@@ -1,5 +1,7 @@
 # deveny-python-replacement
-Port of existing IDL programs for the DeVeny spectrograph on the LDT (dct-obs1) to python.
+Port of existing IDL programs for the DeVeny spectrograph on the LDT (dct-obs1) to python.  
+
+*[Existing IDL code in this repository was exported from dct-obs1 on 31 August 2020.]*
 
 The two major programs contained here are:
 
