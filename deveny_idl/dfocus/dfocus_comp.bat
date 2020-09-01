@@ -1,0 +1,34 @@
+.r /Users/tbida/idl/deveny/dfocus/dfocus.pro
+.r /Users/tbida/idl/deveny/dfocus/dflines.pro
+.r /Users/tbida/idl/deveny/dfocus/dfitlines.pro
+.r /Users/tbida/idl/deveny/dfocus/dfitcurves.pro
+.r /Users/tbida/idl/deveny/dfocus/dplotfocus.pro
+.r /Users/tbida/idl/deveny/dfocus/flogparse.pro
+
+;.r /Users/lmi/idl/deveny/util/dvtrim.pro
+;.r /Users/lmi/idl/deveny/util/specavg.pro
+;.r /Users/lmi/idl/deveny/util/dextract.pro
+;.r /Users/lmi/idl/deveny/util/dspecfit.pro
+;
+;.r /Users/lmi/idl/deveny/util/setplot.pro
+;.r /Users/lmi/idl/deveny/util/readstr1.pro
+;.r /Users/lmi/idl/deveny/util/histo.pro
+;.r /Users/lmi/idl/deveny/util/avg.pro
+;.r /Users/lmi/idl/deveny/util/modd.pro
+;.r /Users/lmi/idl/deveny/util/rot1d.pro
+;.r /Users/lmi/idl/deveny/util/com1d.pro
+;.r /Users/lmi/idl/deveny/util/com2d.pro
+;.r /Users/lmi/idl/deveny/util/quad.pro
+;.r /Users/lmi/idl/deveny/util/rad.pro
+;.r /Users/lmi/idl/deveny/util/deg.pro
+;.r /Users/lmi/idl/deveny/util/readfits.pro
+;.r /Users/lmi/idl/deveny/util/deveny_amag.pro
+;.r /Users/lmi/idl/deveny/util/headfits.pro
+;.r /Users/lmi/idl/deveny/util/sxpar.pro
+;.r /Users/lmi/idl/deveny/util/sxaddpar.pro
+;.r /Users/lmi/idl/deveny/util/valid_num.pro
+;.r /Users/lmi/idl/deveny/util/fxposit.pro
+;.r /Users/lmi/idl/deveny/util/gettok.pro
+;.r /Users/lmi/idl/deveny/util/plotsym.pro
+;.r /Users/lmi/idl/deveny/util/mrd_hread.pro
+;.r /Users/lmi/idl/deveny/util/goodpoly.pro
