@@ -201,7 +201,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         # If no command line argument, assume GUI
         deveny_grangle_gui()
-    if len(sys.argv) == 2:
+    elif len(sys.argv) == 2:
         # If exactly one command line argument, check what it is.
         if sys.argv[1].lower() == 'cli':
             deveny_grangle_cli()
