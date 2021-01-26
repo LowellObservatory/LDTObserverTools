@@ -94,7 +94,10 @@ def deveny_grangle_gui():
                     default_value=gratings[1],key="Grat")]
     row2 = [sg.Text("Enter Central Wavelength:"), 
             sg.Input(key="-WAVEIN-", size=(6,1)), sg.Text("Å")]
-    row3 = [sg.Button("Compute"), sg.Button("Done")]
+    row8 = [sg.Text("Enter Grating Tilt:"), 
+            sg.Input(key="-TILTIN-", size=(6,1)), sg.Text("º")]
+    row3 = [sg.Button("Compute Tilt"), sg.Button("Compute Wavelength"), 
+            sg.Button("Done")]
     row4 = [sg.Text("             Grating: "), 
             sg.Text(size=(20,1), key="-GRATOUT-")]
     row5 = [sg.Text("  Central Wavelength: "), 
@@ -106,8 +109,8 @@ def deveny_grangle_gui():
 
     # Create the Window
     window = sg.Window(
-        "Compute DeVeny Grating Angle",
-        [row1, row2, row3, row4, row5, row6, row7],
+        "DeVeny Grating Angle Calculator",
+        [row1, row2, row8, row3, row4, row5, row6, row7],
         location=(0, 0),
         finalize=True,
         element_justification="center",
@@ -118,13 +121,15 @@ def deveny_grangle_gui():
         event, values = window.read()
         if event == sg.WIN_CLOSED or event == 'Done':
             break
-        if event == 'Compute':
+
+        elif event == 'Compute Tilt':
             # Check for non-numeric entries for Central Wavelength
             if not values['-WAVEIN-'].isnumeric():
                 window['-GRATOUT-'].update("")
                 window['-WAVEOUT-'].update(f"Please Enter a Number")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
+                window['-TILTIN-'].update("")
                 # Wait for next event
                 continue
 
@@ -135,6 +140,7 @@ def deveny_grangle_gui():
                 window['-WAVEOUT-'].update(f"Wavelength out of range")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
+                window['-TILTIN-'].update("")
                 # Wait for next event
                 continue
 
@@ -145,8 +151,45 @@ def deveny_grangle_gui():
             # Update the window with the calculated values
             window['-GRATOUT-'].update(values['Grat'])
             window['-WAVEOUT-'].update(f"{values['-WAVEIN-']} Å")
-            window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f} deg")
+            window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f}º")
             window['-DEMAGOUT-'].update(f"{2.94*amag:.2f} pixels/arcsec")
+            window['-TILTIN-'].update(f"{grangle+tgoffset:.2f}")
+       
+        elif event == 'Compute Wavelength':
+            # Check for non-numeric entries for Grating Tilt
+            if not check_float(values['-TILTIN-']):
+                window['-GRATOUT-'].update("")
+                window['-WAVEOUT-'].update("")
+                window['-TILTOUT-'].update(f"Please Enter a Number")
+                window['-DEMAGOUT-'].update("")
+                window['-WAVEIN-'].update("")
+                # Wait for next event
+                continue
+
+            # Convert wavelen to float, and check for valid range
+            tilt = float(values['-TILTIN-'])
+            if tilt < 0 or tilt > 48:
+                window['-GRATOUT-'].update("")
+                window['-WAVEOUT-'].update("")
+                window['-TILTOUT-'].update(f"Tilt angle out of range")
+                window['-DEMAGOUT-'].update("")
+                window['-WAVEIN-'].update("")
+                # Wait for next event
+                continue
+
+            # Compute the grating angle and anamorphic demagnification
+            gpmm = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
+            wavelen = lambda_at_angle(tilt, gpmm)
+            amag = deveny_amag(tilt)
+
+            # Update the window with the calculated values
+            window['-GRATOUT-'].update(values['Grat'])
+            window['-WAVEOUT-'].update(f"{wavelen:.0f} Å")
+            window['-TILTOUT-'].update(f"{tilt+tgoffset:.2f}º")
+            window['-DEMAGOUT-'].update(f"{2.94*amag:.2f} pixels/arcsec")
+            window['-WAVEIN-'].update(f"{wavelen:.0f}")
+        else:
+            print("Something funny happened... should never print.")
 
     # All done, close window        
     window.close()
@@ -170,7 +213,11 @@ def compute_grangle(wavelen, gpmm):
 
 
 def grangle_eqn(theta):
-    """The grating equation used to find the angle"""
+    """The grating equation used to find the angle
+    
+    The scipy.optimize.newton() function looks for where this equation
+    equals zero.
+    """
     # DeVeny optical angles
     camcol = np.deg2rad(55.00)
     coll = np.deg2rad(10.00)
@@ -178,6 +225,26 @@ def grangle_eqn(theta):
     gx = (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * \
          1.e7 / gpmm - wavelen
     return gx
+
+
+def lambda_at_angle(theta, gpmm, radians=False):
+    """Use the grating equation to compute the central wavelength given theta
+    
+    :param theta: The specified grating angle
+    :param gpmm: The groove density of the grating in g/mm 
+    :param radians: The input angle is in radians [Default: False]
+    :return: The computed central wavelength
+    """
+   # DeVeny optical angles
+    camcol = np.deg2rad(55.00)
+    coll = np.deg2rad(10.00)
+
+    if not radians:
+        theta = np.deg2rad(theta)
+
+    wavelen = (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * \
+               1.e7 / gpmm
+    return wavelen
 
 
 def deveny_amag(grangle):
@@ -189,6 +256,14 @@ def deveny_amag(grangle):
     mbeta = np.deg2rad(camcollang - np.rad2deg(alpha))
 
     return(np.cos(alpha) / np.cos(mbeta))
+
+
+def check_float(potential_float):
+    try:
+        float(potential_float)
+        return True
+    except ValueError:
+        return False
 
 
 if __name__ == "__main__":
