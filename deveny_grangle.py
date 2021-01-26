@@ -54,7 +54,8 @@ def deveny_grangle_cli():
     print(f"\n Grating: {gpmm:.0f} g/mm")
     print(f" Central Wavelength: {wavelen} A")
     print(f" DeVeny grating tilt = {grangle+tgoffset:.2f} deg")
-    print(f" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): {2.94*amag:.2f}\n")
+    print(f" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): " + \
+          f"{2.94*amag:.2f}\n")
 
 
 def deveny_grangle_gui():
