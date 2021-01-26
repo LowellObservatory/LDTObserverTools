@@ -48,7 +48,7 @@ def deveny_grangle():
 
     print(f"\n Grating: {gpmm:.0f} g/mm")
     print(f" Central Wavelength: {wavelen} A")
-    print(f" DeVeny grating tile = {grangle+tgoffset:.2f} deg")
+    print(f" DeVeny grating tilt = {grangle+tgoffset:.2f} deg")
     print(f" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): {2.94*amag:.2f}\n")
 
 
@@ -62,6 +62,7 @@ def grangle_eqn(theta):
     gx = (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * 1.e7 / gpmm - wavelen
     return gx
 
+
 def deveny_amag(grangle):
     """Computes the anamorphic demagnification of the slit given grangle
     """
@@ -72,7 +73,6 @@ def deveny_amag(grangle):
     mbeta = np.deg2rad(camcollang - np.rad2deg(alpha))
 
     return(np.cos(alpha) / np.cos(mbeta))
-
 
 
 if __name__ == "__main__":
