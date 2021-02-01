@@ -10,7 +10,7 @@
 #
 #  @author: tbowers
 
-from .pydeveny import *
+from .deveny_grangle import *
 
 # Boilerplate variables
 __author__ = 'Timothy P. Ellsworth Bowers'
