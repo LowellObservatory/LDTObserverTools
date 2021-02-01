@@ -28,6 +28,9 @@ import numpy as np
 from scipy import optimize
 import PySimpleGUI as sg
 
+# CONSTANTS
+PIXSCALE = 2.94     # Base pixels per arcsec: 1 / (0.34 arcsec / pixel)
+
 
 def deveny_grangle_cli():
     """Compute the desired grating angle given grating and central wavelength
@@ -55,7 +58,7 @@ def deveny_grangle_cli():
     print(f" Central Wavelength: {wavelen} A")
     print(f" DeVeny grating tilt = {grangle+tgoffset:.2f} deg")
     print(f" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): " + \
-          f"{2.94*amag:.2f}\n")
+          f"{PIXSCALE*amag:.2f}\n")
 
 
 def deveny_grangle_gui():
@@ -146,7 +149,7 @@ def deveny_grangle_gui():
             window['-GRATOUT-'].update(values['Grat'])
             window['-WAVEOUT-'].update(f"{values['-WAVEIN-']} Å")
             window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f} deg")
-            window['-DEMAGOUT-'].update(f"{2.94*amag:.2f} pixels/arcsec")
+            window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
 
     # All done, close window        
     window.close()
@@ -249,7 +252,7 @@ def deveny_grangle_maxgui():
             window['-GRATOUT-'].update(values['Grat'])
             window['-WAVEOUT-'].update(f"{values['-WAVEIN-']} Å")
             window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f}º")
-            window['-DEMAGOUT-'].update(f"{2.94*amag:.2f} pixels/arcsec")
+            window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
             window['-TILTIN-'].update(f"{grangle+tgoffset:.2f}")
        
         elif event == 'Compute Wavelength':
@@ -283,7 +286,7 @@ def deveny_grangle_maxgui():
             window['-GRATOUT-'].update(values['Grat'])
             window['-WAVEOUT-'].update(f"{wavelen:.0f} Å")
             window['-TILTOUT-'].update(f"{tilt+tgoffset:.2f}º")
-            window['-DEMAGOUT-'].update(f"{2.94*amag:.2f} pixels/arcsec")
+            window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
             window['-WAVEIN-'].update(f"{wavelen:.0f}")
         else:
             print("Something funny happened... should never print.")
