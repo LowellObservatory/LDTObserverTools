@@ -92,8 +92,7 @@ def dfocus(flog='last', thresh=100.):
     centers, fwhm = dflines(mspectra, thresh=thresh, title = dfl_title)
     nc = len(centers)
     print(F"Back in the main program, number of lines: {nc}")
-    #fw = fltarr(nc, nfiles)
-    
+    fw = np.empty((nfiles, nc), dtype=float)
 
     # Run through files:
     for i in range(nfiles):
@@ -104,20 +103,57 @@ def dfocus(flog='last', thresh=100.):
 
         # Find FWHM of lines:
         fwhm = dfitlines(spectra, centers)
-#     for i=0,nfiles-1 do begin
-#     print,' Processing arc image'+files(i)+'...'
-#     spectrum = dvtrim('../'+files(i),/sub,postpix=postpix)
-#     print,''
-#     print,'   Extracting spectra from image '+files(i)+'...'
-#     dextract, spectrum, traces, win, spectra=spectra, swext=swext
+        fw[i,:] = fwhm
 
-# ; Find fwhm of lines:
-#     dfitlines, spectra, centers, fwhm=fwhm
-#     fw(*,i) = fwhm
-#   endfor
+    print(f"Median of the array fw: {np.median(fw)}")
+
+    # Fit the lines:
+    (linefits, (focus, fwidth, minfoc)) = dfitcurves(fw, fnom=fnom)
+    fpos = focus * df + f0
+    fwid = fwidth * df + f0
+    fwmin = minfoc
+    mfpos = np.median(fpos)
+    mfwid = np.median(fwid)
+
+    print(f"mfpos: {mfpos}, mfwid: {mfwid}")
 
 
+    """
+    dplotfocus, x, fw, fits, flist, fnom=fnom
+    plot, centers, fpos, xra=[0,2050], yra=[f0, f1], xsty=1, $
+        /ynoz, ticklen=1, psym=5, $
+        title='Minimum focus position vs. line position, median = ' + $
+        strmid(mfpos, 3, 8), xtitle='CCD column', ytitle='Focus (mm)'
+    plot, centers, fwid, xra=[0,2050], yra=[f0, f1], xsty=1, $
+        /ynoz, ticklen=1, psym=5, $
+        title='Optimal focus position vs. line position, median = ' + $
+        strmid(mfwid, 3, 8), xtitle='CCD column', ytitle='Optimal Focus (mm)', $
+        subtitle='Grating: ' + grating + $
+        '   Slit width:' + strmid(slitasec, 4, 6) + ' arcsec' + $
+        '    Nominal line width:' + strmid(fnom,4,7) + ' pixels'
+    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data 
+    setplot,'x'
 
+    window, 0, xsize=750, ysize=450, xpos=50, ypos=725
+    centers=dflines(mspectra, fwhm=fwhm, thresh=thresh, $
+        title = mfile + '   Grating:  ' + grating + '   GRANGLE:  ' + $
+        strtrim(grangle,2) + '   ' + lampcal)
+    window, 1, xsize=1500, ysize=650, xpos=50, ypos=50
+    dplotfocus, x, fw, fits, flist, fnom=fnom
+    window, 2, xsize=750, ysize=450, xpos=805, ypos=725
+    plot, centers, fwid, xra=[0,2050], yra=[f0, f1], xsty=1, $
+        /ynoz, ticklen=1, psym=5, $
+        title='Optimal focus position vs. line position, median = ' + $
+        strmid(mfwid, 3, 8), xtitle='CCD column', ytitle='Optimal Focus (mm)', $
+        subtitle='Grating: ' + grating + $
+        '   Slit width:' + strmid(slitasec, 4, 6) + ' arcsec' + $
+        '    Nominal line width:' + strmid(fnom,4,7) + ' pixels'
+    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data 
+    loadct, 0
+
+    return
+    end
+    """
 
 def flogparse(flog):
     """Parse the focus log file produced by the DeVeny LOUI
@@ -463,3 +499,45 @@ def com1d(line):
     dy = np.sum(cy) / np.sum(line)
 
     return dy
+
+
+def dfitcurves(fwhm, fnom=2.7):
+    """Fit line / star focus curves
+    """
+    
+    thresh = 2.0
+    norder = 2
+
+    nf, nc = fwhm.shape
+    fits = np.empty((nc, norder+1), dtype=float)
+    minfoc = np.empty(nc, dtype=float)
+    x = np.arange(nf, dtype=float)
+    focus = np.empty(nc, dtype=float)
+    fwidth = np.empty(nc, dtype=float)
+    xfine = np.arange((nf-1)*10.0 + 1.0, dtype=float)/10.0
+    wts = np.full(nf, 1.0, dtype=float)
+
+    for i in range(nc):
+        data = fwhm[:,i]
+        out = np.where(np.logical_or(data < 1.0, data > 15.0))
+        if count := len(out) > 3:
+            continue
+        if count != 0:
+            wts[out] = 0.0
+            data[out] = 50.0
+        fit = np.polyfit(x, data, norder)
+        # The numpy function returns coeff's in opposite order to IDL func
+        fits[i,:] = np.flip(fit)
+
+        # Curve Miniumum
+        fitfine = np.polyval(fit, xfine)
+        minfine = np.min(fitfine)
+        focus[i] = xfine[np.argmin(fitfine)]
+        minfoc[i] = minfine
+
+        # Nominal focus position (the larger of the two roots):
+        fit[2] -= fnom
+        fpix = np.roots(fit)
+        fwidth[i] = np.max(fpix)
+
+    return (fits, (focus, fwidth, minfoc))
