@@ -46,7 +46,7 @@ def dfocus(flog='last', thresh=100.):
     if log is unspecified, process the last sequence
     """
 
-    global curves, fx, centers, fpos, fwid, fwmin
+    #global curves, fx, centers, fpos, fwid, fwmin
 
     # Parse the log file to obtain file list;
     files, focid = flogparse(flog)
@@ -78,10 +78,10 @@ def dfocus(flog='last', thresh=100.):
     print(f'\n Processing object image {mfile}...')
     spectrum = dvtrim(mfile)
     ny, nx = spectrum.shape
-    print(f'The shape of spectrum: {spectrum.shape}')
+    #print(f'The shape of spectrum: {spectrum.shape}')
     traces = np.full(nx, ny/2, dtype=float).reshape((1,nx))
-    print(type(traces.shape))
-    print(f'The shape of traces: {traces.shape}')
+    #print(type(traces.shape))
+    #print(f'The shape of traces: {traces.shape}')
     print(traces)
     mspectra = dextract(spectrum, traces, win, swext=swext)
     print(mspectra)
@@ -92,13 +92,14 @@ def dfocus(flog='last', thresh=100.):
     centers, fwhm = dflines(mspectra, thresh=thresh, title = dfl_title)
     nc = len(centers)
     print(F"Back in the main program, number of lines: {nc}")
+    print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
     fw = np.empty((nfiles, nc), dtype=float)
 
     # Run through files:
     for i in range(nfiles):
-        print(f" Processing arc image {files[i]} ...")
+        print(f"\n Processing arc image {files[i]} ...")
         spectrum = dvtrim(f"../{files[i]}")
-        print(f"\n  Extracting spectra from image {files[i]}...")
+        print(f"  Extracting spectra from image {files[i]}...")
         spectra = dextract(spectrum, traces, win, swext=swext)
 
         # Find FWHM of lines:
@@ -255,7 +256,7 @@ def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
         inspix = np.arange(nspix, dtype=int) - nspix/2
         for io in range(norders):
             for ix in range(ix):
-                #Interpolation
+                # Interpolation
                 xt = traces[io,ix].astype(int) + inspix
                 spectra[:,ix,io] = spectrum[xt, ix]
 
@@ -264,8 +265,8 @@ def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
             npixavg = nspix
         spectra = np.empty((norders, nx), dtype=float)
 
-        print(f'The shape of spectra: {spectra.shape}')
-        print(f'The shape of traces: {traces.shape}')
+        #print(f'The shape of spectra: {spectra.shape}')
+        #print(f'The shape of traces: {traces.shape}')
 
         for io in range(norders):
             spectra[io,:] = specavg(spectrum, traces[io,:], npixavg)
@@ -279,9 +280,10 @@ def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
 
 def specavg(spectrum, trace, wsize):
     """Extract an average spectrum along trace of size wsize
-    :spectrun: input spectrum
-    :trace: the trace along which to extract
-    :wsize: the size of the extraction (usually odd)
+    :param spectrun: input spectrum
+    :param trace: the trace along which to extract
+    :param wsize: the size of the extraction (usually odd)
+    :return:
     """
     # Case out the dimensionality of traces... 0 -> return
     if spectrum.ndim == 0:
@@ -300,7 +302,7 @@ def specavg(spectrum, trace, wsize):
         speca[i] = np.average(spectrum[int(trace[i]) - whalfsize : 
                                       int(trace[i]) + whalfsize + 1, i])
     
-    print(f"The shape of speca: {speca.shape}")
+    #print(f"The shape of speca: {speca.shape}")
     return speca.reshape((1,nx))
 
 
@@ -425,8 +427,8 @@ def dflines(image, thresh=20., mark=False, title=''):
                     fwhm.append(fw)
                 j0 = jf + j
 
-        centers = np.asarray(peaks[1:])
-        fwhm = fwhm[1:]
+        centers = np.asarray(peaks)
+        #fwhm = fwhm[1:]
     
     cc = np.where(np.logical_and(centers >=0, centers <=2100))
     centers = centers[cc]
@@ -479,7 +481,7 @@ def dfitlines(spectrum, cnt, cplot=False):
             continue  # Just skip this one
         # print(f"Gaussfit parameters: {aa}")
         tmp = gaussfit_func(xx, *a)
-        fwhm[j] = a[2] * 1.177 * 2.0
+        fwhm[j] = a[2] * 2.355     # FWHM = 2.355 * sigma
     
     return fwhm
 
