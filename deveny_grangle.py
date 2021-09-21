@@ -332,7 +332,12 @@ def lambda_at_angle(theta, gpmm, radians=False):
     :param radians: The input angle is in radians [Default: False]
     :return: The computed central wavelength
     """
-   # DeVeny optical angles
+    if not isinstance(theta, float):
+        theta = float(theta)
+    if not isinstance(gpmm, float):
+        gpmm = float(gpmm)
+
+    # DeVeny optical angles
     camcol = np.deg2rad(55.00)
     coll = np.deg2rad(10.00)
 

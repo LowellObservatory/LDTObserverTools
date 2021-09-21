@@ -256,7 +256,7 @@ def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
         inspix = np.arange(nspix, dtype=int) - nspix/2
         for io in range(norders):
             for ix in range(ix):
-                # Interpolation
+                # W/O Interpolation:
                 xt = traces[io,ix].astype(int) + inspix
                 spectra[:,ix,io] = spectrum[xt, ix]
 
@@ -264,9 +264,6 @@ def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
         if npixavg is None:
             npixavg = nspix
         spectra = np.empty((norders, nx), dtype=float)
-
-        #print(f'The shape of spectra: {spectra.shape}')
-        #print(f'The shape of traces: {traces.shape}')
 
         for io in range(norders):
             spectra[io,:] = specavg(spectrum, traces[io,:], npixavg)
@@ -280,7 +277,7 @@ def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
 
 def specavg(spectrum, trace, wsize):
     """Extract an average spectrum along trace of size wsize
-    :param spectrun: input spectrum
+    :param spectrum: input spectrum
     :param trace: the trace along which to extract
     :param wsize: the size of the extraction (usually odd)
     :return:
@@ -300,7 +297,7 @@ def specavg(spectrum, trace, wsize):
     #   to get the full wsize elements for the average
     for i in range(nx):
         speca[i] = np.average(spectrum[int(trace[i]) - whalfsize : 
-                                      int(trace[i]) + whalfsize + 1, i])
+                                       int(trace[i]) + whalfsize + 1, i])
     
     #print(f"The shape of speca: {speca.shape}")
     return speca.reshape((1,nx))
@@ -350,7 +347,7 @@ def gaussfit_func(x, a0, a1, a2, a3):
     # Silence RuntimeWarning for overflow, this function only
     warnings.simplefilter('ignore', RuntimeWarning)
     z = (x - a1) / a2
-    y = a0 * np.exp(-z**2 / a2) + a3
+    y = a0 * np.exp(-z**2 / 2.) + a3
     return y
 
 def dflines(image, thresh=20., mark=False, title=''):
@@ -452,15 +449,21 @@ def dflines(image, thresh=20., mark=False, title=''):
     return (centers, fwhm)
 
 
-def dfitlines(spectrum, cnt, cplot=False):
+def dfitlines(spectrum, cnt, cplot=False, return_amp=False, boxf=None):
     """Procedure to fit line profiles in a focus image
 
     """
     
     nc = len(cnt)
     fwhm = np.empty(nc, dtype=float)
-    boxi = 17
-    boxf = 11
+    if return_amp:
+        afit = np.empty(nc, dtype=float)
+        amax = np.empty(nc, dtype=float)
+    if boxf is None:
+        boxi = 17
+        boxf = 11
+    else:
+        boxi = boxf + 6
     xx = np.arange(2 * boxf + 1).flatten()
 
     # Loop through the lines!
@@ -482,8 +485,15 @@ def dfitlines(spectrum, cnt, cplot=False):
         # print(f"Gaussfit parameters: {aa}")
         tmp = gaussfit_func(xx, *a)
         fwhm[j] = a[2] * 2.355     # FWHM = 2.355 * sigma
+        if return_amp:
+            afit[j] = a[0]
+            amax[j] = np.max(box)
     
-    return fwhm
+    # Return either the single FWHM or tuple containing FWHM & amplitudes
+    if return_amp:
+        return fwhm, afit, amax
+    else:
+        return fwhm
 
 
 def com1d(line):
