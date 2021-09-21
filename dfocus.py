@@ -350,6 +350,7 @@ def gaussfit_func(x, a0, a1, a2, a3):
     y = a0 * np.exp(-z**2 / 2.) + a3
     return y
 
+
 def dflines(image, thresh=20., mark=False, title=''):
     """Automatically find and centroid lines in a 1-row image
  
