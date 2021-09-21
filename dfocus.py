@@ -22,7 +22,6 @@ DeVeny LOUI.
 
 # Built-In Libraries
 import glob
-import sys
 import warnings
 
 # Numpy & SciPy & PySimpleGui
@@ -40,16 +39,24 @@ from .deveny_grangle import deveny_amag
 # CONSTANTS
 
 
-def dfocus(flog='last', thresh=100.):
-    """Find the optimal DeVeny collimator focus value
+def dfocus(flog='last', thresh=100., debug=False):
+    """dfocus Find the optimal DeVeny collimator focus value
 
-    if log is unspecified, process the last sequence
+    [extended_summary]
+
+    Parameters
+    ----------
+    flog : `str`, optional
+        Focus log to process.  If unspecified, process the last sequence in
+        the directory.  [Default: 'last']
+    thresh : `float`, optional
+        Line intensity threshold above background for detection [Default: 100]
+    debug : `bool`. optional
+        Print debug statements  [Default: False]
     """
 
-    #global curves, fx, centers, fpos, fwid, fwmin
-
-    # Parse the log file to obtain file list;
-    files, focid = flogparse(flog)
+    # Parse the log file to obtain file list
+    files, _ = parse_focus_log(flog)
     nfiles = len(files)
 
     # Pull the spectrograph setup from the first focus file:
@@ -58,67 +65,69 @@ def dfocus(flog='last', thresh=100.):
     grating = hdr0['GRATING']
     grangle = hdr0['GRANGLE']
     lampcal = hdr0['LAMPCAL']
-    filtrear = hdr0['FILTREAR']
+
+    # Nominal line width
     fnom = 2.94 * slitasec * deveny_amag(grangle)
 
     # Pull the collimator focus values from the first and last files
-    f0 = hdr0['COLLFOC']
-    hdr1 = fits.getheader(f'../' + files[-1])
-    f1 = hdr1['COLLFOC']
-
-    # Set up arrays for populating the focus values
-    df = (f1 - f0) / (nfiles - 1)
-    x = np.arange(nfiles, dtype=float)
-    fx = np.arange(nfiles, dtype=float) * df + f0
+    focus_0 = hdr0['COLLFOC']
+    focus_1 = (fits.getheader(f'../' + files[-1]))['COLLFOC']
 
     # Examine the middle image
-    mfile = '../' + files[int(nfiles/2)]
-    swext=4  # Vestigial extraction pramater
-    win = 11 # Something about the window to extract
-    print(f'\n Processing object image {mfile}...')
-    spectrum = dvtrim(mfile)
-    ny, nx = spectrum.shape
-    #print(f'The shape of spectrum: {spectrum.shape}')
-    traces = np.full(nx, ny/2, dtype=float).reshape((1,nx))
-    #print(type(traces.shape))
-    #print(f'The shape of traces: {traces.shape}')
-    print(traces)
-    mspectra = dextract(spectrum, traces, win, swext=swext)
-    print(mspectra)
+    middle_file = '../' + files[int(nfiles/2)]
 
-    # Find the lines:
-    dfl_title = f'{mfile}   Grating:  {grating}   GRANGLE:  ' + \
+    print(f'\n Processing object image {middle_file}...')
+    spectrum = trim_deveny_image(middle_file)
+
+    # Build the trace for spectrum extraction
+    ny, nx = spectrum.shape
+    traces = np.full(nx, ny/2, dtype=float).reshape((1,nx))
+    mspectra = extract_spectrum(spectrum, traces, win=11)
+    if debug:
+        print(f"Traces: {traces}")
+        print(f"Middle Spectrum: {mspectra}")
+
+    # Find the lines in the extracted spectrum
+    dfl_title = f'{middle_file}   Grating:  {grating}   GRANGLE:  ' + \
                 f'{grangle:.0f}   {lampcal}'
-    centers, fwhm = dflines(mspectra, thresh=thresh, title = dfl_title)
+
+    centers, _ = find_lines(mspectra, thresh=thresh, title=dfl_title)
     nc = len(centers)
-    print(F"Back in the main program, number of lines: {nc}")
+    if debug:
+        print(F"Back in the main program, number of lines: {nc}")
     print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
-    fw = np.empty((nfiles, nc), dtype=float)
+
+    # Create an array to hold the FWHM values from all lines from all images
+    line_width_array = np.empty((nfiles, nc), dtype=float)
 
     # Run through files:
     for i in range(nfiles):
         print(f"\n Processing arc image {files[i]} ...")
-        spectrum = dvtrim(f"../{files[i]}")
+        spectrum = trim_deveny_image(f"../{files[i]}")
         print(f"  Extracting spectra from image {files[i]}...")
-        spectra = dextract(spectrum, traces, win, swext=swext)
+        spectra = extract_spectrum(spectrum, traces, win=11)
 
         # Find FWHM of lines:
-        fwhm = dfitlines(spectra, centers)
-        fw[i,:] = fwhm
+        fwhm = fit_lines(spectra, centers)
+        line_width_array[i,:] = fwhm
 
-    print(f"Median of the array fw: {np.median(fw)}")
+    print(f"Median of the array fw: {np.median(line_width_array)}")
 
-    # Fit the lines:
-    (linefits, (focus, fwidth, minfoc)) = dfitcurves(fw, fnom=fnom)
-    fpos = focus * df + f0
-    fwid = fwidth * df + f0
-    fwmin = minfoc
-    mfpos = np.median(fpos)
-    mfwid = np.median(fwid)
+    # Find the delta between focus values
+    df = (focus_1 - focus_0) / (nfiles - 1)
+
+    # Nominal line width for finding focus
+    fnom = 2.94 * slitasec * deveny_amag(grangle)
+
+    # Fit the focus curve:
+    focus, fwidth, _ = fit_focus_curves(line_width_array, fnom=fnom)
+    fpos = focus * df + focus_0
+    fwid = fwidth * df + focus_0
+    mfpos, mfwid = np.median(fpos), np.median(fwid)
 
     print(f"mfpos: {mfpos}, mfwid: {mfwid}")
 
-
+    # This section will need to be rehabilitated for making the plots
     """
     dplotfocus, x, fw, fits, flist, fnom=fnom
     plot, centers, fpos, xra=[0,2050], yra=[f0, f1], xsty=1, $
@@ -132,7 +141,7 @@ def dfocus(flog='last', thresh=100.):
         subtitle='Grating: ' + grating + $
         '   Slit width:' + strmid(slitasec, 4, 6) + ' arcsec' + $
         '    Nominal line width:' + strmid(fnom,4,7) + ' pixels'
-    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data 
+    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data
     setplot,'x'
 
     window, 0, xsize=750, ysize=450, xpos=50, ypos=725
@@ -149,294 +158,229 @@ def dfocus(flog='last', thresh=100.):
         subtitle='Grating: ' + grating + $
         '   Slit width:' + strmid(slitasec, 4, 6) + ' arcsec' + $
         '    Nominal line width:' + strmid(fnom,4,7) + ' pixels'
-    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data 
+    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data
     loadct, 0
 
     return
     end
     """
 
-def flogparse(flog):
-    """Parse the focus log file produced by the DeVeny LOUI
+def parse_focus_log(flog):
+    """parse_focus_log Parse the focus log file produced by the DeVeny LOUI
 
-    flog: if 'last', then read in the most recent log file, but
-            the user can also pass in a specific log file to use
+    [extended_summary]
+
+    Parameters
+    ----------
+    flog : `str`
+        Identifier for the focus log to be processed
+
+    Returns
+    -------
+    `list`, `str`
+        List of files associated with this focus run, and the focus ID
     """
     if flog.lower() == 'last':
         focfiles = sorted(glob.glob('deveny_focus*'))
         flog = focfiles[-1]
-    focid = flog[13:]
- 
+
     files = []
     with open(flog) as f:
-        f.readline()   # Discard file header
+        # Discard file header
+        f.readline()
+        # Read in the remainder of the file, grabbing just the filenames
         for line in f:
             files.append(line[2:20])
-    
-    return files, focid
+
+    # Return the list of files, and the FocusID
+    return files, flog[13:]
 
 
-
-def dvtrim(filename):
-    """Trim a DeVeny Image
+def trim_deveny_image(filename):
+    """trim_deveny_image Trim a DeVeny Image
 
     The IDL code from which this was ported contains a large amount of
     vistigial code from previous versions of the DeVeny camera, including
     instances where the CCD was read out using 2 amplifiers and required
     special treatment in order to balance the two sides of the output image.
 
-    The code below consists of the lines of code that were actually running 
+    The code below consists of the lines of code that were actually running
     using the keywords passed from current version of dfocus.pro, and the
     pieces of that code that are actually used.
+
+    Specifically, this routine trims off the 50 prescan and 50 postscan pixels,
+    as well as several rows off the top and bottom.  (Extracts rows [12:512])
+
+    Parameters
+    ----------
+    filename : `str`
+        Filename of the spectrum to get and trim
+
+    Returns
+    -------
+    `np.ndarray`
+        The trimmed CCD image
     """
 
     # Parameters for DeVeny (2015 Deep-Depletion Device):
-    nxpix = 2048
-    prepix = 50
-    # postpix = 50        # Overscan pixels
+    nxpix, prepix = 2048, 50
 
     # Read in the file
     image = fits.getdata(filename)
 
     # Trim the image (remove top and bottom rows) -- why this particular range?
-    image = image[12:512,:]
-
     # Trim off the 50 prepixels and the 50 postpixels; RETURN
-    return image[:,prepix:prepix+nxpix]
+    return image[12:512,prepix:prepix+nxpix]
 
 
-def dextract(spectrum,traces,nspix,swext=2,npixavg=None):
-    """Object spectral extraction routine
-   
-    Options:
-    swext = 1: extract point source spectra by averaging over window
-    swext = 2: extract full spatial orders with spatial interpolation
-    swext = 3: extract full orders without interpolation 
-    swext = 4: extract spectra by averaging over window
+def extract_spectrum(spectrum, traces, win):
+    """extract_spectrum Object spectral extraction routine
 
-    Output:
-    spectra: 2 or 3-d array of spectra of individual orders
+    Extract spectra by averaging over the specified window
+
+    Parameters
+    ----------
+    spectrum : `np.ndarray`
+        The trimmed spectral image
+    traces : `np.ndarray`
+        The trace(s) along which to extract spectra
+    win : `int`
+        Window over which to average the spectrum
+
+    Returns
+    -------
+    `numpy.ndarray`
+        2D or 3D array of spectra of individual orders
     """
-    
-    # Case out the dimensionality of traces... 0 -> return
-    if traces.ndim == 0:
-        return 0
-    elif traces.ndim == 1:
-        nx = traces.size
-        norders = 1
-    else:
-        norders, nx = traces.shape
+    # Spec out the shape, and create an empty array to hold the output spectra
+    norders, nx = traces.shape
+    spectra = np.empty((norders, nx), dtype=float)
 
-    # Case out the option swext
-    if swext == 0:
-        return 0
+    # Set extraction window size
+    half_window = int(np.floor(win/2))
 
-    elif swext == 1:
-        if npixavg is None:
-            npixavg = 19
-        spectra = np.empty((norders,nx), dtype=float)
-        for io in range(norders):
-            spectra[io,:] = dspecfit(spectrum, traces[io,:], bwidth=nspix, 
-                                     extwidth=npixavg)
-    
-    elif swext == 2:
-        spectra = np.empty((nspix, nx, norders), dtype=float)
-        fnspix = np.arange(nspix, dtype=float) - nspix/2
-        for io in range(norders):
-            for ix in range(nx):
-                # Interpolation:
-                xt = traces[io,ix].astype(int) + fnspix
-                ut = traces[io, ix] + fnspix
-                vector = spectrum[xt, ix]
-                tvector = interpol(vector, xt, ut)
-                spectra[:,ix,io] = tvector
-
-    elif swext == 3:
-        spectra = np.empty((nspix, nx, norders), dtype=float)
-        inspix = np.arange(nspix, dtype=int) - nspix/2
-        for io in range(norders):
-            for ix in range(ix):
-                # W/O Interpolation:
-                xt = traces[io,ix].astype(int) + inspix
-                spectra[:,ix,io] = spectrum[xt, ix]
-
-    elif swext == 4:
-        if npixavg is None:
-            npixavg = nspix
-        spectra = np.empty((norders, nx), dtype=float)
-
-        for io in range(norders):
-            spectra[io,:] = specavg(spectrum, traces[io,:], npixavg)
-    
-    else:
-        print("Silly user, you can't do that.")
-        return 0
+    for io in range(norders):
+        # Because of python indexing, we need to "+1" the upper limit in order
+        #   to get the full wsize elements for the average
+        speca = np.average(spectrum[int(traces[io,:]) - half_window:
+                                    int(traces[io,:]) + half_window + 1, :], 0)
+        spectra[io,:] = speca.reshape((1,nx))
 
     return spectra
 
 
-def specavg(spectrum, trace, wsize):
-    """Extract an average spectrum along trace of size wsize
-    :param spectrum: input spectrum
-    :param trace: the trace along which to extract
-    :param wsize: the size of the extraction (usually odd)
-    :return:
+def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
+               verbose=False, mark=False, title=''):
+    """find_lines Automatically find and centroid lines in a 1-row image
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    image : `np.ndarray`
+        Extracted spectrum
+    thresh : `float`, optional
+        Threshold above which to indentify lines [Default: 20 DN above bkgd]
+    findmax : `int`, optional
+        Maximum number of lines to find [Default: 50]
+    minsep : `int`, optional
+        Minimum line separation for identification [Default: 11 pixels]
+    fit_window : `int`, optional
+        Size of the window to fit Gaussian [Default: 15 pixels]
+    verbose : `bool`, optional
+        Produce verbose output?  [Default: False]
+    mark : `bool`, optional
+        Mark the lines on the output plot?  [Default: False]
+    title : `str`
+        Title to use for the output plot.  [Default: '']
+
+    Returns
+    -------
+    (`list of float`, `list of float`)
+        centers: Line centers (pixel #)
+        fwhm: The computed FWHM
     """
-    # Case out the dimensionality of traces... 0 -> return
-    if spectrum.ndim == 0:
-        return 0
-    elif spectrum.ndim == 1:
-        nx = spectrum.size
-    else:
-        ny, nx = spectrum.shape
-    speca = np.empty(nx, dtype=float)
-
-    whalfsize = int(np.floor(wsize/2))
-
-    # Because of python indexing, we need to "+1" the upper limit in order
-    #   to get the full wsize elements for the average
-    for i in range(nx):
-        speca[i] = np.average(spectrum[int(trace[i]) - whalfsize : 
-                                       int(trace[i]) + whalfsize + 1, i])
-    
-    #print(f"The shape of speca: {speca.shape}")
-    return speca.reshape((1,nx))
-
-
-def dspecfit(spec, trace, bwidth=101, extwidth=19):
-    """Fit the background to a spectrum and subtract it
-
-    Default values:
-    :bwidth: 101
-    :extwidth: 19
-    """
-
-    """     
-    tval=fix(trace)
-
-    nfit=bwidth & win=[bwidth/2-extwidth/2,bwidth/2+extwidth/2] ;  w=0 over win
-    sz=size(spec)
-    fits=fltarr(nfit,sz(1)) & datas=fits & subs=fits
-
-    for i=0,sz(1)-1 do begin
-
-        ww=fltarr(nfit) & ww(*)=1. & ww(win(0):win(1))=0.
-        data=spec(i,tval(i)-nfit/2:tval(i)+nfit/2)
-        coef=polyfitw(findgen(nfit),data,ww,1)	; go with linear fit
-
-        fit=poly(findgen(nfit),coef)
-        fits(*,i)=fit
-        datas(*,i)=data
-        subs(*,i)=data-fit
-
-    endfor
-
-    gplott=fltarr(sz(1))
-
-    for i=0,sz(1)-1 do gplott(i)=total(subs(win(0):win(1),i))
-
-    return,gplott
-
-    end
-    """
-    return 0
-
-
-def gaussfit_func(x, a0, a1, a2, a3):
- 
-    # Silence RuntimeWarning for overflow, this function only
-    warnings.simplefilter('ignore', RuntimeWarning)
-    z = (x - a1) / a2
-    y = a0 * np.exp(-z**2 / 2.) + a3
-    return y
-
-
-def dflines(image, thresh=20., mark=False, title=''):
-    """Automatically find and centroid lines in a 1-row image
- 
-    :image:
-    :thresh: 20 DN above background
-    :mark:
-    :title:
-
-    Returns:
-    :centers: List of line centers (pixel #)
-    :fwhm: The computed FWHM
-    """
-
+    # Silence OptimizeWarning, this function only
     warnings.simplefilter('ignore', optimize.OptimizeWarning)
 
-    nx, ny = image.shape
-    avgj = np.ndarray.flatten(image)
+    # Define the half-window
+    fhalfwin = int(np.floor(fit_window/2))
 
-    print(f"Shapes of image: {image.shape}, and avgj: {avgj.shape}")
+     # Get size and flatten to 1D
+    _, nx = image.shape
+    spec = np.ndarray.flatten(image)
 
-    peaks = []
-    fwhm = []
- 
-    # Create background from median value of the image:
-    bkgd = np.median(image)
-    print(f'  Background level: {bkgd:.1f}')
+    # Find background from median value of the image:
+    bkgd = np.median(spec)
+    print(f'  Background level: {bkgd:.1f}' + \
+          f'   Detection threshold level: {bkgd+thresh:.1f}')
 
-    # Step through the cut and identify peaks:
-    fmax = 11     # Minimum separations
-    fwin = 15
-    fhalfmax = int(np.floor(fmax/2))
-    fhalfwin = int(np.floor(fwin/2))
-    findmax = 50
+    # Create empty lists to fill
+    cent, fwhm = ([], [])
     j0 = 0
 
-    if mark:
-        centers = [0]
-    else:
-        for j in range(ny):
-            # print(f"avgj[j]: {avgj[j]}, {avgj[j].shape}")
-            if j > (ny - fmax):
+    # Step through the cut and identify peaks:
+    for j in range(nx):
+
+        # If we get too close to the end, skip
+        if j > (nx - minsep):
+            continue
+
+        # If the spectrum at this pixel is above the THRESH...
+        if spec[j] > (bkgd + thresh):
+
+            # Mark this pixel as j1
+            j1 = j
+
+            # If this is too close to the last one, skip
+            if np.abs(j1 - j0) < minsep:
                 continue
-            if avgj[j] > (bkgd + thresh):
-                j1 = j
-                if np.abs(j1 - j0) < fmax:      
-                    continue
-                for jf in range(findmax):
-                    itmp0 = avgj[jf + j]
-                    itmp1 = avgj[jf + j + 1]
-                    if itmp1 < itmp0:
-                        icntr = jf + j
-                        break
-                if (icntr < fmax/2) or (icntr > (ny - fmax/2 - 1)):
-                    continue
-                xx = np.arange(fwin, dtype=float) + float(icntr - fhalfwin)
-                temp = avgj[(icntr) - fhalfwin : (icntr) + fhalfwin + 1]
-                temp = signal.medfilt(temp, kernel_size=3)
-                
-                # Run the fit, with error checking
-                try:
-                    p0 = [1000, np.mean(xx), 3, bkgd]
-                    aa, cv = optimize.curve_fit(gaussfit_func, xx, temp, p0=p0)
-                except RuntimeError:
-                    continue  # Just skip this one
-                # print(f"Gaussfit parameters: {aa}")
-                tempfit = gaussfit_func(xx, *aa)
-                center = aa[1]
-                fw = aa[2] * 1.177 * 2.
-                pmax = aa[0]
-                if fw > 1.0:
-                    peaks.append(center)
-                    fwhm.append(fw)
-                j0 = jf + j
 
-        centers = np.asarray(peaks)
-        #fwhm = fwhm[1:]
-    
-    cc = np.where(np.logical_and(centers >=0, centers <=2100))
-    centers = centers[cc]
+            # Loop through 0-FINDMAX...  (find central pixel?)
+            for jf in range(findmax):
+                itmp0 = spec[jf + j]
+                itmp1 = spec[jf + j + 1]
+                if itmp1 < itmp0:
+                    icntr = jf + j
+                    break
 
-    szc = len(centers)
-    print(f" Number of lines: {szc}")
+            # If central pixel is too close to the edge, skip
+            if (icntr < minsep/2) or (icntr > (nx - minsep/2 - 1)):
+                continue
+
+            # Set up the gaussian fitting for this line
+            xmin, xmax = (icntr - fhalfwin, icntr + fhalfwin + 1)
+            xx = np.arange(xmin, xmax, dtype=float)
+            temp = spec[xmin : xmax]
+            # Filter the SPEC to smooth it a bit for fitting
+            temp = signal.medfilt(temp, kernel_size=3)
+
+            # Run the fit, with error checking
+            try:
+                p0 = [1000, np.mean(xx), 3, bkgd]
+                aa, _ = optimize.curve_fit(gaussfit_func, xx, temp, p0=p0)
+            except RuntimeError:
+                continue  # Just skip this one
+
+            # If the width makes sense, save
+            if (fw := aa[2] * 2.355) > 1.0:      # sigma -> FWHM
+                cent.append(aa[1])
+                fwhm.append(fw)
+
+            # Set j0 to this pixel before looping on
+            j0 = jf + j
+
+    # Make list into an array, check again that the centers make sense
+    centers = np.asarray(cent)
+    c_idx = np.where(np.logical_and(centers > 0, centers <= nx))
+    centers = centers[c_idx]
+
+    if verbose:
+        print(f" Number of lines: {len(centers)}")
 
     print(f"At this point the code makes some plots.  Yippee.")
- 
-    """ 
+
+    """
     plot,avgj,xra=[0,ny+2],xsty=1,yra=[0,max(avgj)+0.2*max(avgj)], $
     title=title, xtitle='CCD column', ytitle='I (DN)'
     for id=0,szc(1)-1 do begin
@@ -446,20 +390,34 @@ def dflines(image, thresh=20., mark=False, title=''):
     endfor
 
     """
- 
-    return (centers, fwhm)
+    return centers, fwhm
 
 
-def dfitlines(spectrum, cnt, cplot=False, return_amp=False, boxf=None):
-    """Procedure to fit line profiles in a focus image
+def fit_lines(spectrum, centers, return_amp=False, boxf=None):
+    """fit_lines Procedure to fit line profiles in a focus image
 
+    [extended_summary]
+
+    Parameters
+    ----------
+    spectrum : `np.ndarray`
+        Extracted spectrum
+    centers : `list of float`
+        Line centers based on the 'middle' image
+    return_amp : `bool`, optional
+        Return the amplitudes of the lines? [Default: False]
+    boxf : [type], optional
+        [description], by default None
+
+    Returns
+    -------
+    `np.ndarray`
+        List of the FHWM of the lines from this image
     """
-    
-    nc = len(cnt)
-    fwhm = np.empty(nc, dtype=float)
+    # Process inputs
     if return_amp:
-        afit = np.empty(nc, dtype=float)
-        amax = np.empty(nc, dtype=float)
+        afit = []
+        amax = []
     if boxf is None:
         boxi = 17
         boxf = 11
@@ -467,90 +425,175 @@ def dfitlines(spectrum, cnt, cplot=False, return_amp=False, boxf=None):
         boxi = boxf + 6
     xx = np.arange(2 * boxf + 1).flatten()
 
+    fwhm = []
     # Loop through the lines!
-    for j in range(nc):
-        if (cnt[j] - boxi) < 0 or (cnt[j] + boxi) > 2030:
+    for center in centers:
+        # Check that we're within a valid range
+        if (center - boxi) < 0 or (center + boxi) > 2030:
             continue
-        box = spectrum[:,int(cnt[j]) - boxi : int(cnt[j]) + boxi + 1]
-        ccnt = com1d(box) + cnt[j] - boxi
+
+        # Compute the 1st moment to estimate the window for Gaussian fitting
+        box = spectrum[:,int(center) - boxi : int(center) + boxi + 1]
+        ccnt = first_moment_1d(box) + center - boxi
         if (ccnt - boxi) < 0 or (ccnt + boxi) > 2030:
             continue
+
+        # This is the box for Gaussian fitting
         box = spectrum[:,int(ccnt) - boxf : int(ccnt) + boxf + 1].flatten()
-        
+
         # Run the fit, with error checking
         try:
             p0 = [1000, np.mean(xx), 3, 0]
-            a, cv = optimize.curve_fit(gaussfit_func, xx, box, p0=p0)
+            a, _ = optimize.curve_fit(gaussfit_func, xx, box, p0=p0)
         except RuntimeError:
-            continue  # Just skip this one
-        # print(f"Gaussfit parameters: {aa}")
-        tmp = gaussfit_func(xx, *a)
-        fwhm[j] = a[2] * 2.355     # FWHM = 2.355 * sigma
+            # Add "None" to the lists to maintain indexing
+            fwhm.append(None)
+            if return_amp:
+                afit.append(None)
+                amax.append(np.max(box))
+            continue
+
+        # Add the fit values to the appropriate arrays
+        fwhm.append(a[2] * 2.355)     # FWHM = 2.355 * sigma
         if return_amp:
-            afit[j] = a[0]
-            amax[j] = np.max(box)
-    
+            afit.append(a[0])
+            amax.append(np.max(box))
+
     # Return either the single FWHM or tuple containing FWHM & amplitudes
     if return_amp:
-        return fwhm, afit, amax
+        return np.asarray(fwhm), np.asarray(afit), np.asarray(amax)
     else:
-        return fwhm
+        return np.asarray(fwhm)
 
 
-def com1d(line):
-    """Returns the center-of-mass of line
+def fit_focus_curves(fwhm, fnom=2.7, norder=2):
+    """fit_focus_curves Fit line / star focus curves
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    fwhm : `np.ndarray`
+        Array of FWHM for all lines as a function of COLLFOC
+    fnom : `float`, optional
+        Nominal FHWM of an in-focus line. [Default: 2.7]
+    norder : `int`, optional
+        Polynomial order of the focus fit [Default: 2]
+
+    Returns
+    -------
+    `array`, `array`, `array`
+        Tuple of best fit focus, best fit linewidth, and the minumum
+        linewidth
     """
+    # Create the various arrays / lists needed
+    n_focus, n_centers = fwhm.shape
+    fit_coefficients = np.empty((n_centers, norder+1), dtype=float)
+    min_focus = []
+    line_best_focus = []
+    line_best_width = []
 
-    ltz = np.where(line < 0)
-    if len(ltz) != 0:
-        line[ltz] = 0
-    
-    nx, ny = line.shape
-    yy = np.arange(ny)
+    # Fitting arrays
+    x_coarse = np.arange(n_focus, dtype=float)
+    x_fine = np.arange(0, n_focus-1 + 0.1, 0.1, dtype=float)
 
-    cy = yy * line
-    dy = np.sum(cy) / np.sum(line)
+    # Loop through lines to find the best focus for each one
+    for i in range(n_centers):
 
-    return dy
-
-
-def dfitcurves(fwhm, fnom=2.7):
-    """Fit line / star focus curves
-    """
-    
-    thresh = 2.0
-    norder = 2
-
-    nf, nc = fwhm.shape
-    fits = np.empty((nc, norder+1), dtype=float)
-    minfoc = np.empty(nc, dtype=float)
-    x = np.arange(nf, dtype=float)
-    focus = np.empty(nc, dtype=float)
-    fwidth = np.empty(nc, dtype=float)
-    xfine = np.arange((nf-1)*10.0 + 1.0, dtype=float)/10.0
-    wts = np.full(nf, 1.0, dtype=float)
-
-    for i in range(nc):
+        # Data are the FWHM for this line at different COLLFOC
         data = fwhm[:,i]
-        out = np.where(np.logical_or(data < 1.0, data > 15.0))
-        if count := len(out) > 3:
+
+        # Find FWHM either unphysically large or small -- set to 50.
+        bad_idx = np.where(np.logical_or(data < 1.0, data > 15.0))
+        data[bad_idx] = 50.
+
+        # If more than 3 of the FHWM are bad for this line, skip and go on
+        if len(bad_idx) > 3:
+            # Add values to the lists for proper indexing
+            for foc_list in [min_focus, line_best_focus, line_best_width]:
+                foc_list.append(None)
             continue
-        if count != 0:
-            wts[out] = 0.0
-            data[out] = 50.0
-        fit = np.polyfit(x, data, norder)
+
+        # Do the fit to the FWHM vs COLLFOC
+        fit = np.polyfit(x_coarse, data, norder)
         # The numpy function returns coeff's in opposite order to IDL func
-        fits[i,:] = np.flip(fit)
+        fit_coefficients[i,:] = np.flip(fit)
 
-        # Curve Miniumum
-        fitfine = np.polyval(fit, xfine)
+        # Use the fine grid to evaluate the curve miniumum
+        fitfine = np.polyval(fit, x_fine)
         minfine = np.min(fitfine)
-        focus[i] = xfine[np.argmin(fitfine)]
-        minfoc[i] = minfine
+        line_best_focus.append(x_fine[np.argmin(fitfine)])
+        min_focus.append(minfine)
 
-        # Nominal focus position (the larger of the two roots):
+        # Compute the nominal focus position as the larger of the two points
+        #  where the polymonial crosses fnom
         fit[2] -= fnom
-        fpix = np.roots(fit)
-        fwidth[i] = np.max(fpix)
+        focus_roots = np.roots(fit)
+        line_best_width.append(np.max(focus_roots))
 
-    return (fits, (focus, fwidth, minfoc))
+    return np.asarray(line_best_focus), np.asarray(line_best_width), \
+           np.asarray(min_focus)
+
+
+def gaussfit_func(x, a0, a1, a2, a3):
+    """gaussfit_func Gaussian Function
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    x : `array`
+        X values over which to compute the gaussian
+    a0 : `float`
+        Gaussian amplitude
+    a1 : `float`
+        Gaussian mean (mu)
+    a2 : `float`
+        Gaussian width (sigma)
+    a3 : `float`
+        Baseline atop which the Gaussian sits
+
+    Returns
+    -------
+    `array`
+        The Y values of the Gaussian corresponding to X
+    """
+    # Silence RuntimeWarning for overflow, this function only
+    warnings.simplefilter('ignore', RuntimeWarning)
+    z = (x - a1) / a2
+    return a0 * np.exp(-z**2 / 2.) + a3
+
+
+def first_moment_1d(line):
+    """first_moment_1d Returns the 1st moment of line
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    line : `array`
+        1-dimensional array to find the 1st moment of
+
+    Returns
+    -------
+    `float`
+        The first moment of the input array relative to element #
+    """
+    # Only use positive values -- set negative values to zero
+    line[np.where(line < 0)] = 0
+
+    # Make the counting array
+    yy = np.arange(len(line))
+
+    # Return the first moment
+    return np.sum(yy * line) / np.sum(line)
+
+
+#=========================================================#
+def main(args):
+    dfocus()
+
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv)
