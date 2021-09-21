@@ -1,4 +1,6 @@
-# PyDeVeny
+# LDTObserverTools
+## Collection of Observer Tools for the Lowell Discovery Telescope
+
 Port of existing IDL programs for the DeVeny spectrograph on the LDT (``dct-obs1`` / ``dct-obs2``) to python.  
 
 *[Existing IDL code in this repository was exported from ``dct-obs1`` on 31 August 2020.]*
