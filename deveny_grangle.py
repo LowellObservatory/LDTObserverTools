@@ -29,8 +29,8 @@ import PySimpleGUI as sg
 
 # CONSTANTS
 PIXSCALE = 2.94     # Base pixels per arcsec: 1 / (0.34 arcsec / pixel)
-gpmm = None
-wavelen = None
+GPMM = None
+WAVELEN = None
 
 def deveny_grangle_cli():
     """Compute the desired grating angle given grating and central wavelength
@@ -40,22 +40,22 @@ def deveny_grangle_cli():
     """
 
     # Global variables -- available to grating_eqn function
-    global gpmm, wavelen
+    global GPMM, WAVELEN
 
     # Mechanical Offset
     tgoffset = 0.0
 
     # Get input from user
     print(" Enter grating resolution (g/mm):")
-    gpmm = float(input())
+    GPMM = float(input())
     print(" Enter central wavelength (A):")
-    wavelen = float(input())
+    WAVELEN = float(input())
 
     # Compute the grating angle and anamorphic demagnification
     grangle, amag = compute_grangle()
 
-    print(f"\n Grating: {gpmm:.0f} g/mm")
-    print(f" Central Wavelength: {wavelen} A")
+    print(f"\n Grating: {GPMM:.0f} g/mm")
+    print(f" Central Wavelength: {WAVELEN} A")
     print(f" DeVeny grating tilt = {grangle+tgoffset:.2f} deg")
     print(" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): " + \
           f"{PIXSCALE*amag:.2f}\n")
@@ -71,7 +71,7 @@ def deveny_grangle_gui():
     """
 
     # Global variables -- available to grating_eqn function
-    global gpmm, wavelen
+    global GPMM, WAVELEN
 
     # Mechanical Offset
     tgoffset = 0.0
@@ -132,8 +132,8 @@ def deveny_grangle_gui():
                 continue
 
             # Convert wavelen to float, and check for valid range
-            wavelen = float(values['-WAVEIN-'])
-            if wavelen < 3000 or wavelen > 11000:
+            WAVELEN = float(values['-WAVEIN-'])
+            if WAVELEN < 3000 or WAVELEN > 11000:
                 window['-GRATOUT-'].update("")
                 window['-WAVEOUT-'].update("Wavelength out of range")
                 window['-TILTOUT-'].update("")
@@ -142,7 +142,7 @@ def deveny_grangle_gui():
                 continue
 
             # Compute the grating angle and anamorphic demagnification
-            gpmm = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
+            GPMM = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
             grangle, amag = compute_grangle()
 
             # Update the window with the calculated values
@@ -168,7 +168,7 @@ def deveny_grangle_maxgui():
     """
 
     # Global variables -- available to grating_eqn function
-    global gpmm, wavelen
+    global GPMM, WAVELEN
 
     # Mechanical Offset
     tgoffset = 0.0
@@ -234,8 +234,8 @@ def deveny_grangle_maxgui():
                 continue
 
             # Convert wavelen to float, and check for valid range
-            wavelen = float(values['-WAVEIN-'])
-            if wavelen < 3000 or wavelen > 11000:
+            WAVELEN = float(values['-WAVEIN-'])
+            if WAVELEN < 3000 or WAVELEN > 11000:
                 window['-GRATOUT-'].update("")
                 window['-WAVEOUT-'].update("Wavelength out of range")
                 window['-TILTOUT-'].update("")
@@ -245,7 +245,7 @@ def deveny_grangle_maxgui():
                 continue
 
             # Compute the grating angle and anamorphic demagnification
-            gpmm = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
+            GPMM = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
             grangle, amag = compute_grangle()
 
             # Update the window with the calculated values
@@ -278,16 +278,16 @@ def deveny_grangle_maxgui():
                 continue
 
             # Compute the grating angle and anamorphic demagnification
-            gpmm = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
-            wavelen = lambda_at_angle(tilt, gpmm)
+            GPMM = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
+            WAVELEN = lambda_at_angle(tilt, GPMM)
             amag = deveny_amag(tilt)
 
             # Update the window with the calculated values
             window['-GRATOUT-'].update(values['Grat'])
-            window['-WAVEOUT-'].update(f"{wavelen:.0f} Å")
+            window['-WAVEOUT-'].update(f"{WAVELEN:.0f} Å")
             window['-TILTOUT-'].update(f"{tilt+tgoffset:.2f}º")
             window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
-            window['-WAVEIN-'].update(f"{wavelen:.0f}")
+            window['-WAVEIN-'].update(f"{WAVELEN:.0f}")
         else:
             print("Something funny happened... should never print.")
 
@@ -309,7 +309,7 @@ def compute_grangle():
     # Call the newton method from scipy.optimize to solve the grating equation
     grangle = np.rad2deg(optimize.newton(grangle_eqn, theta))
     amag = deveny_amag(grangle)
-    return (grangle, amag)
+    return grangle, amag
 
 
 def grangle_eqn(theta):
@@ -322,23 +322,22 @@ def grangle_eqn(theta):
     camcol = np.deg2rad(55.00)
     coll = np.deg2rad(10.00)
 
-    gx = (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * \
-         1.e7 / gpmm - wavelen
-    return gx
+    return (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * \
+         1.e7 / GPMM - WAVELEN
 
 
-def lambda_at_angle(theta, gpmm, radians=False):
+def lambda_at_angle(theta, lpmm, radians=False):
     """Use the grating equation to compute the central wavelength given theta
 
     :param theta: The specified grating angle
-    :param gpmm: The groove density of the grating in g/mm
+    :param lpmm: The groove density of the grating in l/mm
     :param radians: The input angle is in radians [Default: False]
     :return: The computed central wavelength
     """
     if not isinstance(theta, float):
         theta = float(theta)
-    if not isinstance(gpmm, float):
-        gpmm = float(gpmm)
+    if not isinstance(lpmm, float):
+        lpmm = float(lpmm)
 
     # DeVeny optical angles
     camcol = np.deg2rad(55.00)
@@ -347,9 +346,8 @@ def lambda_at_angle(theta, gpmm, radians=False):
     if not radians:
         theta = np.deg2rad(theta)
 
-    wavelen = (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * \
-               1.e7 / gpmm
-    return wavelen
+    return (np.sin((coll + theta)) + np.sin(coll + theta - camcol)) * \
+               1.e7 / lpmm
 
 
 def deveny_amag(grangle):
