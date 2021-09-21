@@ -21,7 +21,6 @@ Both a CLI (direct copy of the IDL version) and GUI version are included here.
 """
 
 # Built-In Libraries
-import sys
 
 # Numpy & SciPy & PySimpleGui
 import numpy as np
@@ -30,11 +29,12 @@ import PySimpleGUI as sg
 
 # CONSTANTS
 PIXSCALE = 2.94     # Base pixels per arcsec: 1 / (0.34 arcsec / pixel)
-
+gpmm = None
+wavelen = None
 
 def deveny_grangle_cli():
     """Compute the desired grating angle given grating and central wavelength
-    
+
     Command line version of deveny_grangle, direct copy of the IDL version.
     Takes no arguments, returns nothing, and prints output to screen.
     """
@@ -46,27 +46,27 @@ def deveny_grangle_cli():
     tgoffset = 0.0
 
     # Get input from user
-    print(" Enter grating resolution (g/mm):")    
+    print(" Enter grating resolution (g/mm):")
     gpmm = float(input())
     print(" Enter central wavelength (A):")
     wavelen = float(input())
 
     # Compute the grating angle and anamorphic demagnification
-    grangle, amag = compute_grangle(wavelen, gpmm)
+    grangle, amag = compute_grangle()
 
     print(f"\n Grating: {gpmm:.0f} g/mm")
     print(f" Central Wavelength: {wavelen} A")
     print(f" DeVeny grating tilt = {grangle+tgoffset:.2f} deg")
-    print(f" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): " + \
+    print(" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): " + \
           f"{PIXSCALE*amag:.2f}\n")
 
 
 def deveny_grangle_gui():
     """Compute the desired grating angle given grating and central wavelength
-    
+
     GUI version of deveny_grangle.  Uses PySimpleGUI.  Includes a drop-down
     menu for available gratings, and checks for a wavelength between 3000 and
-    11,000 angstroms.  Uses the same subroutines as the CLI version and 
+    11,000 angstroms.  Uses the same subroutines as the CLI version and
     produces the same results.
     """
 
@@ -87,22 +87,22 @@ def deveny_grangle_gui():
                 "DV8 - 831 g/mm, 8000 Å",
                 "DV9 - 1200 g/mm, 5000 Å",
                 "DV10 - 2160 g/mm, 5000 Å"]
- 
+
     # Define the color scheme for the GUI
     sg.theme('light grey 1')
 
     # Define the window layout
-    row1 = [sg.Text("Select Grating:"), 
+    row1 = [sg.Text("Select Grating:"),
             sg.Drop(values=(gratings), auto_size_text=True,
                     default_value=gratings[1],key="Grat")]
-    row2 = [sg.Text("Enter Central Wavelength:"), 
+    row2 = [sg.Text("Enter Central Wavelength:"),
             sg.Input(key="-WAVEIN-", size=(6,1)), sg.Text("Å")]
     row3 = [sg.Button("Compute"), sg.Button("Done")]
-    row4 = [sg.Text("             Grating: "), 
+    row4 = [sg.Text("             Grating: "),
             sg.Text(size=(20,1), key="-GRATOUT-")]
-    row5 = [sg.Text("  Central Wavelength: "), 
+    row5 = [sg.Text("  Central Wavelength: "),
             sg.Text(size=(20,1), key="-WAVEOUT-")]
-    row6 = [sg.Text("DeVeny Grating Tilt = "), 
+    row6 = [sg.Text("DeVeny Grating Tilt = "),
             sg.Text(size=(20,1), key="-TILTOUT-")]
     row7 = [sg.Text("Slit demagnification (0.34\"/pixel): "),
             sg.Text(size=(15,1), key="-DEMAGOUT-")]
@@ -119,13 +119,13 @@ def deveny_grangle_gui():
     # Wait for events
     while True:
         event, values = window.read()
-        if event == sg.WIN_CLOSED or event == 'Done':
+        if event in [sg.WIN_CLOSED, 'Done']:
             break
         if event == 'Compute':
             # Check for non-numeric entries for Central Wavelength
             if not values['-WAVEIN-'].isnumeric():
                 window['-GRATOUT-'].update("")
-                window['-WAVEOUT-'].update(f"Please Enter a Number")
+                window['-WAVEOUT-'].update("Please Enter a Number")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
                 # Wait for next event
@@ -135,7 +135,7 @@ def deveny_grangle_gui():
             wavelen = float(values['-WAVEIN-'])
             if wavelen < 3000 or wavelen > 11000:
                 window['-GRATOUT-'].update("")
-                window['-WAVEOUT-'].update(f"Wavelength out of range")
+                window['-WAVEOUT-'].update("Wavelength out of range")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
                 # Wait for next event
@@ -143,7 +143,7 @@ def deveny_grangle_gui():
 
             # Compute the grating angle and anamorphic demagnification
             gpmm = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
-            grangle, amag = compute_grangle(wavelen, gpmm)
+            grangle, amag = compute_grangle()
 
             # Update the window with the calculated values
             window['-GRATOUT-'].update(values['Grat'])
@@ -151,16 +151,16 @@ def deveny_grangle_gui():
             window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f} deg")
             window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
 
-    # All done, close window        
+    # All done, close window
     window.close()
 
 
 def deveny_grangle_maxgui():
     """Compute the desired grating angle given grating and central wavelength
-    
+
     GUI version of deveny_grangle.  Uses PySimpleGUI.  Includes a drop-down
     menu for available gratings, and checks for a wavelength between 3000 and
-    11,000 angstroms.  Uses the same subroutines as the CLI version and 
+    11,000 angstroms.  Uses the same subroutines as the CLI version and
     produces the same results.
 
     This version also allows for the calcuation of the central wavelength given
@@ -184,25 +184,25 @@ def deveny_grangle_maxgui():
                 "DV8 - 831 g/mm, 8000 Å",
                 "DV9 - 1200 g/mm, 5000 Å",
                 "DV10 - 2160 g/mm, 5000 Å"]
- 
+
     # Define the color scheme for the GUI
     sg.theme('light grey 1')
 
     # Define the window layout
-    row1 = [sg.Text("Select Grating:"), 
+    row1 = [sg.Text("Select Grating:"),
             sg.Drop(values=(gratings), auto_size_text=True,
                     default_value=gratings[1],key="Grat")]
-    row2 = [sg.Text("Enter Central Wavelength:"), 
+    row2 = [sg.Text("Enter Central Wavelength:"),
             sg.Input(key="-WAVEIN-", size=(6,1)), sg.Text("Å")]
-    row8 = [sg.Text("Enter Grating Tilt:"), 
+    row8 = [sg.Text("Enter Grating Tilt:"),
             sg.Input(key="-TILTIN-", size=(6,1)), sg.Text("º")]
-    row3 = [sg.Button("Compute Tilt"), sg.Button("Compute Wavelength"), 
+    row3 = [sg.Button("Compute Tilt"), sg.Button("Compute Wavelength"),
             sg.Button("Done")]
-    row4 = [sg.Text("             Grating: "), 
+    row4 = [sg.Text("             Grating: "),
             sg.Text(size=(20,1), key="-GRATOUT-")]
-    row5 = [sg.Text("  Central Wavelength: "), 
+    row5 = [sg.Text("  Central Wavelength: "),
             sg.Text(size=(20,1), key="-WAVEOUT-")]
-    row6 = [sg.Text("DeVeny Grating Tilt = "), 
+    row6 = [sg.Text("DeVeny Grating Tilt = "),
             sg.Text(size=(20,1), key="-TILTOUT-")]
     row7 = [sg.Text("Slit demagnification (0.34\"/pixel): "),
             sg.Text(size=(15,1), key="-DEMAGOUT-")]
@@ -219,14 +219,14 @@ def deveny_grangle_maxgui():
     # Wait for events
     while True:
         event, values = window.read()
-        if event == sg.WIN_CLOSED or event == 'Done':
+        if event in [sg.WIN_CLOSED, 'Done']:
             break
 
-        elif event == 'Compute Tilt':
+        if event == 'Compute Tilt':
             # Check for non-numeric entries for Central Wavelength
             if not values['-WAVEIN-'].isnumeric():
                 window['-GRATOUT-'].update("")
-                window['-WAVEOUT-'].update(f"Please Enter a Number")
+                window['-WAVEOUT-'].update("Please Enter a Number")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
                 window['-TILTIN-'].update("")
@@ -237,7 +237,7 @@ def deveny_grangle_maxgui():
             wavelen = float(values['-WAVEIN-'])
             if wavelen < 3000 or wavelen > 11000:
                 window['-GRATOUT-'].update("")
-                window['-WAVEOUT-'].update(f"Wavelength out of range")
+                window['-WAVEOUT-'].update("Wavelength out of range")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
                 window['-TILTIN-'].update("")
@@ -246,7 +246,7 @@ def deveny_grangle_maxgui():
 
             # Compute the grating angle and anamorphic demagnification
             gpmm = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
-            grangle, amag = compute_grangle(wavelen, gpmm)
+            grangle, amag = compute_grangle()
 
             # Update the window with the calculated values
             window['-GRATOUT-'].update(values['Grat'])
@@ -254,13 +254,13 @@ def deveny_grangle_maxgui():
             window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f}º")
             window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
             window['-TILTIN-'].update(f"{grangle+tgoffset:.2f}")
-       
+
         elif event == 'Compute Wavelength':
             # Check for non-numeric entries for Grating Tilt
             if not check_float(values['-TILTIN-']):
                 window['-GRATOUT-'].update("")
                 window['-WAVEOUT-'].update("")
-                window['-TILTOUT-'].update(f"Please Enter a Number")
+                window['-TILTOUT-'].update("Please Enter a Number")
                 window['-DEMAGOUT-'].update("")
                 window['-WAVEIN-'].update("")
                 # Wait for next event
@@ -271,7 +271,7 @@ def deveny_grangle_maxgui():
             if tilt < 0 or tilt > 48:
                 window['-GRATOUT-'].update("")
                 window['-WAVEOUT-'].update("")
-                window['-TILTOUT-'].update(f"Tilt angle out of range")
+                window['-TILTOUT-'].update("Tilt angle out of range")
                 window['-DEMAGOUT-'].update("")
                 window['-WAVEIN-'].update("")
                 # Wait for next event
@@ -291,20 +291,20 @@ def deveny_grangle_maxgui():
         else:
             print("Something funny happened... should never print.")
 
-    # All done, close window        
+    # All done, close window
     window.close()
 
 
-def compute_grangle(wavelen, gpmm):
+def compute_grangle():
     """Compute the needed grating angle
 
     This function does the heavy lifting for computing the grating angle
     :param wavelen: The central wavelength in angstroms
-    :param gpmm: The groove density of the grating in g/mm 
+    :param gpmm: The groove density of the grating in g/mm
     :return: The computed grating angle
     """
     # Initial guess: 20º
-    theta = np.deg2rad(20.) 
+    theta = np.deg2rad(20.)
 
     # Call the newton method from scipy.optimize to solve the grating equation
     grangle = np.rad2deg(optimize.newton(grangle_eqn, theta))
@@ -314,7 +314,7 @@ def compute_grangle(wavelen, gpmm):
 
 def grangle_eqn(theta):
     """The grating equation used to find the angle
-    
+
     The scipy.optimize.newton() function looks for where this equation
     equals zero.
     """
@@ -329,9 +329,9 @@ def grangle_eqn(theta):
 
 def lambda_at_angle(theta, gpmm, radians=False):
     """Use the grating equation to compute the central wavelength given theta
-    
+
     :param theta: The specified grating angle
-    :param gpmm: The groove density of the grating in g/mm 
+    :param gpmm: The groove density of the grating in g/mm
     :param radians: The input angle is in radians [Default: False]
     :return: The computed central wavelength
     """
@@ -360,7 +360,7 @@ def deveny_amag(grangle):
     alpha = np.deg2rad(grangle + collang)
     mbeta = np.deg2rad(camcollang - np.rad2deg(alpha))
 
-    return(np.cos(alpha) / np.cos(mbeta))
+    return np.cos(alpha) / np.cos(mbeta)
 
 
 def check_float(potential_float):
@@ -372,23 +372,24 @@ def check_float(potential_float):
         return False
 
 
-if __name__ == "__main__":
+#=========================================================#
+def main(args):
     """File is run from the command line
 
     Direct run takes either 0 (default:GUI) or 1 (choose: CLI or GUI) command
     line arguments.  Anything else gets an error message and end.
     """
     # Check for command line arguments
-    if len(sys.argv) == 1:
+    if len(args) == 1:
         # If no command line argument, assume GUI
         deveny_grangle_gui()
-    elif len(sys.argv) == 2:
+    elif len(args) == 2:
         # If exactly one command line argument, check what it is.
-        if sys.argv[1].lower() == 'cli':
+        if args[1].lower() == 'cli':
             deveny_grangle_cli()
-        elif sys.argv[1].lower() == 'gui':
+        elif args[1].lower() == 'gui':
             deveny_grangle_gui()
-        elif sys.argv[1].lower() == 'max':
+        elif args[1].lower() == 'max':
             deveny_grangle_maxgui()
         else:
             print("This routine only accepts 'CLI', 'GUI', " + \
@@ -396,3 +397,7 @@ if __name__ == "__main__":
     else:
         # Can't deal with more than one command line argument
         print("This routine accepts zero or one command line arguments.")
+
+if __name__ == "__main__":
+    import sys
+    main(sys.argv)
