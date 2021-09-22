@@ -112,25 +112,49 @@ def dfocus(flog='last', thresh=100., debug=False):
 
     print(f"Median of the array fw: {np.nanmedian(line_width_array)}")
 
-    # Find the delta between focus values
+    # Find the delta between focus values, and the nominal linewidth for focus
     df = (focus_1 - focus_0) / (nfiles - 1)
-
-    # Nominal line width for finding focus
     fnom = 2.94 * slitasec * deveny_amag(grangle)
 
     # Fit the focus curve:
-    focus, fwidth, _ = fit_focus_curves(line_width_array, fnom=fnom)
-    fpos = focus * df + focus_0
-    fwid = fwidth * df + focus_0
-    mfpos, mfwid = np.median(fpos), np.median(fwid)
+    min_focus_index, optimal_focus_index, _ = \
+        fit_focus_curves(line_width_array, fnom=fnom)
+    min_focus_value = min_focus_index * df + focus_0
+    optimal_focus_value = optimal_focus_index * df + focus_0
+    med_min_focus = np.real(np.nanmedian(min_focus_value))
+    med_opt_focus = np.real(np.nanmedian(optimal_focus_value))
 
-    print(f"mfpos: {mfpos}, mfwid: {mfwid}")
+    print(f"Median focus position: {med_min_focus:.3f}, " + \
+          f"Median Full Width: {med_opt_focus:.3f}")
 
-    # This section will need to be rehabilitated for making the plots
+    #=========================================================================#
+    # Plot Section
+
+    # The plot shown in the IDL0 window: Plot of the found lines
     fig, ax = plt.subplots()
     _ = find_lines(mspectra, thresh=thresh, title=dfl_title, ax=ax)
     plt.tight_layout()
     plt.show()
+
+    # The plot shoen in the IDL2 window: Plot of best-fit fwid vs centers
+    fig, ax = plt.subplots()
+    tsz = 8
+    ax.plot(centers, optimal_focus_value, '.')
+    ax.set_xlim(0,2050)
+    ax.set_ylim(focus_0, focus_1)
+    ax.set_title("Optimal focus position vs. line position, median = " + \
+                 f"{med_opt_focus:.3f}")
+    ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(), 
+              color='magenta', ls='--')
+    # ax.hlines(9.411, 0, 1, transform=ax.get_yaxis_transform(), 
+    #           color='magenta', ls='--')
+
+    ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
+    plt.tight_layout()
+    plt.show()
+
+    # The plot shoen in the IDL2 window: Plot of best-fit fwid vs centers
+    plot_focus_curves()
 
     """
     dplotfocus, x, fw, fits, flist, fnom=fnom
@@ -490,7 +514,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
     fnom : `float`, optional
         Nominal FHWM of an in-focus line. [Default: 2.7]
     norder : `int`, optional
-        Polynomial order of the focus fit [Default: 2]
+        Polynomial order of the focus fit [Default: 2 = Quadratic]
 
     Returns
     -------
@@ -500,11 +524,11 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
     """
     # Create the various arrays / lists needed
     n_focus, n_centers = fwhm.shape
-    fit_coefficients = np.empty((n_centers, norder+1), dtype=float)
-    min_focus = []
-    line_best_focus = []
-    line_best_width = []
+    min_linewidth = []
+    min_focus_index = []
+    optimal_focus_index = []
 
+    print("Here's the nasty array we're fitting!")
     print(fwhm)
 
     # Fitting arrays
@@ -517,7 +541,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         # Data are the FWHM for this line at different COLLFOC
         data = fwhm[:,i]
 
-        # Find FWHM either unphysically large or small (or NaN) -- set to 50.
+        # Find unphysically large or small FWHM (or NaN) -- set to 50.
         bad_idx = np.where(np.logical_or(data < 1.0, data > 15.0))
         data[bad_idx] = 50.
         data[np.isnan(data)] = 50.
@@ -525,29 +549,58 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         # If more than 3 of the FHWM are bad for this line, skip and go on
         if len(bad_idx) > 3:
             # Add values to the lists for proper indexing
-            for foc_list in [min_focus, line_best_focus, line_best_width]:
+            for foc_list in [min_linewidth, min_focus_index, optimal_focus_index]:
                 foc_list.append(None)
             continue
 
         # Do the fit to the FWHM vs COLLFOC
         fit = np.polyfit(x_coarse, data, norder)
-        # The numpy function returns coeff's in opposite order to IDL func
-        fit_coefficients[i,:] = np.flip(fit)
 
         # Use the fine grid to evaluate the curve miniumum
-        fitfine = np.polyval(fit, x_fine)
-        minfine = np.min(fitfine)
-        line_best_focus.append(x_fine[np.argmin(fitfine)])
-        min_focus.append(minfine)
+        focus_curve = np.polyval(fit, x_fine)
+        min_focus_index.append(x_fine[np.argmin(focus_curve)])
+        min_linewidth.append(np.min(focus_curve))
 
         # Compute the nominal focus position as the larger of the two points
         #  where the polymonial crosses fnom
         fit[2] -= fnom
         focus_roots = np.roots(fit)
-        line_best_width.append(np.max(focus_roots))
+        optimal_focus_index.append(np.max(focus_roots))
 
-    return np.asarray(line_best_focus), np.asarray(line_best_width), \
-           np.asarray(min_focus)
+    return np.asarray(min_focus_index), np.asarray(optimal_focus_index), \
+           np.asarray(min_linewidth)
+
+
+def plot_focus_curves():
+    # This will be the Python translation of dplotfocus
+    """
+    pro dplotfocus, x, fwhm, fits, filelist, fnom=fnom
+
+    common curves, fx, centers, fpos, fwid, fwmin
+    
+    sz = size(fwhm) & nc = sz(1)
+    !p.multi(1)=6
+    !p.multi(2)=nc/6+1
+    if (nc/4+1) gt 5 then !p.multi(2)=5
+    for i=0,nc-1 do begin
+
+        plot, fx, fwhm(i,*), psym=4, yra=[0,max(fwhm(i,*))], $
+            ticklen=1,ysty=1, ymargin=[4, 4], $
+            xtitle='Collimator Position (mm)', $
+            ytitle='FWHM', $
+            title='LC: '+strtrim(centers(i),1)+'  Fnom: '+strmid(fnom,6,5)+' pixels'
+        oplot, fx, poly(x,fits(*,i))
+        plots, [fpos(i), fpos(i)], [0, fwmin(i)], /data, color=90, thick=3
+        plots, [fwid(i), fwid(i)], [0, fnom], /data, color=60, thick=3
+
+    endfor
+
+    !p.multi=0
+
+    return
+    end
+    """
+    pass
 
 
 def gaussfit_func(x, a0, a1, a2, a3):
