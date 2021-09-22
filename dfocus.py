@@ -24,14 +24,13 @@ DeVeny LOUI.
 import glob
 import warnings
 
-# Numpy & SciPy & PySimpleGui
+# 3rd-Party Libraries
+from astropy.io import fits
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import optimize
 from scipy import signal
-import PySimpleGUI as sg
-
-# AstroPy
-from astropy.io import fits
+#import PySimpleGUI as sg
 
 # Local Libraries
 from .deveny_grangle import deveny_amag
@@ -88,8 +87,8 @@ def dfocus(flog='last', thresh=100., debug=False):
         print(f"Middle Spectrum: {mspectra}")
 
     # Find the lines in the extracted spectrum
-    dfl_title = f'{middle_file}   Grating:  {grating}   GRANGLE:  ' + \
-                f'{grangle:.0f}   {lampcal}'
+    dfl_title = f'{middle_file}   Grating: {grating}   GRANGLE: ' + \
+                f'{grangle:.2f}   {lampcal}'
 
     centers, _ = find_lines(mspectra, thresh=thresh, title=dfl_title)
     nc = len(centers)
@@ -111,7 +110,7 @@ def dfocus(flog='last', thresh=100., debug=False):
         fwhm = fit_lines(spectra, centers)
         line_width_array[i,:] = fwhm
 
-    print(f"Median of the array fw: {np.median(line_width_array)}")
+    print(f"Median of the array fw: {np.nanmedian(line_width_array)}")
 
     # Find the delta between focus values
     df = (focus_1 - focus_0) / (nfiles - 1)
@@ -128,6 +127,11 @@ def dfocus(flog='last', thresh=100., debug=False):
     print(f"mfpos: {mfpos}, mfwid: {mfwid}")
 
     # This section will need to be rehabilitated for making the plots
+    fig, ax = plt.subplots()
+    _ = find_lines(mspectra, thresh=thresh, title=dfl_title, ax=ax)
+    plt.tight_layout()
+    plt.show()
+
     """
     dplotfocus, x, fw, fits, flist, fnom=fnom
     plot, centers, fpos, xra=[0,2050], yra=[f0, f1], xsty=1, $
@@ -255,6 +259,7 @@ def extract_spectrum(spectrum, traces, win):
     # Spec out the shape, and create an empty array to hold the output spectra
     norders, nx = traces.shape
     spectra = np.empty((norders, nx), dtype=float)
+    speca = np.empty(nx, dtype=float)
 
     # Set extraction window size
     half_window = int(np.floor(win/2))
@@ -262,15 +267,17 @@ def extract_spectrum(spectrum, traces, win):
     for io in range(norders):
         # Because of python indexing, we need to "+1" the upper limit in order
         #   to get the full wsize elements for the average
-        speca = np.average(spectrum[int(traces[io,:]) - half_window:
-                                    int(traces[io,:]) + half_window + 1, :], 0)
+        trace = traces[io,:].astype(int)
+        for i in range(nx):
+            speca[i] = np.average(spectrum[trace[i] - half_window :
+                                           trace[i] + half_window + 1, i])
         spectra[io,:] = speca.reshape((1,nx))
 
     return spectra
 
 
 def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
-               verbose=False, mark=False, title=''):
+               verbose=False, ax=None, mark=False, title=''):
     """find_lines Automatically find and centroid lines in a 1-row image
 
     [extended_summary]
@@ -289,6 +296,8 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         Size of the window to fit Gaussian [Default: 15 pixels]
     verbose : `bool`, optional
         Produce verbose output?  [Default: False]
+    ax : `pyplot.Axes`, optional
+        Create a plot on the provided axes  [Default: None]
     mark : `bool`, optional
         Mark the lines on the output plot?  [Default: False]
     title : `str`
@@ -378,18 +387,21 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
     if verbose:
         print(f" Number of lines: {len(centers)}")
 
-    print(f"At this point the code makes some plots.  Yippee.")
+    # Produce a plot for posterity, if directed
+    if ax is not None:
+        tsz = 8
+        print(f"At this point the code makes some plots.  Yippee.")
+        ax.plot(np.arange(len(spec)), spec)
+        ax.set_title(title, fontsize=tsz)
+        ax.set_xlabel('CCD Column', fontsize=tsz)
+        ax.set_ylabel('I (DN)', fontsize=tsz)
+        ax.set_xlim(0, nx+2)
+        ax.set_ylim(0, (yrange := 1.2*max(spec)))
+        ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
+        for c in centers:
+            ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.1f}", fontsize=tsz)
+        ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
 
-    """
-    plot,avgj,xra=[0,ny+2],xsty=1,yra=[0,max(avgj)+0.2*max(avgj)], $
-    title=title, xtitle='CCD column', ytitle='I (DN)'
-    for id=0,szc(1)-1 do begin
-        plots,centers(id),avgj(centers(id))+20,psym=1
-        xyouts,centers(id),avgj(centers(id))+30,strtrim(centers(id),2), $
-        /data,orientation=0.
-    endfor
-
-    """
     return centers, fwhm
 
 
@@ -493,6 +505,8 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
     line_best_focus = []
     line_best_width = []
 
+    print(fwhm)
+
     # Fitting arrays
     x_coarse = np.arange(n_focus, dtype=float)
     x_fine = np.arange(0, n_focus-1 + 0.1, 0.1, dtype=float)
@@ -503,9 +517,10 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         # Data are the FWHM for this line at different COLLFOC
         data = fwhm[:,i]
 
-        # Find FWHM either unphysically large or small -- set to 50.
+        # Find FWHM either unphysically large or small (or NaN) -- set to 50.
         bad_idx = np.where(np.logical_or(data < 1.0, data > 15.0))
         data[bad_idx] = 50.
+        data[np.isnan(data)] = 50.
 
         # If more than 3 of the FHWM are bad for this line, skip and go on
         if len(bad_idx) > 3:
