@@ -194,6 +194,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     end
     """
 
+
 def parse_focus_log(flog):
     """parse_focus_log Parse the focus log file produced by the DeVeny LOUI
 
@@ -669,6 +670,41 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
 
     plt.tight_layout()
     plt.show()
+
+
+def find_lines_in_spectrum(filename, thresh=100.):
+    """find_lines_in_spectrum Find the line centers in a spectrum
+
+    This function is not directly utilized in DFOCUS, but rather is included
+    as a wrapper for several functions that can be used by other programs.
+
+    Given the filename of an arc-lamp spectrum, this function returns a list
+    of the line centers found in the image.
+
+    Parameters
+    ----------
+    filename : `str`
+        Filename of the arc frame to find lines in
+    thresh : `float`, optional
+        Line intensity threshold above background for detection [Default: 100]
+
+    Returns
+    -------
+    `array`
+        List of line centers found in the image
+    """
+    # Get the trimmed image
+    spectrum, _ = trim_deveny_image(filename)
+
+    # Build the trace for spectrum extraction
+    ny, nx = spectrum.shape
+    traces = np.full(nx, ny/2, dtype=float).reshape((1,nx))
+    spectra = extract_spectrum(spectrum, traces, win=11)
+
+    # Find the lines!
+    centers, _ = find_lines(spectra, thresh=thresh)
+
+    return centers
 
 
 #=========================================================#
