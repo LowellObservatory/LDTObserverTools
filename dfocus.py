@@ -28,13 +28,11 @@ import warnings
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import optimize
-from scipy import signal
-#import PySimpleGUI as sg
+from scipy import optimize, signal
 
 # Local Libraries
 from .deveny_grangle import deveny_amag
-from .utils import *
+from .utils import gaussfit, first_moment_1d, good_poly
 
 # CONSTANTS
 
@@ -146,10 +144,8 @@ def dfocus(flog='last', thresh=100., debug=False):
     ax.set_ylim(focus_0, focus_1)
     ax.set_title("Optimal focus position vs. line position, median = " + \
                  f"{med_opt_focus:.3f}")
-    ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(), 
+    ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(),
               color='magenta', ls='--')
-    # ax.hlines(9.411, 0, 1, transform=ax.get_yaxis_transform(), 
-    #           color='magenta', ls='--')
 
     ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
     plt.tight_layout()
@@ -431,14 +427,16 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         ax.set_ylim(0, (yrange := 1.2*max(spec)))
         ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
         for c in centers:
-            ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.3f}", fontsize=tsz)
-        ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
+            ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.3f}",
+                    fontsize=tsz)
+        ax.tick_params('both', labelsize=tsz, direction='in',
+                       top=True, right=True)
 
     return centers, fwhm
 
 
-def fit_lines(spectrum, centers, return_amp=False, boxf=None, collfoc=None,
-              middle_cf=None):
+def fit_lines(spectrum, centers, collfoc, middle_cf, return_amp=False,
+boxf=None):
     """fit_lines Procedure to fit line profiles in a focus image
 
     [extended_summary]
@@ -449,10 +447,14 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None, collfoc=None,
         Extracted spectrum
     centers : `list of float`
         Line centers based on the 'middle' image
+    collfoc : `float`
+        The collimator focus for this image (used to centroid lines)
+    middle_cf : `float`
+        The collimator focus for the middle image of the sweep
     return_amp : `bool`, optional
         Return the amplitudes of the lines? [Default: False]
-    boxf : [type], optional
-        [description], by default None
+    boxf : `float`, optional
+        Final box half-width for Gaussian fitting [Default: None]
 
     Returns
     -------
@@ -474,10 +476,13 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None, collfoc=None,
     # Loop through the lines!
     for center in centers:
 
-        # Do rouch adjustment for change in line position as a function of
-        #  collimator focus
-        d_cen = -4.0 * (collfoc - middle_cf)
-        center += d_cen
+        # *** Novel Technique:  Line position (spectrally) is dependent upon
+        #  collimator focus position.  Based on a rough empirical estimate,
+        #  the spectrum is shifted by -4 pixels per millimeter of positive
+        #  collimator focus change.
+        # In order to more easily find lines (and have a smaller search
+        #  window). we can adjust the expected line center accordingly:
+        center += -4.0 * (collfoc - middle_cf)
 
         # Check that we're within a valid range
         if (center - boxi) < 0 or (center + boxi) > 2030:
@@ -528,8 +533,7 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None, collfoc=None,
     # Return either the single FWHM or tuple containing FWHM & amplitudes
     if return_amp:
         return np.asarray(fwhm), np.asarray(afit), np.asarray(amax)
-    else:
-        return np.asarray(fwhm)
+    return np.asarray(fwhm)
 
 
 def fit_focus_curves(fwhm, fnom=2.7, norder=2):
@@ -607,24 +611,49 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
 
 
 def plot_focus_curves(centers, line_width_array, min_focus_values,
-                      optimal_focus_values, min_linewidths, fit_pars, 
+                      optimal_focus_values, min_linewidths, fit_pars,
                       df, focus_0, fnom=2.7):
-    # This will be the Python translation of dplotfocus
+    """plot_focus_curves Make the big plot of all the focus curves
 
+    [extended_summary]
+
+    Parameters
+    ----------
+    centers : `array`
+        List of line centers from fine_lines()
+    line_width_array : `2d array`
+        Array of line widths from each COLLFOC setting for each line
+    min_focus_values : `array`
+        List of the minimum focus values found from the polynomial fit
+    optimal_focus_values : `array`
+        List of the optimal focus values found from the polynomial fit
+    min_linewidths : `array`
+        List of the minumum linewidths found from the fitting
+    fit_pars : `2d array`
+        Array of the polynomial fit parameters for each line
+    df : `float`
+        Spacing between COLLFOC settings
+    focus_0 : `float`
+        Lower end of the COLLFOC range
+    fnom : `float`, optional
+        Nominal (optimal) linewidth [Default: 2.7]
+    """
+
+    # Set up variables
     nfoc, nc = line_width_array.shape
-    x = np.arange(nfoc)
-    fx = x*df + focus_0
+    focus_idx = np.arange(nfoc)
+    fx = focus_idx * df + focus_0
 
+    # Set the plotting array
     ncols = 6
-    nrows = np.floor(nc/6).astype(int) + 1
-
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8.5,11))
-    tsz = 6
+    nrows = np.floor(nc/ncols).astype(int) + 1
+    fig, axs = plt.subplots(nncols=ncols, rows=nrows, figsize=(8.5,11))
+    tsz = 6     # type size
 
     for i, ax in enumerate(axs.flatten()):
         if i < nc:
             ax.plot(fx, line_width_array[:,i], 'k^')
-            ax.plot(fx, np.polyval(fit_pars[i,:], x), 'g-')
+            ax.plot(fx, np.polyval(fit_pars[i,:], focus_idx), 'g-')
             ax.vlines(min_focus_values[i], 0, min_linewidths[i], color='r', ls='-')
             ax.vlines(optimal_focus_values[i], 0, fnom, color='b', ls='-')
             ax.set_ylim(0, np.nanmax(line_width_array[:,i]))
@@ -640,35 +669,6 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
 
     plt.tight_layout()
     plt.show()
-
-    """
-    pro dplotfocus, x, fwhm, fits, fnom=fnom
-
-    common curves, fx, centers, fpos, fwid, fwmin
-    
-    sz = size(fwhm) & nc = sz(1)
-    !p.multi(1)=6
-    !p.multi(2)=nc/6+1
-    if (nc/4+1) gt 5 then !p.multi(2)=5
-    for i=0,nc-1 do begin
-
-        plot, fx, fwhm(i,*), psym=4, yra=[0,max(fwhm(i,*))], $
-            ticklen=1,ysty=1, ymargin=[4, 4], $
-            xtitle='Collimator Position (mm)', $
-            ytitle='FWHM', $
-            title='LC: '+strtrim(centers(i),1)+'  Fnom: '+strmid(fnom,6,5)+' pixels'
-        oplot, fx, poly(x,fits(*,i))
-        plots, [fpos(i), fpos(i)], [0, fwmin(i)], /data, color=90, thick=3
-        plots, [fwid(i), fwid(i)], [0, fnom], /data, color=60, thick=3
-
-    endfor
-
-    !p.multi=0
-
-    return
-    end
-    """
-    pass
 
 
 #=========================================================#
