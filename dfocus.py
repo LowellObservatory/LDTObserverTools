@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  This file is part of PyDeVeny.
+#  This file is part of LDTObserverTools.
 #
 #   This Source Code Form is subject to the terms of the Mozilla Public
 #   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,7 +10,7 @@
 #
 #  @author: tbowers
 
-"""PyDeVeny contains python ports of the various DeVeny IDL routines
+"""LDTObserverTools contains python ports of the various DeVeny IDL routines
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
@@ -34,6 +34,7 @@ from scipy import signal
 
 # Local Libraries
 from .deveny_grangle import deveny_amag
+from .utils import *
 
 # CONSTANTS
 
@@ -55,7 +56,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     """
 
     # Parse the log file to obtain file list
-    files, _ = parse_focus_log(flog)
+    files, focus_id = parse_focus_log(flog)
     nfiles = len(files)
 
     # Pull the spectrograph setup from the first focus file:
@@ -92,8 +93,7 @@ def dfocus(flog='last', thresh=100., debug=False):
 
     centers, _ = find_lines(mspectra, thresh=thresh, title=dfl_title)
     nc = len(centers)
-    if debug:
-        print(F"Back in the main program, number of lines: {nc}")
+    print(F"Back in the main program, number of lines: {nc}")
     print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
 
     # Create an array to hold the FWHM values from all lines from all images
@@ -117,15 +117,16 @@ def dfocus(flog='last', thresh=100., debug=False):
     fnom = 2.94 * slitasec * deveny_amag(grangle)
 
     # Fit the focus curve:
-    min_focus_index, optimal_focus_index, _ = \
+    min_focus_index, optimal_focus_index, min_linewidths, fit_pars = \
         fit_focus_curves(line_width_array, fnom=fnom)
-    min_focus_value = min_focus_index * df + focus_0
-    optimal_focus_value = optimal_focus_index * df + focus_0
-    med_min_focus = np.real(np.nanmedian(min_focus_value))
-    med_opt_focus = np.real(np.nanmedian(optimal_focus_value))
 
-    print(f"Median focus position: {med_min_focus:.3f}, " + \
-          f"Median Full Width: {med_opt_focus:.3f}")
+    # Convert the returned indices into actual COLLFOC values, find medians
+    min_focus_values = min_focus_index * df + focus_0             # fpos
+    optimal_focus_values = optimal_focus_index * df + focus_0     # fwid
+    med_min_focus = np.real(np.nanmedian(min_focus_values))       # fwmin
+    med_opt_focus = np.real(np.nanmedian(optimal_focus_values))
+
+    print(f"Median Optimal Focus Position: {med_opt_focus:.3f}")
 
     #=========================================================================#
     # Plot Section
@@ -134,12 +135,12 @@ def dfocus(flog='last', thresh=100., debug=False):
     fig, ax = plt.subplots()
     _ = find_lines(mspectra, thresh=thresh, title=dfl_title, ax=ax)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"pyfocus.{focus_id}.eps")
 
-    # The plot shoen in the IDL2 window: Plot of best-fit fwid vs centers
+    # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
     fig, ax = plt.subplots()
     tsz = 8
-    ax.plot(centers, optimal_focus_value, '.')
+    ax.plot(centers, optimal_focus_values, '.')
     ax.set_xlim(0,2050)
     ax.set_ylim(focus_0, focus_1)
     ax.set_title("Optimal focus position vs. line position, median = " + \
@@ -153,8 +154,11 @@ def dfocus(flog='last', thresh=100., debug=False):
     plt.tight_layout()
     plt.show()
 
-    # The plot shoen in the IDL2 window: Plot of best-fit fwid vs centers
-    plot_focus_curves()
+    # The plot shown in the IDL1 window: Focus curves for each identified line
+
+    plot_focus_curves(centers, line_width_array, min_focus_values,
+                      optimal_focus_values, min_linewidths, fit_pars,
+                      df, focus_0, fnom=fnom)
 
     """
     dplotfocus, x, fw, fits, flist, fnom=fnom
@@ -301,7 +305,7 @@ def extract_spectrum(spectrum, traces, win):
 
 
 def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
-               verbose=False, ax=None, mark=False, title=''):
+               verbose=True, ax=None, mark=False, title=''):
     """find_lines Automatically find and centroid lines in a 1-row image
 
     [extended_summary]
@@ -349,7 +353,7 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
           f'   Detection threshold level: {bkgd+thresh:.1f}')
 
     # Create empty lists to fill
-    cent, fwhm = ([], [])
+    cent, fwhm = [], []
     j0 = 0
 
     # Step through the cut and identify peaks:
@@ -390,8 +394,7 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
 
             # Run the fit, with error checking
             try:
-                p0 = [1000, np.mean(xx), 3, bkgd]
-                aa, _ = optimize.curve_fit(gaussfit_func, xx, temp, p0=p0)
+                aa, _ = gaussfit(xx, temp, nterms=5)
             except RuntimeError:
                 continue  # Just skip this one
 
@@ -403,10 +406,12 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
             # Set j0 to this pixel before looping on
             j0 = jf + j
 
-    # Make list into an array, check again that the centers make sense
+    # Make lists into arrays, check again that the centers make sense
     centers = np.asarray(cent)
+    fwhm = np.asarray(fwhm)
     c_idx = np.where(np.logical_and(centers > 0, centers <= nx))
     centers = centers[c_idx]
+    fwhm = fwhm[c_idx]
 
     if verbose:
         print(f" Number of lines: {len(centers)}")
@@ -423,7 +428,7 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         ax.set_ylim(0, (yrange := 1.2*max(spec)))
         ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
         for c in centers:
-            ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.1f}", fontsize=tsz)
+            ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.3f}", fontsize=tsz)
         ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
 
     return centers, fwhm
@@ -469,18 +474,20 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None):
             continue
 
         # Compute the 1st moment to estimate the window for Gaussian fitting
-        box = spectrum[:,int(center) - boxi : int(center) + boxi + 1]
-        ccnt = first_moment_1d(box) + center - boxi
+        box = spectrum[:, int(center)-boxi : int(center)+boxi+1].flatten()
+        ccnt = first_moment_1d(box) + int(center) - boxi
+        print(f"Comparing center = {center:.2f} and ccnt = {ccnt:.2f}... diff = {center - ccnt:.2f}")
+        print(f"First moment = {first_moment_1d(box)}")
+
         if (ccnt - boxi) < 0 or (ccnt + boxi) > 2030:
             continue
 
         # This is the box for Gaussian fitting
-        box = spectrum[:,int(ccnt) - boxf : int(ccnt) + boxf + 1].flatten()
+        box = spectrum[:, int(ccnt)-boxf : int(ccnt)+boxf+1].flatten()
 
         # Run the fit, with error checking
         try:
-            p0 = [1000, np.mean(xx), 3, 0]
-            a, _ = optimize.curve_fit(gaussfit_func, xx, box, p0=p0)
+            a, _ = gaussfit(xx, box, nterms=5)
         except RuntimeError:
             # Add "None" to the lists to maintain indexing
             fwhm.append(None)
@@ -488,6 +495,8 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None):
                 afit.append(None)
                 amax.append(np.max(box))
             continue
+
+        print(f"In fit_lines(), here's the FWHM: {a[2]*2.355:.2f}")
 
         # Add the fit values to the appropriate arrays
         fwhm.append(a[2] * 2.355)     # FWHM = 2.355 * sigma
@@ -518,63 +527,95 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
 
     Returns
     -------
-    `array`, `array`, `array`
-        Tuple of best fit focus, best fit linewidth, and the minumum
-        linewidth
+    `1d_array`, `1d_array`, `1d_array`, `2d_array`
+        Tuple of best fit focus, best fit linewidth, the minumum linewidth,
+        and the actual fit parameters (for plotting)
     """
     # Create the various arrays / lists needed
     n_focus, n_centers = fwhm.shape
     min_linewidth = []
-    min_focus_index = []
-    optimal_focus_index = []
+    min_cf_idx_value = []
+    optimal_cf_idx_value = []
+    fits = []
 
-    print("Here's the nasty array we're fitting!")
-    print(fwhm)
+    #print("Here's the nasty array we're fitting!")
+    #print(fwhm)
 
-    # Fitting arrays
-    x_coarse = np.arange(n_focus, dtype=float)
-    x_fine = np.arange(0, n_focus-1 + 0.1, 0.1, dtype=float)
+    # Fitting arrays (these are indices for collimator focus)
+    cf_idx_coarse = np.arange(n_focus, dtype=float)
+    cf_idx_fine = np.arange(0, n_focus-1 + 0.1, 0.1, dtype=float)
 
     # Loop through lines to find the best focus for each one
     for i in range(n_centers):
 
         # Data are the FWHM for this line at different COLLFOC
-        data = fwhm[:,i]
+        fwhms_of_this_line = fwhm[:,i]
 
         # Find unphysically large or small FWHM (or NaN) -- set to 50.
-        bad_idx = np.where(np.logical_or(data < 1.0, data > 15.0))
-        data[bad_idx] = 50.
-        data[np.isnan(data)] = 50.
+        bad_idx = np.where(np.logical_or(fwhms_of_this_line < 1.0,
+                           fwhms_of_this_line > 15.0))
+        fwhms_of_this_line[bad_idx] = 50.
+        fwhms_of_this_line[np.isnan(fwhms_of_this_line)] = 50.
 
         # If more than 3 of the FHWM are bad for this line, skip and go on
         if len(bad_idx) > 3:
             # Add values to the lists for proper indexing
-            for foc_list in [min_linewidth, min_focus_index, optimal_focus_index]:
-                foc_list.append(None)
+            for flst in [min_linewidth, min_cf_idx_value, optimal_cf_idx_value]:
+                flst.append(None)
             continue
 
-        # Do the fit to the FWHM vs COLLFOC
-        fit = np.polyfit(x_coarse, data, norder)
+        # Do a polynomial fit (norder) to the FWHM vs COLLFOC index
+        fit = np.polyfit(cf_idx_coarse, fwhms_of_this_line, norder)
+        fits.append(fit)
+        print(f"In fit_focus_curves(): fit = {fit}")
 
         # Use the fine grid to evaluate the curve miniumum
-        focus_curve = np.polyval(fit, x_fine)
-        min_focus_index.append(x_fine[np.argmin(focus_curve)])
-        min_linewidth.append(np.min(focus_curve))
+        focus_curve = np.polyval(fit, cf_idx_fine)                   # fitfine
+        min_cf_idx_value.append(cf_idx_fine[np.argmin(focus_curve)]) # focus
+        min_linewidth.append(np.min(focus_curve))                    # minfoc
 
         # Compute the nominal focus position as the larger of the two points
-        #  where the polymonial crosses fnom
-        fit[2] -= fnom
-        focus_roots = np.roots(fit)
-        optimal_focus_index.append(np.max(focus_roots))
+        #  where the polymonial function crosses fnom
+        a0, a1, a2 = fit[0], fit[1], fit[2]-fnom
+        optimal_cf_idx_value.append(np.max(np.roots([a0,a1,a2])))             # fwidth
+        print(fits[-1])
 
-    return np.asarray(min_focus_index), np.asarray(optimal_focus_index), \
-           np.asarray(min_linewidth)
+    return np.asarray(min_cf_idx_value), np.asarray(optimal_cf_idx_value), \
+           np.asarray(min_linewidth), np.asarray(fits)
 
 
-def plot_focus_curves():
+def plot_focus_curves(centers, line_width_array, min_focus_values,
+                      optimal_focus_values, min_linewidths, fit_pars, 
+                      df, focus_0, fnom=2.7):
     # This will be the Python translation of dplotfocus
+
+    nfoc, nc = line_width_array.shape
+    x = np.arange(nfoc)
+    fx = x*df + focus_0
+
+    ncols = 6
+    nrows = np.floor(nc/6).astype(int) + 1
+
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8.5,11))
+    tsz = 6
+
+    for i, ax in zip(range(nc), axs.flatten()):
+        ax.plot(fx, line_width_array[:,i], 'k^')
+        ax.plot(fx, np.polyval(fit_pars[i,:], x), 'g-')
+        print(f"In plot_focus_curves(): fit = {fit_pars[i,:]}")
+        ax.vlines(min_focus_values[i], 0, min_linewidths[i], color='r', ls='-')
+        ax.vlines(optimal_focus_values[i], 0, fnom, color='b', ls='-')
+        ax.set_ylim(0, np.max(line_width_array[:,i]))
+        ax.set_xlabel('Collimator Position (mm)', fontsize=tsz)
+        ax.set_ylabel('FWHM (pix)', fontsize=tsz)
+        ax.set_title(f"LC: {centers[i]:.2f}  Fnom: {fnom:.2f} pixels", fontsize=tsz)
+        ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
+
+    plt.tight_layout()
+    plt.show()
+
     """
-    pro dplotfocus, x, fwhm, fits, filelist, fnom=fnom
+    pro dplotfocus, x, fwhm, fits, fnom=fnom
 
     common curves, fx, centers, fpos, fwid, fwmin
     
@@ -601,60 +642,6 @@ def plot_focus_curves():
     end
     """
     pass
-
-
-def gaussfit_func(x, a0, a1, a2, a3):
-    """gaussfit_func Gaussian Function
-
-    [extended_summary]
-
-    Parameters
-    ----------
-    x : `array`
-        X values over which to compute the gaussian
-    a0 : `float`
-        Gaussian amplitude
-    a1 : `float`
-        Gaussian mean (mu)
-    a2 : `float`
-        Gaussian width (sigma)
-    a3 : `float`
-        Baseline atop which the Gaussian sits
-
-    Returns
-    -------
-    `array`
-        The Y values of the Gaussian corresponding to X
-    """
-    # Silence RuntimeWarning for overflow, this function only
-    warnings.simplefilter('ignore', RuntimeWarning)
-    z = (x - a1) / a2
-    return a0 * np.exp(-z**2 / 2.) + a3
-
-
-def first_moment_1d(line):
-    """first_moment_1d Returns the 1st moment of line
-
-    [extended_summary]
-
-    Parameters
-    ----------
-    line : `array`
-        1-dimensional array to find the 1st moment of
-
-    Returns
-    -------
-    `float`
-        The first moment of the input array relative to element #
-    """
-    # Only use positive values -- set negative values to zero
-    line[np.where(line < 0)] = 0
-
-    # Make the counting array
-    yy = np.arange(len(line))
-
-    # Return the first moment
-    return np.sum(yy * line) / np.sum(line)
 
 
 #=========================================================#
