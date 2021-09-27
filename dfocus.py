@@ -77,7 +77,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     middle_file = '../' + files[int(nfiles/2)]
 
     print(f'\n Processing object image {middle_file}...')
-    spectrum = trim_deveny_image(middle_file)
+    spectrum, middle_cf = trim_deveny_image(middle_file)
 
     # Build the trace for spectrum extraction
     ny, nx = spectrum.shape
@@ -102,12 +102,13 @@ def dfocus(flog='last', thresh=100., debug=False):
     # Run through files:
     for i in range(nfiles):
         print(f"\n Processing arc image {files[i]} ...")
-        spectrum = trim_deveny_image(f"../{files[i]}")
+        spectrum, collfoc = trim_deveny_image(f"../{files[i]}")
         print(f"  Extracting spectra from image {files[i]}...")
         spectra = extract_spectrum(spectrum, traces, win=11)
 
         # Find FWHM of lines:
-        fwhm = fit_lines(spectra, centers)
+        fwhm = fit_lines(spectra, centers, boxf=5,
+                         collfoc=collfoc, middle_cf=middle_cf)
         line_width_array[i,:] = fwhm
 
     print(f"Median of the array fw: {np.nanmedian(line_width_array)}")
@@ -258,11 +259,13 @@ def trim_deveny_image(filename):
     nxpix, prepix = 2048, 50
 
     # Read in the file
-    image = fits.getdata(filename)
+    with fits.open(filename) as hdul:
+        image = hdul[0].data
+        collfoc = hdul[0].header['COLLFOC']
 
     # Trim the image (remove top and bottom rows) -- why this particular range?
     # Trim off the 50 prepixels and the 50 postpixels; RETURN
-    return image[12:512,prepix:prepix+nxpix]
+    return image[12:512,prepix:prepix+nxpix], collfoc
 
 
 def extract_spectrum(spectrum, traces, win):
@@ -434,7 +437,8 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
     return centers, fwhm
 
 
-def fit_lines(spectrum, centers, return_amp=False, boxf=None):
+def fit_lines(spectrum, centers, return_amp=False, boxf=None, collfoc=None,
+              middle_cf=None):
     """fit_lines Procedure to fit line profiles in a focus image
 
     [extended_summary]
@@ -469,6 +473,12 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None):
     fwhm = []
     # Loop through the lines!
     for center in centers:
+
+        # Do rouch adjustment for change in line position as a function of
+        #  collimator focus
+        d_cen = -4.0 * (collfoc - middle_cf)
+        center += d_cen
+
         # Check that we're within a valid range
         if (center - boxi) < 0 or (center + boxi) > 2030:
             continue
@@ -476,8 +486,6 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None):
         # Compute the 1st moment to estimate the window for Gaussian fitting
         box = spectrum[:, int(center)-boxi : int(center)+boxi+1].flatten()
         ccnt = first_moment_1d(box) + int(center) - boxi
-        print(f"Comparing center = {center:.2f} and ccnt = {ccnt:.2f}... diff = {center - ccnt:.2f}")
-        print(f"First moment = {first_moment_1d(box)}")
 
         if (ccnt - boxi) < 0 or (ccnt + boxi) > 2030:
             continue
@@ -487,8 +495,10 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None):
 
         # Run the fit, with error checking
         try:
-            a, _ = gaussfit(xx, box, nterms=5)
-        except RuntimeError:
+            bounds = ([-np.inf, -np.inf, 0.5, -np.inf, -np.inf, -np.inf],
+                      [np.inf, np.inf, 10., np.inf, np.inf, np.inf])
+            a, _ = gaussfit(xx, box, nterms=6, debug=False, bounds=bounds)
+        except RuntimeError as e:
             # Add "None" to the lists to maintain indexing
             fwhm.append(None)
             if return_amp:
@@ -496,7 +506,18 @@ def fit_lines(spectrum, centers, return_amp=False, boxf=None):
                 amax.append(np.max(box))
             continue
 
-        print(f"In fit_lines(), here's the FWHM: {a[2]*2.355:.2f}")
+        if False:
+            # DEBUGGING
+            _, ax = plt.subplots()
+            xp = np.arange(len(spectrum.flatten()))
+            ax.plot(xp, spectrum.flatten())
+            # ax.plot(xp, gaussian_function(xp, *a))
+            ax.vlines(center, 0, 1, transform=ax.get_xaxis_transform(), ls='--', color='black')
+            ax.vlines(ccnt, 0, 1, transform=ax.get_xaxis_transform(), ls=':', color='red')
+            ax.set_title(f"LC: {center:.2f}  COLLFOC: {collfoc}  middle_cf: {middle_cf}")
+            ax.set_xlim(int(center)-boxi, int(center)+boxi+1)
+            plt.show()
+
 
         # Add the fit values to the appropriate arrays
         fwhm.append(a[2] * 2.355)     # FWHM = 2.355 * sigma
@@ -551,11 +572,11 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         # Data are the FWHM for this line at different COLLFOC
         fwhms_of_this_line = fwhm[:,i]
 
-        # Find unphysically large or small FWHM (or NaN) -- set to 50.
+        # Find unphysically large or small FWHM (or NaN) -- set to np.nan
         bad_idx = np.where(np.logical_or(fwhms_of_this_line < 1.0,
                            fwhms_of_this_line > 15.0))
-        fwhms_of_this_line[bad_idx] = 50.
-        fwhms_of_this_line[np.isnan(fwhms_of_this_line)] = 50.
+        fwhms_of_this_line[bad_idx] = np.nan
+        fwhms_of_this_line[np.isnan(fwhms_of_this_line)] = np.nan
 
         # If more than 3 of the FHWM are bad for this line, skip and go on
         if len(bad_idx) > 3:
@@ -565,7 +586,8 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
             continue
 
         # Do a polynomial fit (norder) to the FWHM vs COLLFOC index
-        fit = np.polyfit(cf_idx_coarse, fwhms_of_this_line, norder)
+        #fit = np.polyfit(cf_idx_coarse, fwhms_of_this_line, norder)
+        fit = good_poly(cf_idx_coarse, fwhms_of_this_line, norder, 2.)
         fits.append(fit)
         print(f"In fit_focus_curves(): fit = {fit}")
 
@@ -599,17 +621,22 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8.5,11))
     tsz = 6
 
-    for i, ax in zip(range(nc), axs.flatten()):
-        ax.plot(fx, line_width_array[:,i], 'k^')
-        ax.plot(fx, np.polyval(fit_pars[i,:], x), 'g-')
-        print(f"In plot_focus_curves(): fit = {fit_pars[i,:]}")
-        ax.vlines(min_focus_values[i], 0, min_linewidths[i], color='r', ls='-')
-        ax.vlines(optimal_focus_values[i], 0, fnom, color='b', ls='-')
-        ax.set_ylim(0, np.max(line_width_array[:,i]))
-        ax.set_xlabel('Collimator Position (mm)', fontsize=tsz)
-        ax.set_ylabel('FWHM (pix)', fontsize=tsz)
-        ax.set_title(f"LC: {centers[i]:.2f}  Fnom: {fnom:.2f} pixels", fontsize=tsz)
-        ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
+    for i, ax in enumerate(axs.flatten()):
+        if i < nc:
+            ax.plot(fx, line_width_array[:,i], 'k^')
+            ax.plot(fx, np.polyval(fit_pars[i,:], x), 'g-')
+            ax.vlines(min_focus_values[i], 0, min_linewidths[i], color='r', ls='-')
+            ax.vlines(optimal_focus_values[i], 0, fnom, color='b', ls='-')
+            ax.set_ylim(0, np.nanmax(line_width_array[:,i]))
+            ax.set_xlim(np.min(fx)-df, np.max(fx)+df)
+            ax.set_xlabel('Collimator Position (mm)', fontsize=tsz)
+            ax.set_ylabel('FWHM (pix)', fontsize=tsz)
+            ax.set_title(f"LC: {centers[i]:.2f}  Fnom: {fnom:.2f} pixels", fontsize=tsz)
+            ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
+            ax.grid(which='both', color='#c0c0c0', linestyle='-', linewidth=0.5)
+        else:
+            # Clear any extra positions if there aren't enough lines
+            fig.delaxes(ax)
 
     plt.tight_layout()
     plt.show()
