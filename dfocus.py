@@ -56,18 +56,19 @@ def dfocus(flog='last', thresh=100., debug=False):
     focus = initialize_focus_values(flog)
 
     # Process the middle image to get line centers, arrays, trace
-    centers, line_width_array, trace, mid_collfoc = \
-        process_middle_image(focus, thresh, debug=debug)
+    centers, trace, mid_collfoc = process_middle_image(focus, thresh,
+                                                       debug=debug)
 
     # Run through files, showing a progress bar
     print("\n Processing arc images...")
     prog_bar = tqdm(total=focus['n'], unit='frame',
                     unit_scale=False, colour='yellow')
 
-    for i in range(focus['n']):
+    line_width_array = []
+    for foc_file in focus['files']:
 
         # Trim and extract the spectrum
-        spectrum, collfoc = trim_deveny_image(f"../{focus['files'][i]}")
+        spectrum, collfoc = trim_deveny_image(f"../{foc_file}")
         spectra = extract_spectrum(spectrum, trace, win=11)
 
         # Find FWHM of lines:
@@ -79,20 +80,21 @@ def dfocus(flog='last', thresh=100., debug=False):
 
         # Keep only the lines from `these_centers` that match the
         #  reference image
-        fw = []
-        for c in centers:
+        line_widths = []
+        for cen in centers:
             # Find line within 3 pix of the (adjusted) reference line
-            idx = np.where(np.absolute((c+line_dx) - these_centers) < 3.)[0]
+            idx = np.where(np.absolute((cen+line_dx) - these_centers) < 3.)[0]
             # If there's something there wider than 2 piux, use it... else NaN
             width = fwhm[idx][0] if len(idx) else np.nan
-            fw.append(width if width > 2.0 else np.nan)
+            line_widths.append(width if width > 2.0 else np.nan)
 
         # Append these linewidths to the larger array for processing
-        line_width_array[i,:] = np.asarray(fw)
+        line_width_array.append(np.asarray(line_widths))
         prog_bar.update(1)
 
     # Close the progress bar, end of loop
     prog_bar.close()
+    line_width_array = np.asarray(line_width_array)
 
     print(f"\n Median of all linewidths: {np.nanmedian(line_width_array):.2f} pix")
 
@@ -104,7 +106,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     print("="*50)
     min_focus_values = min_focus_index * focus['delta'] + focus['start']
     optimal_focus_values = optimal_focus_index * focus['delta'] + focus['start']
-    med_min_focus = np.real(np.nanmedian(min_focus_values))
+    #med_min_focus = np.real(np.nanmedian(min_focus_values))
     med_opt_focus = np.real(np.nanmedian(optimal_focus_values))
 
     print(f"Median Optimal Focus Position: {med_opt_focus:.3f}")
@@ -151,7 +153,7 @@ def initialize_focus_values(flog):
     focus_0 = hdr0['COLLFOC']
     focus_1 = (fits.getheader(f"../{files[-1]}"))['COLLFOC']
     # Find the delta between focus values, and the nominal linewidth for focu
-    df = (focus_1 - focus_0) / (n_files - 1)
+    delta_focus = (focus_1 - focus_0) / (n_files - 1)
 
     # Examine the middle image
     mid_file = f"../{files[int(n_files/2)]}"
@@ -166,7 +168,7 @@ def initialize_focus_values(flog):
             'nominal': nominal_focus,
             'start': focus_0,
             'end': focus_1,
-            'delta': df,
+            'delta': delta_focus,
             'plot_title':dfl_title}
 
 
@@ -194,11 +196,11 @@ def parse_focus_log(flog):
         flog = focfiles[-1]
 
     files = []
-    with open(flog) as f:
+    with open(flog) as file_object:
         # Discard file header
-        f.readline()
+        file_object.readline()
         # Read in the remainder of the file, grabbing just the filenames
-        for line in f:
+        for line in file_object:
             files.append(line[2:20])
 
     # Return the list of files, and the FocusID
@@ -223,8 +225,6 @@ def process_middle_image(focus, thresh, debug=False):
     -------
     centers, `ndarray`
         Centers
-    line_width_array, `ndarray`
-        Line Width Array
     trace, `ndarray`
         Trace
     mid_collfoc, `float`
@@ -249,10 +249,7 @@ def process_middle_image(focus, thresh, debug=False):
         print(F"Back in the main program, number of lines: {n_c}")
         print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
 
-    # Create an array to hold the FWHM values from all lines from all images
-    line_width_array = np.empty((focus['n'], n_c), dtype=float)
-
-    return centers, line_width_array, trace, mid_collfoc
+    return centers, trace, mid_collfoc
 
 
 def trim_deveny_image(filename):
@@ -321,14 +318,14 @@ def extract_spectrum(spectrum, traces, win):
     # Set extraction window size
     half_window = int(np.floor(win/2))
 
-    for io in range(norders):
+    for order in range(norders):
         # Because of python indexing, we need to "+1" the upper limit in order
         #   to get the full wsize elements for the average
-        trace = traces[io,:].astype(int)
+        trace = traces[order,:].astype(int)
         for i in range(n_x):
             speca[i] = np.average(spectrum[trace[i] - half_window :
                                            trace[i] + half_window + 1, i])
-        spectra[io,:] = speca.reshape((1,n_x))
+        spectra[order,:] = speca.reshape((1,n_x))
 
     return spectra
 
@@ -390,8 +387,8 @@ def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
         ax.plot(np.arange(len(spec)), spec)
         ax.set_ylim(0, (yrange := 1.2*max(spec)))
         ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
-        for c in centers:
-            ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.3f}",
+        for cen in centers:
+            ax.text(cen, spec[int(np.round(cen))]+0.03*yrange, f"{cen:.3f}",
                     fontsize=tsz)
 
         # Make pretty & Save
@@ -473,10 +470,10 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
         # Compute the nominal focus position as the larger of the two points
         #  where the polymonial function crosses fnom
-        a0, a1, a2 = fit[0], fit[1], fit[2]-fnom
+        coeffs = [fit[0], fit[1], fit[2]-fnom]
         if debug:
-            print(f"Roots: {np.roots([a0,a1,a2])}")
-        optimal_cf_idx_value.append(np.max(np.real(np.roots([a0,a1,a2]))))             # fwidth
+            print(f"Roots: {np.roots(coeffs)}")
+        optimal_cf_idx_value.append(np.max(np.real(np.roots(coeffs))))             # fwidth
 
     return np.asarray(min_cf_idx_value), np.asarray(optimal_cf_idx_value), \
            np.asarray(min_linewidth), np.asarray(foc_fits)
@@ -521,7 +518,7 @@ def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
 
 def plot_focus_curves(centers, line_width_array, min_focus_values,
                       optimal_focus_values, min_linewidths, fit_pars,
-                      df, focus_0, fnom=2.7):
+                      delta_focus, focus_0, fnom=2.7):
     """plot_focus_curves Make the big plot of all the focus curves (IDL1 Window)
 
     [extended_summary]
@@ -551,7 +548,7 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     # Set up variables
     n_foc, n_c = line_width_array.shape
     focus_idx = np.arange(n_foc)
-    fx = focus_idx * df + focus_0
+    focus_x = focus_idx * delta_focus + focus_0
 
     # Set the plotting array
     ncols = 6
@@ -561,17 +558,27 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
 
     for i, ax in enumerate(axs.flatten()):
         if i < n_c:
-            ax.plot(fx, line_width_array[:,i], 'k^')
-            ax.plot(fx, np.polyval(fit_pars[i,:], focus_idx), 'g-')
-            ax.vlines(min_focus_values[i], 0, min_linewidths[i], color='r', ls='-')
+            # Plot the points and the polynomial fit
+            ax.plot(focus_x, line_width_array[:,i], 'k^')
+            ax.plot(focus_x, np.polyval(fit_pars[i,:], focus_idx), 'g-')
+
+            # Plot vertical lines to indicate minimum and optimal focus
+            ax.vlines(min_focus_values[i], 0, min_linewidths[i],
+                     color='r', ls='-')
             ax.vlines(optimal_focus_values[i], 0, fnom, color='b', ls='-')
+
+            # Plot parameters to make pretty
             ax.set_ylim(0, np.nanmax(line_width_array[:,i]))
-            ax.set_xlim(np.min(fx)-df, np.max(fx)+df)
+            ax.set_xlim(np.min(focus_x)-delta_focus,
+                        np.max(focus_x)+delta_focus)
             ax.set_xlabel('Collimator Position (mm)', fontsize=tsz)
             ax.set_ylabel('FWHM (pix)', fontsize=tsz)
-            ax.set_title(f"LC: {centers[i]:.2f}  Fnom: {fnom:.2f} pixels", fontsize=tsz)
-            ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
-            ax.grid(which='both', color='#c0c0c0', linestyle='-', linewidth=0.5)
+            ax.set_title(f"LC: {centers[i]:.2f}  Fnom: {fnom:.2f} pixels",
+                         fontsize=tsz)
+            ax.tick_params('both', labelsize=tsz, direction='in',
+                           top=True, right=True)
+            ax.grid(which='both', color='#c0c0c0', linestyle='-',
+                    linewidth=0.5)
         else:
             # Clear any extra positions if there aren't enough lines
             fig.delaxes(ax)
