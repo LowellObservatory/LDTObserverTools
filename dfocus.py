@@ -52,6 +52,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     debug : `bool`. optional
         Print debug statements  [Default: False]
     """
+    # Initialize a dictionary to hold lots of variables
     focus = initialize_focus_values(flog)
 
     print(f"\n Processing object image {focus['mid_file']}...")
@@ -65,8 +66,10 @@ def dfocus(flog='last', thresh=100., debug=False):
         print(f"Traces: {trace}")
         print(f"Middle Spectrum: {mspectra}")
 
-    # Find the lines in the extracted spectrum
-    n_c, centers, _ = find_lines(mspectra, thresh=thresh)
+    # Find the lines in the extracted spectrum -- create the plot, too
+    #  The plot shown in the IDL0 window: Plot of the found lines
+    n_c, centers, _ = find_lines(mspectra, thresh=thresh, do_plot=True,
+                                 focus_dict=focus)
     if debug:
         print(F"Back in the main program, number of lines: {n_c}")
         print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
@@ -125,32 +128,8 @@ def dfocus(flog='last', thresh=100., debug=False):
     print(f"Median Optimal Focus Position: {med_opt_focus:.3f}")
 
     #=========================================================================#
-    # Plot Section
-
-    # The plot shown in the IDL0 window: Plot of the found lines
-    _, ax = plt.subplots()
-    _ = find_lines(mspectra, thresh=thresh, title=focus['plot_title'],
-                   ax=ax, verbose=False)
-    plt.tight_layout()
-    plt.savefig(f"pyfocus.{focus['id']}.eps")
-
     # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
-    if debug:
-        print("="*20)
-        print(centers.dtype, optimal_focus_values.dtype, type(med_opt_focus))
-    _, ax = plt.subplots()
-    tsz = 8
-    ax.plot(centers, optimal_focus_values, '.')
-    ax.set_xlim(0,2050)
-    ax.set_ylim(focus['start'], focus['end'])
-    ax.set_title("Optimal focus position vs. line position, median = " + \
-                 f"{med_opt_focus:.3f}")
-    ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(),
-              color='magenta', ls='--')
-
-    ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
-    plt.tight_layout()
-    plt.show()
+    plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus)
 
     # The plot shown in the IDL1 window: Focus curves for each identified line
     plot_focus_curves(centers, line_width_array, min_focus_values,
@@ -207,7 +186,6 @@ def initialize_focus_values(flog):
             'end': focus_1,
             'delta': df,
             'plot_title':dfl_title}
-
 
 
 def parse_focus_log(flog):
@@ -323,11 +301,11 @@ def extract_spectrum(spectrum, traces, win):
     return spectra
 
 
-def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
-               verbose=True, ax=None, mark=False, title=''):
+def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
+               focus_dict=None):
     """find_lines Automatically find and centroid lines in a 1-row image
 
-    *** Look into using scipy.signal.find_peaks() for this task! ***
+    Uses scipy.signal.find_peaks() for this task
 
     Parameters
     ----------
@@ -335,20 +313,14 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         Extracted spectrum
     thresh : `float`, optional
         Threshold above which to indentify lines [Default: 20 DN above bkgd]
-    findmax : `int`, optional
-        Maximum number of lines to find [Default: 50]
     minsep : `int`, optional
         Minimum line separation for identification [Default: 11 pixels]
-    fit_window : `int`, optional
-        Size of the window to fit Gaussian [Default: 15 pixels]
     verbose : `bool`, optional
         Produce verbose output?  [Default: False]
-    ax : `pyplot.Axes`, optional
-        Create a plot on the provided axes  [Default: None]
-    mark : `bool`, optional
-        Mark the lines on the output plot?  [Default: False]
-    title : `str`
-        Title to use for the output plot.  [Default: '']
+    do_plot : `bool`, optional
+        Create a plot on the provided axes?  [Default: False]
+    focus_dict : `dict`, optional
+        Dictionary containing needed variables for plot  [Default: None]
 
     Returns
     -------
@@ -369,7 +341,7 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         print(f'  Background level: {bkgd:.1f}' + \
             f'   Detection threshold level: {bkgd+thresh:.1f}')
 
-    # Use scipy to find peaks
+    # Use scipy to find peaks & widths -- no more janky IDL-based junk
     centers, _ = signal.find_peaks(spec - bkgd, height=thresh, distance=minsep)
     fwhm = (signal.peak_widths(spec - bkgd, centers))[0]
 
@@ -377,21 +349,28 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         print(f" Number of lines: {len(centers)}")
 
     # Produce a plot for posterity, if directed
-    if ax is not None:
+    if do_plot:
+        # Set up the plot environment
+        _, ax = plt.subplots()
         tsz = 8
-        print("At this point the code makes some plots.  Yippee.")
+
+        # Plot the spectrum, mark the peaks, and label them
         ax.plot(np.arange(len(spec)), spec)
-        ax.set_title(title, fontsize=tsz)
-        ax.set_xlabel('CCD Column', fontsize=tsz)
-        ax.set_ylabel('I (DN)', fontsize=tsz)
-        ax.set_xlim(0, n_x+2)
         ax.set_ylim(0, (yrange := 1.2*max(spec)))
         ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
         for c in centers:
             ax.text(c, spec[int(np.round(c))]+0.03*yrange, f"{c:.3f}",
                     fontsize=tsz)
+
+        # Make pretty & Save
+        ax.set_title(focus_dict['plot_title'], fontsize=tsz)
+        ax.set_xlabel('CCD Column', fontsize=tsz)
+        ax.set_ylabel('I (DN)', fontsize=tsz)
+        ax.set_xlim(0, n_x+2)
         ax.tick_params('both', labelsize=tsz, direction='in',
                        top=True, right=True)
+        plt.tight_layout()
+        plt.savefig(f"pyfocus.{focus_dict['id']}.eps")
 
     return len(centers), centers, fwhm
 
@@ -471,10 +450,47 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
            np.asarray(min_linewidth), np.asarray(foc_fits)
 
 
+def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
+                       debug=False):
+    """plot_optimal_focus Make the Optimal Focus Plot (IDL2 Window)
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    focus : `dict`
+        Dictionary of the various focus-related quantities
+    centers : `ndarray`
+        Array of the centers of each line
+    optimal_focus_values : `ndarray`
+        Array of the optimal focus values for each line
+    med_opt_focus : `float`
+        Median optimal focus value
+    debug : `bool`. optional
+        Print debug statements  [Default: False]
+    """
+    if debug:
+        print("="*20)
+        print(centers.dtype, optimal_focus_values.dtype, type(med_opt_focus))
+    _, ax = plt.subplots()
+    tsz = 8
+    ax.plot(centers, optimal_focus_values, '.')
+    ax.set_xlim(0,2050)
+    ax.set_ylim(focus['start'], focus['end'])
+    ax.set_title("Optimal focus position vs. line position, median = " + \
+                 f"{med_opt_focus:.3f}")
+    ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(),
+              color='magenta', ls='--')
+
+    ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_focus_curves(centers, line_width_array, min_focus_values,
                       optimal_focus_values, min_linewidths, fit_pars,
                       df, focus_0, fnom=2.7):
-    """plot_focus_curves Make the big plot of all the focus curves
+    """plot_focus_curves Make the big plot of all the focus curves (IDL1 Window)
 
     [extended_summary]
 
@@ -562,7 +578,7 @@ def find_lines_in_spectrum(filename, thresh=100.):
     spectra = extract_spectrum(spectrum, traces, win=11)
 
     # Find the lines!
-    centers, _ = find_lines(spectra, thresh=thresh)
+    _, centers, _ = find_lines(spectra, thresh=thresh)
 
     return centers
 
