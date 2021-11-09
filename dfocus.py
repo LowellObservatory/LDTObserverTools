@@ -32,7 +32,7 @@ from tqdm import tqdm
 
 # Local Libraries
 from .deveny_grangle import deveny_amag
-from .utils import gaussfit, first_moment_1d, good_poly
+from .utils import good_poly
 
 # CONSTANTS
 
@@ -58,7 +58,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     nfiles = len(files)
 
     # Pull the spectrograph setup from the first focus file:
-    hdr0 = fits.getheader(f'../' + files[0])
+    hdr0 = fits.getheader(f"../{files[0]}" + files[0])
     slitasec = hdr0['SLITASEC']
     grating = hdr0['GRATING']
     grangle = hdr0['GRANGLE']
@@ -69,17 +69,17 @@ def dfocus(flog='last', thresh=100., debug=False):
 
     # Pull the collimator focus values from the first and last files
     focus_0 = hdr0['COLLFOC']
-    focus_1 = (fits.getheader(f'../' + files[-1]))['COLLFOC']
+    focus_1 = (fits.getheader(f"../{files[-1]}"))['COLLFOC']
 
     # Examine the middle image
-    middle_file = '../' + files[int(nfiles/2)]
+    middle_file = f"../{files[int(nfiles/2)]}"
 
     print(f'\n Processing object image {middle_file}...')
     spectrum, middle_cf = trim_deveny_image(middle_file)
 
     # Build the trace for spectrum extraction
-    ny, nx = spectrum.shape
-    traces = np.full(nx, ny/2, dtype=float).reshape((1,nx))
+    n_y, n_x = spectrum.shape
+    traces = np.full(n_x, n_y/2, dtype=float).reshape((1,n_x))
     mspectra = extract_spectrum(spectrum, traces, win=11)
     if debug:
         print(f"Traces: {traces}")
@@ -90,13 +90,13 @@ def dfocus(flog='last', thresh=100., debug=False):
                 f'{grangle:.2f}   {lampcal}'
 
     centers, _ = find_lines(mspectra, thresh=thresh, title=dfl_title)
-    nc = len(centers)
-    print(F"Back in the main program, number of lines: {nc}")
+    n_c = len(centers)
+    print(F"Back in the main program, number of lines: {n_c}")
     if debug:
         print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
 
     # Create an array to hold the FWHM values from all lines from all images
-    line_width_array = np.empty((nfiles, nc), dtype=float)
+    line_width_array = np.empty((nfiles, n_c), dtype=float)
 
     # Run through files:
     print("\n Processing arc images...")
@@ -134,7 +134,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     # Fit the focus curve:
     min_focus_index, optimal_focus_index, min_linewidths, fit_pars = \
         fit_focus_curves(line_width_array, fnom=fnom)
-    
+
     print(optimal_focus_index)
 
     # Convert the returned indices into actual COLLFOC values, find medians
@@ -151,7 +151,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     # Plot Section
 
     # The plot shown in the IDL0 window: Plot of the found lines
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     _ = find_lines(mspectra, thresh=thresh, title=dfl_title, ax=ax)
     plt.tight_layout()
     plt.savefig(f"pyfocus.{focus_id}.eps")
@@ -159,7 +159,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
     print("="*20)
     print(centers.dtype, optimal_focus_values.dtype, type(med_opt_focus))
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     tsz = 8
     ax.plot(centers, optimal_focus_values, '.')
     ax.set_xlim(0,2050)
@@ -177,43 +177,6 @@ def dfocus(flog='last', thresh=100., debug=False):
     plot_focus_curves(centers, line_width_array, min_focus_values,
                       optimal_focus_values, min_linewidths, fit_pars,
                       df, focus_0, fnom=fnom)
-
-    """
-    dplotfocus, x, fw, fits, flist, fnom=fnom
-    plot, centers, fpos, xra=[0,2050], yra=[f0, f1], xsty=1, $
-        /ynoz, ticklen=1, psym=5, $
-        title='Minimum focus position vs. line position, median = ' + $
-        strmid(mfpos, 3, 8), xtitle='CCD column', ytitle='Focus (mm)'
-    plot, centers, fwid, xra=[0,2050], yra=[f0, f1], xsty=1, $
-        /ynoz, ticklen=1, psym=5, $
-        title='Optimal focus position vs. line position, median = ' + $
-        strmid(mfwid, 3, 8), xtitle='CCD column', ytitle='Optimal Focus (mm)', $
-        subtitle='Grating: ' + grating + $
-        '   Slit width:' + strmid(slitasec, 4, 6) + ' arcsec' + $
-        '    Nominal line width:' + strmid(fnom,4,7) + ' pixels'
-    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data
-    setplot,'x'
-
-    window, 0, xsize=750, ysize=450, xpos=50, ypos=725
-    centers=dflines(mspectra, fwhm=fwhm, thresh=thresh, $
-        title = mfile + '   Grating:  ' + grating + '   GRANGLE:  ' + $
-        strtrim(grangle,2) + '   ' + lampcal)
-    window, 1, xsize=1500, ysize=650, xpos=50, ypos=50
-    dplotfocus, x, fw, fits, flist, fnom=fnom
-    window, 2, xsize=750, ysize=450, xpos=805, ypos=725
-    plot, centers, fwid, xra=[0,2050], yra=[f0, f1], xsty=1, $
-        /ynoz, ticklen=1, psym=5, $
-        title='Optimal focus position vs. line position, median = ' + $
-        strmid(mfwid, 3, 8), xtitle='CCD column', ytitle='Optimal Focus (mm)', $
-        subtitle='Grating: ' + grating + $
-        '   Slit width:' + strmid(slitasec, 4, 6) + ' arcsec' + $
-        '    Nominal line width:' + strmid(fnom,4,7) + ' pixels'
-    plots, [0, 2050], [mfwid, mfwid], color=60, thick=3, /data
-    loadct, 0
-
-    return
-    end
-    """
 
 
 def parse_focus_log(flog):
@@ -306,9 +269,9 @@ def extract_spectrum(spectrum, traces, win):
         2D or 3D array of spectra of individual orders
     """
     # Spec out the shape, and create an empty array to hold the output spectra
-    norders, nx = traces.shape
-    spectra = np.empty((norders, nx), dtype=float)
-    speca = np.empty(nx, dtype=float)
+    norders, n_x = traces.shape
+    spectra = np.empty((norders, n_x), dtype=float)
+    speca = np.empty(n_x, dtype=float)
 
     # Set extraction window size
     half_window = int(np.floor(win/2))
@@ -317,10 +280,10 @@ def extract_spectrum(spectrum, traces, win):
         # Because of python indexing, we need to "+1" the upper limit in order
         #   to get the full wsize elements for the average
         trace = traces[io,:].astype(int)
-        for i in range(nx):
+        for i in range(n_x):
             speca[i] = np.average(spectrum[trace[i] - half_window :
                                            trace[i] + half_window + 1, i])
-        spectra[io,:] = speca.reshape((1,nx))
+        spectra[io,:] = speca.reshape((1,n_x))
 
     return spectra
 
@@ -360,7 +323,7 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
         The computed FWHM for each peak
     """
     # Get size and flatten to 1D
-    _, nx = image.shape
+    _, n_x = image.shape
     spec = np.ndarray.flatten(image)
 
     # Find background from median value of the image:
@@ -379,12 +342,12 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
     # Produce a plot for posterity, if directed
     if ax is not None:
         tsz = 8
-        print(f"At this point the code makes some plots.  Yippee.")
+        print("At this point the code makes some plots.  Yippee.")
         ax.plot(np.arange(len(spec)), spec)
         ax.set_title(title, fontsize=tsz)
         ax.set_xlabel('CCD Column', fontsize=tsz)
         ax.set_ylabel('I (DN)', fontsize=tsz)
-        ax.set_xlim(0, nx+2)
+        ax.set_xlim(0, n_x+2)
         ax.set_ylim(0, (yrange := 1.2*max(spec)))
         ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
         for c in centers:
@@ -394,123 +357,6 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
                        top=True, right=True)
 
     return centers, fwhm
-
-
-def fit_lines(spectrum, centers, collfoc, middle_cf, return_amp=False,
-boxf=None):
-    """fit_lines Procedure to fit line profiles in a focus image
-
-    [extended_summary]
-
-    Parameters
-    ----------
-    spectrum : `ndarray`
-        Extracted spectrum
-    centers : `ndarray`
-        Line centers based on the 'middle' image
-    collfoc : `float`
-        The collimator focus for this image (used to centroid lines)
-    middle_cf : `float`
-        The collimator focus for the middle image of the sweep
-    return_amp : `bool`, optional
-        Return the amplitudes of the lines? [Default: False]
-    boxf : `float`, optional
-        Final box half-width for Gaussian fitting [Default: None]
-
-    Returns
-    -------
-    `ndarray`
-        List of the FHWM of the lines from this image
-    """
-
-    line_dx = -4.0 * (collfoc - middle_cf)
-    print(f"line_dx: {line_dx}")
-
-    print(f"Centers: {centers}")
-    print(f"Shifted centers: {centers + line_dx}")
-
-    centers, _ = signal.find_peaks(spec - bkgd, height=thresh, distance=minsep)
-    fwhm = (signal.peak_widths(spectrum.flatten(), (centers+line_dx).astype(int)))[0]
-
-    print(f"And here are the widths: {fwhm}")
-
-    return fwhm
-
-    # Process inputs
-    if return_amp:
-        afit = []
-        amax = []
-    if boxf is None:
-        boxi = 17
-        boxf = 11
-    else:
-        boxi = boxf + 6
-    xx = np.arange(2 * boxf + 1).flatten()
-
-    fwhm = []
-    # Loop through the lines!
-    for center in centers:
-
-        # *** Novel Technique:  Line position (spectrally) is dependent upon
-        #  collimator focus position.  Based on a rough empirical estimate,
-        #  the spectrum is shifted by -4 pixels per millimeter of positive
-        #  collimator focus change.
-        # In order to more easily find lines (and have a smaller search
-        #  window). we can adjust the expected line center accordingly:
-        center += -4.0 * (collfoc - middle_cf)
-
-        # Check that we're within a valid range
-        if (center - boxi) < 0 or (center + boxi) > 2030:
-            print("We had to, like, contine, man...")
-            continue
-
-        # Compute the 1st moment to estimate the window for Gaussian fitting
-        box = spectrum[:, int(center)-boxi : int(center)+boxi+1].flatten()
-        ccnt = first_moment_1d(box) + int(center) - boxi
-
-        if (ccnt - boxi) < 0 or (ccnt + boxi) > 2030:
-            print("We had to, like, contine, man...")
-            continue
-
-        # This is the box for Gaussian fitting
-        box = spectrum[:, int(ccnt)-boxf : int(ccnt)+boxf+1].flatten()
-
-        # Run the fit, with error checking
-        try:
-            bounds = ([-np.inf, -np.inf, 0.5, -np.inf, -np.inf, -np.inf],
-                      [np.inf, np.inf, 10., np.inf, np.inf, np.inf])
-            a, _ = gaussfit(xx, box, nterms=6, debug=False, bounds=bounds)
-        except RuntimeError as e:
-            # Add "None" to the lists to maintain indexing
-            fwhm.append(None)
-            if return_amp:
-                afit.append(None)
-                amax.append(np.max(box))
-            continue
-
-        if False:
-            # DEBUGGING
-            _, ax = plt.subplots()
-            xp = np.arange(len(spectrum.flatten()))
-            ax.plot(xp, spectrum.flatten())
-            # ax.plot(xp, gaussian_function(xp, *a))
-            ax.vlines(center, 0, 1, transform=ax.get_xaxis_transform(), ls='--', color='black')
-            ax.vlines(ccnt, 0, 1, transform=ax.get_xaxis_transform(), ls=':', color='red')
-            ax.set_title(f"LC: {center:.2f}  COLLFOC: {collfoc}  middle_cf: {middle_cf}")
-            ax.set_xlim(int(center)-boxi, int(center)+boxi+1)
-            plt.show()
-
-
-        # Add the fit values to the appropriate arrays
-        fwhm.append(a[2] * 2.355)     # FWHM = 2.355 * sigma
-        if return_amp:
-            afit.append(a[0])
-            amax.append(np.max(box))
-
-    # Return either the single FWHM or tuple containing FWHM & amplitudes
-    if return_amp:
-        return np.asarray(fwhm), np.asarray(afit), np.asarray(amax)
-    return np.asarray(fwhm)
 
 
 def fit_focus_curves(fwhm, fnom=2.7, norder=2):
@@ -538,7 +384,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
     min_linewidth = []
     min_cf_idx_value = []
     optimal_cf_idx_value = []
-    fits = []
+    foc_fits = []
 
     #print("Here's the nasty array we're fitting!")
     #print(fwhm)
@@ -569,7 +415,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         # Do a polynomial fit (norder) to the FWHM vs COLLFOC index
         #fit = np.polyfit(cf_idx_coarse, fwhms_of_this_line, norder)
         fit = good_poly(cf_idx_coarse, fwhms_of_this_line, norder, 2.)
-        fits.append(fit)
+        foc_fits.append(fit)
         print(f"In fit_focus_curves(): fit = {fit}")
 
         # Use the fine grid to evaluate the curve miniumum
@@ -585,7 +431,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         #print(fits[-1])
 
     return np.asarray(min_cf_idx_value), np.asarray(optimal_cf_idx_value), \
-           np.asarray(min_linewidth), np.asarray(fits)
+           np.asarray(min_linewidth), np.asarray(foc_fits)
 
 
 def plot_focus_curves(centers, line_width_array, min_focus_values,
@@ -618,18 +464,18 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     """
 
     # Set up variables
-    nfoc, nc = line_width_array.shape
-    focus_idx = np.arange(nfoc)
+    n_foc, n_c = line_width_array.shape
+    focus_idx = np.arange(n_foc)
     fx = focus_idx * df + focus_0
 
     # Set the plotting array
     ncols = 6
-    nrows = np.floor(nc/ncols).astype(int) + 1
+    nrows = np.floor(n_c/ncols).astype(int) + 1
     fig, axs = plt.subplots(ncols=ncols, nrows=nrows, figsize=(8.5,11))
     tsz = 6     # type size
 
     for i, ax in enumerate(axs.flatten()):
-        if i < nc:
+        if i < n_c:
             ax.plot(fx, line_width_array[:,i], 'k^')
             ax.plot(fx, np.polyval(fit_pars[i,:], focus_idx), 'g-')
             ax.vlines(min_focus_values[i], 0, min_linewidths[i], color='r', ls='-')
@@ -674,8 +520,8 @@ def find_lines_in_spectrum(filename, thresh=100.):
     spectrum, _ = trim_deveny_image(filename)
 
     # Build the trace for spectrum extraction
-    ny, nx = spectrum.shape
-    traces = np.full(nx, ny/2, dtype=float).reshape((1,nx))
+    n_y, n_x = spectrum.shape
+    traces = np.full(n_x, n_y/2, dtype=float).reshape((1,n_x))
     spectra = extract_spectrum(spectrum, traces, win=11)
 
     # Find the lines!
@@ -686,6 +532,15 @@ def find_lines_in_spectrum(filename, thresh=100.):
 
 #=========================================================#
 def main(args):
+    """main [summary]
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    args : [type]
+        [description]
+    """
     dfocus()
 
 
