@@ -55,27 +55,9 @@ def dfocus(flog='last', thresh=100., debug=False):
     # Initialize a dictionary to hold lots of variables
     focus = initialize_focus_values(flog)
 
-    print(f"\n Processing object image {focus['mid_file']}...")
-    spectrum, mid_collfoc = trim_deveny_image(focus['mid_file'])
-
-    # Build the trace for spectrum extraction
-    n_y, n_x = spectrum.shape
-    trace = np.full(n_x, n_y/2, dtype=float).reshape((1,n_x))
-    mspectra = extract_spectrum(spectrum, trace, win=11)
-    if debug:
-        print(f"Traces: {trace}")
-        print(f"Middle Spectrum: {mspectra}")
-
-    # Find the lines in the extracted spectrum -- create the plot, too
-    #  The plot shown in the IDL0 window: Plot of the found lines
-    n_c, centers, _ = find_lines(mspectra, thresh=thresh, do_plot=True,
-                                 focus_dict=focus)
-    if debug:
-        print(F"Back in the main program, number of lines: {n_c}")
-        print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
-
-    # Create an array to hold the FWHM values from all lines from all images
-    line_width_array = np.empty((focus['n'], n_c), dtype=float)
+    # Process the middle image to get line centers, arrays, trace
+    centers, line_width_array, trace, mid_collfoc = \
+        process_middle_image(focus, thresh, debug=debug)
 
     # Run through files, showing a progress bar
     print("\n Processing arc images...")
@@ -221,6 +203,56 @@ def parse_focus_log(flog):
 
     # Return the list of files, and the FocusID
     return len(files), files, flog[13:]
+
+
+def process_middle_image(focus, thresh, debug=False):
+    """process_middle_image Process the middle focus image
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    focus : `dict`, optional
+        Dictionary containing needed variables for plot
+    thresh : `float`
+        Line intensity threshold above background for detection
+    debug : `bool`. optional
+        Print debug statements  [Default: False]
+
+    Returns
+    -------
+    centers, `ndarray`
+        Centers
+    line_width_array, `ndarray`
+        Line Width Array
+    trace, `ndarray`
+        Trace
+    mid_collfoc, `float`
+        Collimator focus of the middle frame
+    """
+    print(f"\n Processing center focus image {focus['mid_file']}...")
+    spectrum, mid_collfoc = trim_deveny_image(focus['mid_file'])
+
+    # Build the trace for spectrum extraction
+    n_y, n_x = spectrum.shape
+    trace = np.full(n_x, n_y/2, dtype=float).reshape((1,n_x))
+    mspectra = extract_spectrum(spectrum, trace, win=11)
+    if debug:
+        print(f"Traces: {trace}")
+        print(f"Middle Spectrum: {mspectra}")
+
+    # Find the lines in the extracted spectrum -- create the plot, too
+    #  The plot shown in the IDL0 window: Plot of the found lines
+    n_c, centers, _ = find_lines(mspectra, thresh=thresh, do_plot=True,
+                                 focus_dict=focus)
+    if debug:
+        print(F"Back in the main program, number of lines: {n_c}")
+        print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
+
+    # Create an array to hold the FWHM values from all lines from all images
+    line_width_array = np.empty((focus['n'], n_c), dtype=float)
+
+    return centers, line_width_array, trace, mid_collfoc
 
 
 def trim_deveny_image(filename):
