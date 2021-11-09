@@ -22,13 +22,13 @@ DeVeny LOUI.
 
 # Built-In Libraries
 import glob
-import warnings
 
 # 3rd-Party Libraries
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import optimize, signal
+from scipy import signal
+from tqdm import tqdm
 
 # Local Libraries
 from .deveny_grangle import deveny_amag
@@ -92,22 +92,38 @@ def dfocus(flog='last', thresh=100., debug=False):
     centers, _ = find_lines(mspectra, thresh=thresh, title=dfl_title)
     nc = len(centers)
     print(F"Back in the main program, number of lines: {nc}")
-    print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
+    if debug:
+        print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
 
     # Create an array to hold the FWHM values from all lines from all images
     line_width_array = np.empty((nfiles, nc), dtype=float)
 
     # Run through files:
+    print("\n Processing arc images...")
+    # Show progress bar for processing arcs
+    prog_bar = tqdm(total=nfiles, unit='frame', unit_scale=False, colour='yellow')
     for i in range(nfiles):
-        print(f"\n Processing arc image {files[i]} ...")
         spectrum, collfoc = trim_deveny_image(f"../{files[i]}")
-        print(f"  Extracting spectra from image {files[i]}...")
         spectra = extract_spectrum(spectrum, traces, win=11)
 
         # Find FWHM of lines:
-        fwhm = fit_lines(spectra, centers, boxf=5,
-                         collfoc=collfoc, middle_cf=middle_cf)
+        this_cen, fwhm = find_lines(spectra, thresh=thresh, verbose=False)
+        line_dx = -4.0 * (collfoc - middle_cf)
+
+        # Keep lines matching this CENTER
+        fw = []
+        for c in centers:
+            d = np.absolute((c+line_dx) - this_cen)
+            idx = np.where(d < 3.)[0]
+            width = fwhm[idx][0] if len(idx) else np.nan
+            fw.append(width if width > 2.0 else np.nan)
+        fwhm = np.asarray(fw)
+        # fwhm = fit_lines(spectra, centers, boxf=5,
+        #                  collfoc=collfoc, middle_cf=middle_cf)
         line_width_array[i,:] = fwhm
+        prog_bar.update(1)
+    prog_bar.close()
+
 
     print(f"Median of the array fw: {np.nanmedian(line_width_array)}")
 
@@ -118,8 +134,12 @@ def dfocus(flog='last', thresh=100., debug=False):
     # Fit the focus curve:
     min_focus_index, optimal_focus_index, min_linewidths, fit_pars = \
         fit_focus_curves(line_width_array, fnom=fnom)
+    
+    print(optimal_focus_index)
 
     # Convert the returned indices into actual COLLFOC values, find medians
+    print("="*30)
+    print(optimal_focus_index.dtype, type(df), type(focus_0))
     min_focus_values = min_focus_index * df + focus_0             # fpos
     optimal_focus_values = optimal_focus_index * df + focus_0     # fwid
     med_min_focus = np.real(np.nanmedian(min_focus_values))       # fwmin
@@ -137,6 +157,8 @@ def dfocus(flog='last', thresh=100., debug=False):
     plt.savefig(f"pyfocus.{focus_id}.eps")
 
     # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
+    print("="*20)
+    print(centers.dtype, optimal_focus_values.dtype, type(med_opt_focus))
     fig, ax = plt.subplots()
     tsz = 8
     ax.plot(centers, optimal_focus_values, '.')
@@ -152,7 +174,6 @@ def dfocus(flog='last', thresh=100., debug=False):
     plt.show()
 
     # The plot shown in the IDL1 window: Focus curves for each identified line
-
     plot_focus_curves(centers, line_width_array, min_focus_values,
                       optimal_focus_values, min_linewidths, fit_pars,
                       df, focus_0, fnom=fnom)
@@ -308,11 +329,11 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
                verbose=True, ax=None, mark=False, title=''):
     """find_lines Automatically find and centroid lines in a 1-row image
 
-    [extended_summary]
+    *** Look into using scipy.signal.find_peaks() for this task! ***
 
     Parameters
     ----------
-    image : `np.ndarray`
+    image : `ndarray`
         Extracted spectrum
     thresh : `float`, optional
         Threshold above which to indentify lines [Default: 20 DN above bkgd]
@@ -333,85 +354,24 @@ def find_lines(image, thresh=20., findmax=50, minsep=11, fit_window=15,
 
     Returns
     -------
-    (`list of float`, `list of float`)
-        centers: Line centers (pixel #)
-        fwhm: The computed FWHM
+    centers : `ndarray`
+        Line centers (pixel #)
+    fwhm : `ndarray`
+        The computed FWHM for each peak
     """
-    # Silence OptimizeWarning, this function only
-    warnings.simplefilter('ignore', optimize.OptimizeWarning)
-
-    # Define the half-window
-    fhalfwin = int(np.floor(fit_window/2))
-
-     # Get size and flatten to 1D
+    # Get size and flatten to 1D
     _, nx = image.shape
     spec = np.ndarray.flatten(image)
 
     # Find background from median value of the image:
     bkgd = np.median(spec)
-    print(f'  Background level: {bkgd:.1f}' + \
-          f'   Detection threshold level: {bkgd+thresh:.1f}')
+    if verbose:
+        print(f'  Background level: {bkgd:.1f}' + \
+            f'   Detection threshold level: {bkgd+thresh:.1f}')
 
-    # Create empty lists to fill
-    cent, fwhm = [], []
-    j0 = 0
-
-    # Step through the cut and identify peaks:
-    for j in range(nx):
-
-        # If we get too close to the end, skip
-        if j > (nx - minsep):
-            continue
-
-        # If the spectrum at this pixel is above the THRESH...
-        if spec[j] > (bkgd + thresh):
-
-            # Mark this pixel as j1
-            j1 = j
-
-            # If this is too close to the last one, skip
-            if np.abs(j1 - j0) < minsep:
-                continue
-
-            # Loop through 0-FINDMAX...  (find central pixel?)
-            for jf in range(findmax):
-                itmp0 = spec[jf + j]
-                itmp1 = spec[jf + j + 1]
-                if itmp1 < itmp0:
-                    icntr = jf + j
-                    break
-
-            # If central pixel is too close to the edge, skip
-            if (icntr < minsep/2) or (icntr > (nx - minsep/2 - 1)):
-                continue
-
-            # Set up the gaussian fitting for this line
-            xmin, xmax = (icntr - fhalfwin, icntr + fhalfwin + 1)
-            xx = np.arange(xmin, xmax, dtype=float)
-            temp = spec[xmin : xmax]
-            # Filter the SPEC to smooth it a bit for fitting
-            temp = signal.medfilt(temp, kernel_size=3)
-
-            # Run the fit, with error checking
-            try:
-                aa, _ = gaussfit(xx, temp, nterms=5)
-            except RuntimeError:
-                continue  # Just skip this one
-
-            # If the width makes sense, save
-            if (fw := aa[2] * 2.355) > 1.0:      # sigma -> FWHM
-                cent.append(aa[1])
-                fwhm.append(fw)
-
-            # Set j0 to this pixel before looping on
-            j0 = jf + j
-
-    # Make lists into arrays, check again that the centers make sense
-    centers = np.asarray(cent)
-    fwhm = np.asarray(fwhm)
-    c_idx = np.where(np.logical_and(centers > 0, centers <= nx))
-    centers = centers[c_idx]
-    fwhm = fwhm[c_idx]
+    # Use scipy to find peaks
+    centers, _ = signal.find_peaks(spec - bkgd, height=thresh, distance=minsep)
+    fwhm = (signal.peak_widths(spec - bkgd, centers))[0]
 
     if verbose:
         print(f" Number of lines: {len(centers)}")
@@ -444,9 +404,9 @@ boxf=None):
 
     Parameters
     ----------
-    spectrum : `np.ndarray`
+    spectrum : `ndarray`
         Extracted spectrum
-    centers : `list of float`
+    centers : `ndarray`
         Line centers based on the 'middle' image
     collfoc : `float`
         The collimator focus for this image (used to centroid lines)
@@ -459,9 +419,23 @@ boxf=None):
 
     Returns
     -------
-    `np.ndarray`
+    `ndarray`
         List of the FHWM of the lines from this image
     """
+
+    line_dx = -4.0 * (collfoc - middle_cf)
+    print(f"line_dx: {line_dx}")
+
+    print(f"Centers: {centers}")
+    print(f"Shifted centers: {centers + line_dx}")
+
+    centers, _ = signal.find_peaks(spec - bkgd, height=thresh, distance=minsep)
+    fwhm = (signal.peak_widths(spectrum.flatten(), (centers+line_dx).astype(int)))[0]
+
+    print(f"And here are the widths: {fwhm}")
+
+    return fwhm
+
     # Process inputs
     if return_amp:
         afit = []
@@ -487,6 +461,7 @@ boxf=None):
 
         # Check that we're within a valid range
         if (center - boxi) < 0 or (center + boxi) > 2030:
+            print("We had to, like, contine, man...")
             continue
 
         # Compute the 1st moment to estimate the window for Gaussian fitting
@@ -494,6 +469,7 @@ boxf=None):
         ccnt = first_moment_1d(box) + int(center) - boxi
 
         if (ccnt - boxi) < 0 or (ccnt + boxi) > 2030:
+            print("We had to, like, contine, man...")
             continue
 
         # This is the box for Gaussian fitting
@@ -604,8 +580,9 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2):
         # Compute the nominal focus position as the larger of the two points
         #  where the polymonial function crosses fnom
         a0, a1, a2 = fit[0], fit[1], fit[2]-fnom
-        optimal_cf_idx_value.append(np.max(np.roots([a0,a1,a2])))             # fwidth
-        print(fits[-1])
+        print(f"Roots: {np.roots([a0,a1,a2])}")
+        optimal_cf_idx_value.append(np.max(np.real(np.roots([a0,a1,a2]))))             # fwidth
+        #print(fits[-1])
 
     return np.asarray(min_cf_idx_value), np.asarray(optimal_cf_idx_value), \
            np.asarray(min_linewidth), np.asarray(fits)
@@ -648,7 +625,7 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     # Set the plotting array
     ncols = 6
     nrows = np.floor(nc/ncols).astype(int) + 1
-    fig, axs = plt.subplots(nncols=ncols, rows=nrows, figsize=(8.5,11))
+    fig, axs = plt.subplots(ncols=ncols, nrows=nrows, figsize=(8.5,11))
     tsz = 6     # type size
 
     for i, ax in enumerate(axs.flatten()):
