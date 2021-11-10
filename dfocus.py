@@ -26,6 +26,7 @@ import warnings
 
 # 3rd-Party Libraries
 from astropy.io import fits
+from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
@@ -55,8 +56,8 @@ def dfocus(flog='last', thresh=100., debug=False):
     focus = initialize_focus_values(flog)
 
     # Process the middle image to get line centers, arrays, trace
-    centers, trace, mid_collfoc = process_middle_image(focus, thresh,
-                                                       debug=debug)
+    centers, trace, mid_collfoc, mspectra = process_middle_image(focus, thresh,
+                                                                 debug=debug)
 
     # Run through files, showing a progress bar
     print("\n Processing arc images...")
@@ -111,13 +112,22 @@ def dfocus(flog='last', thresh=100., debug=False):
     print(f"Median Optimal Focus Position: {med_opt_focus:.3f}")
 
     #=========================================================================#
-    # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
-    plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus)
+    # Make the multipage PDF plot
+    with PdfPages(f"pyfocus.{focus['id']}.pdf") as pdf:
 
-    # The plot shown in the IDL1 window: Focus curves for each identified line
-    plot_focus_curves(centers, line_width_array, min_focus_values,
-                      optimal_focus_values, min_linewidths, fit_pars,
-                      focus['delta'], focus['start'], fnom=focus['nominal'])
+        #  The plot shown in the IDL0 window: Plot of the found lines
+        find_lines(mspectra, thresh=thresh, do_plot=True,
+                   focus_dict=focus, pdf=pdf)
+
+        # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
+        plot_optimal_focus(focus, centers, optimal_focus_values,
+                           med_opt_focus, pdf=pdf)
+
+        # The plot shown in the IDL1 window: Focus curves for each identified line
+        plot_focus_curves(centers, line_width_array, min_focus_values,
+                        optimal_focus_values, min_linewidths, fit_pars,
+                        focus['delta'], focus['start'], fnom=focus['nominal'],
+                        pdf=pdf)
 
 
 def initialize_focus_values(flog):
@@ -157,8 +167,11 @@ def initialize_focus_values(flog):
     # Examine the middle image
     mid_file = f"../{files[int(n_files/2)]}"
 
-    dfl_title = f'{mid_file}   Grating: {grating}   GRANGLE: ' + \
-                f'{grangle:.2f}   {lampcal}'
+    dfl_title = f"{mid_file}   Grating: {grating}   GRANGLE: " + \
+                f"{grangle:.2f}   {lampcal}"
+
+    opt_title = f"Grating: {grating}   Slit width: {slitasec:.2f} arcsec" + \
+                f"   Nominal line width: {nominal_focus:.2f} pixels"
 
     return {'n': n_files,
             'files': files,
@@ -168,7 +181,8 @@ def initialize_focus_values(flog):
             'start': focus_0,
             'end': focus_1,
             'delta': delta_focus,
-            'plot_title':dfl_title}
+            'plot_title': dfl_title,
+            'opt_title': opt_title}
 
 
 def parse_focus_log(flog):
@@ -228,6 +242,8 @@ def process_middle_image(focus, thresh, debug=False):
         Trace
     mid_collfoc, `float`
         Collimator focus of the middle frame
+    mspectra, `ndarray`
+        The spectrum from the middle frame (for later plotting)
     """
     print(f"\n Processing center focus image {focus['mid_file']}...")
     spectrum, mid_collfoc = trim_deveny_image(focus['mid_file'])
@@ -240,15 +256,13 @@ def process_middle_image(focus, thresh, debug=False):
         print(f"Traces: {trace}")
         print(f"Middle Spectrum: {mspectra}")
 
-    # Find the lines in the extracted spectrum -- create the plot, too
-    #  The plot shown in the IDL0 window: Plot of the found lines
-    n_c, centers, _ = find_lines(mspectra, thresh=thresh, do_plot=True,
-                                 focus_dict=focus)
+    # Find the lines in the extracted spectrum
+    n_c, centers, _ = find_lines(mspectra, thresh=thresh)
     if debug:
         print(F"Back in the main program, number of lines: {n_c}")
         print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
 
-    return centers, trace, mid_collfoc
+    return centers, trace, mid_collfoc, mspectra
 
 
 def trim_deveny_image(filename):
@@ -330,7 +344,7 @@ def extract_spectrum(spectrum, traces, win):
 
 
 def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
-               focus_dict=None):
+               focus_dict=None, pdf=None):
     """find_lines Automatically find and centroid lines in a 1-row image
 
     Uses scipy.signal.find_peaks() for this task
@@ -370,8 +384,9 @@ def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
             f'   Detection threshold level: {bkgd+thresh:.1f}')
 
     # Use scipy to find peaks & widths -- no more janky IDL-based junk
-    centers, _ = signal.find_peaks(spec - bkgd, height=thresh, distance=minsep)
-    fwhm = (signal.peak_widths(spec - bkgd, centers))[0]
+    centers, _ = signal.find_peaks(newspec := spec - bkgd, height=thresh,
+                                   distance=minsep)
+    fwhm = (signal.peak_widths(newspec, centers))[0]
 
     if verbose:
         print(f" Number of lines: {len(centers)}")
@@ -383,22 +398,26 @@ def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
         tsz = 8
 
         # Plot the spectrum, mark the peaks, and label them
-        ax.plot(np.arange(len(spec)), spec)
-        ax.set_ylim(0, (yrange := 1.2*max(spec)))
-        ax.plot(centers, spec[centers.astype(int)]+0.02*yrange, 'k*')
+        ax.plot(np.arange(len(spec)), newspec)
+        ax.set_ylim(0, (yrange := 1.2*max(newspec)))
+        ax.plot(centers, newspec[centers.astype(int)]+0.02*yrange, 'k*')
         for cen in centers:
-            ax.text(cen, spec[int(np.round(cen))]+0.03*yrange, f"{cen:.3f}",
+            ax.text(cen, newspec[int(np.round(cen))]+0.03*yrange, f"{cen:.3f}",
                     fontsize=tsz)
 
         # Make pretty & Save
-        ax.set_title(focus_dict['plot_title'], fontsize=tsz)
+        ax.set_title(focus_dict['plot_title'], fontsize=tsz*1.2)
         ax.set_xlabel('CCD Column', fontsize=tsz)
         ax.set_ylabel('I (DN)', fontsize=tsz)
         ax.set_xlim(0, n_x+2)
         ax.tick_params('both', labelsize=tsz, direction='in',
                        top=True, right=True)
         plt.tight_layout()
-        plt.savefig(f"pyfocus.{focus_dict['id']}.eps")
+        if pdf is None:
+            plt.show()
+        else:
+            pdf.savefig()
+        plt.close()
 
     return len(centers), centers, fwhm
 
@@ -479,7 +498,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
         coeffs = [fit[0], fit[1], fit[2]-fnom]
         if debug:
             print(f"Roots: {np.roots(coeffs)}")
-        optimal_cf_idx_value.append(np.max(np.real(np.roots(coeffs))))             # fwidth
+        optimal_cf_idx_value.append( np.max( np.real( np.roots(coeffs) ) ) )
 
     # After looping, return the items as numpy arrays
     return np.asarray(min_cf_idx_value), np.asarray(optimal_cf_idx_value), \
@@ -487,7 +506,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
 
 def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
-                       debug=False):
+                       debug=False, pdf=None):
     """plot_optimal_focus Make the Optimal Focus Plot (IDL2 Window)
 
     [extended_summary]
@@ -513,19 +532,26 @@ def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
     ax.plot(centers, optimal_focus_values, '.')
     ax.set_xlim(0,2050)
     ax.set_ylim(focus['start'], focus['end'])
-    ax.set_title("Optimal focus position vs. line position, median = " + \
-                 f"{med_opt_focus:.3f}")
+    ax.set_title('Optimal focus position vs. line position, median =  ' + \
+                 f"{med_opt_focus:.2f} mm", fontsize=tsz*1.2)
     ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(),
               color='magenta', ls='--')
+    ax.set_xlabel(f"CCD Column\n{focus['opt_title']}", fontsize=tsz)
+    ax.set_ylabel("Optimal Focus (mm)", fontsize=tsz)
+    ax.grid(which='both', color='#c0c0c0', linestyle='-', linewidth=0.5)
 
     ax.tick_params('both', labelsize=tsz, direction='in', top=True, right=True)
     plt.tight_layout()
-    plt.show()
+    if pdf is None:
+        plt.show()
+    else:
+        pdf.savefig()
+    plt.close()
 
 
 def plot_focus_curves(centers, line_width_array, min_focus_values,
                       optimal_focus_values, min_linewidths, fit_pars,
-                      delta_focus, focus_0, fnom=2.7):
+                      delta_focus, focus_0, fnom=2.7, pdf=None):
     """plot_focus_curves Make the big plot of all the focus curves (IDL1 Window)
 
     [extended_summary]
@@ -594,7 +620,11 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
             fig.delaxes(ax)
 
     plt.tight_layout()
-    plt.show()
+    if pdf is None:
+        plt.show()
+    else:
+        pdf.savefig()
+    plt.close()
 
 
 def find_lines_in_spectrum(filename, thresh=100.):
