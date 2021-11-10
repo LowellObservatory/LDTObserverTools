@@ -22,6 +22,7 @@ DeVeny LOUI.
 
 # Built-In Libraries
 import glob
+import os
 import warnings
 
 # 3rd-Party Libraries
@@ -52,6 +53,10 @@ def dfocus(flog='last', thresh=100., debug=False):
     debug : `bool`. optional
         Print debug statements  [Default: False]
     """
+    n_cols = (os.get_terminal_size()).columns
+    print("="*n_cols)
+    print("  DeVeny Collimator Focus Calculator")
+
     # Initialize a dictionary to hold lots of variables
     focus = initialize_focus_values(flog)
 
@@ -96,28 +101,28 @@ def dfocus(flog='last', thresh=100., debug=False):
     prog_bar.close()
     line_width_array = np.asarray(line_width_array)
 
-    print(f"\n Median of all linewidths: {np.nanmedian(line_width_array):.2f} pix")
+    print(f"\n  Median value of all linewidths: {np.nanmedian(line_width_array):.2f} pix")
 
     # Fit the focus curve:
     min_focus_index, optimal_focus_index, min_linewidths, fit_pars = \
         fit_focus_curves(line_width_array, fnom=focus['nominal'])
 
     # Convert the returned indices into actual COLLFOC values, find medians
-    print("="*50)
+    print("="*n_cols)
     min_focus_values = min_focus_index * focus['delta'] + focus['start']
     optimal_focus_values = optimal_focus_index * focus['delta'] + focus['start']
     #med_min_focus = np.real(np.nanmedian(min_focus_values))
     med_opt_focus = np.real(np.nanmedian(optimal_focus_values))
 
-    print(f"Median Optimal Focus Position: {med_opt_focus:.3f}")
+    print(f"Reecommended (Median) Optimal Focus Position: {med_opt_focus:.2f} mm")
 
     #=========================================================================#
     # Make the multipage PDF plot
-    with PdfPages(f"pyfocus.{focus['id']}.pdf") as pdf:
+    with PdfPages(pdf_fn := f"pyfocus.{focus['id']}.pdf") as pdf:
 
         #  The plot shown in the IDL0 window: Plot of the found lines
         find_lines(mspectra, thresh=thresh, do_plot=True,
-                   focus_dict=focus, pdf=pdf)
+                   focus_dict=focus, pdf=pdf, verbose=False)
 
         # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
         plot_optimal_focus(focus, centers, optimal_focus_values,
@@ -128,6 +133,8 @@ def dfocus(flog='last', thresh=100., debug=False):
                         optimal_focus_values, min_linewidths, fit_pars,
                         focus['delta'], focus['start'], fnom=focus['nominal'],
                         pdf=pdf)
+
+    print(f"\n  Plots have been saved to: {pdf_fn}\n")
 
 
 def initialize_focus_values(flog):
