@@ -237,7 +237,7 @@ def good_poly(x, y, order, thresh, return_full=False):
         yy = yy[good_idx]
 
     if (array_length := len(xx)) == 0:
-        print("good_poly(): No good values to fit, return zeros.")
+        warnings.warn("No good values to fit, return zeros.", UserWarning)
         if return_full:
             yfit = [0] * len(x)
             return [0] * (order+1), yfit, xx, yy

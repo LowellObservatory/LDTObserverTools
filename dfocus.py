@@ -22,6 +22,7 @@ DeVeny LOUI.
 
 # Built-In Libraries
 import glob
+import warnings
 
 # 3rd-Party Libraries
 from astropy.io import fits
@@ -33,8 +34,6 @@ from tqdm import tqdm
 # Local Libraries
 from .deveny_grangle import deveny_amag
 from .utils import good_poly
-
-# CONSTANTS
 
 
 def dfocus(flog='last', thresh=100., debug=False):
@@ -463,6 +462,13 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
         if debug:
             print(f"In fit_focus_curves(): fit = {fit}")
 
+        # If good_poly() returns zeros, deal with it accordingly
+        if all(value == 0 for value in fit):
+            min_cf_idx_value.append(np.nan)
+            min_linewidth.append(np.nan)
+            optimal_cf_idx_value.append(np.nan)
+            continue
+
         # Use the fine grid to evaluate the curve miniumum
         focus_curve = np.polyval(fit, cf_idx_fine)                   # fitfine
         min_cf_idx_value.append(cf_idx_fine[np.argmin(focus_curve)]) # focus
@@ -475,6 +481,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
             print(f"Roots: {np.roots(coeffs)}")
         optimal_cf_idx_value.append(np.max(np.real(np.roots(coeffs))))             # fwidth
 
+    # After looping, return the items as numpy arrays
     return np.asarray(min_cf_idx_value), np.asarray(optimal_cf_idx_value), \
            np.asarray(min_linewidth), np.asarray(foc_fits)
 
@@ -544,6 +551,8 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     fnom : `float`, optional
         Nominal (optimal) linewidth [Default: 2.7]
     """
+    # Warning Filter -- Matplotlib doesn't like going from masked --> NaN
+    warnings.simplefilter('ignore', UserWarning)
 
     # Set up variables
     n_foc, n_c = line_width_array.shape
@@ -568,7 +577,8 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
             ax.vlines(optimal_focus_values[i], 0, fnom, color='b', ls='-')
 
             # Plot parameters to make pretty
-            ax.set_ylim(0, np.nanmax(line_width_array[:,i]))
+            #ax.set_ylim(0, np.nanmax(line_width_array[:,i]))
+            ax.set_ylim(0,7.9)
             ax.set_xlim(np.min(focus_x)-delta_focus,
                         np.max(focus_x)+delta_focus)
             ax.set_xlabel('Collimator Position (mm)', fontsize=tsz)
