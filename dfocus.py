@@ -552,7 +552,7 @@ def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
     tsz = 8
     ax.plot(centers, optimal_focus_values, '.')
     ax.set_xlim(0,2050)
-    ax.set_ylim(focus['start'], focus['end'])
+    ax.set_ylim(focus['start']-focus['delta'], focus['end']+focus['delta'])
     ax.set_title('Optimal focus position vs. line position, median =  ' + \
                  f"{med_opt_focus:.2f} mm  " + \
                  f"(Mount Temp: {focus['mnttemp']:.1f}$^\\circ$C)",
