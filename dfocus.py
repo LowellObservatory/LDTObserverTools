@@ -238,7 +238,7 @@ def parse_focus_log(path, flog):
             files.append(line[2:20])
 
     # Return the list of files, and the FocusID
-    return len(files), files, flog[13:]
+    return len(files), files, flog[-15:]
 
 
 def process_middle_image(focus, thresh, debug=False):
