@@ -42,3 +42,10 @@ pro dfitcurves, fwhm, filelist, fits=fits, focus=focus, $
 
   return
 end
+
+
+;;;  NOTE: !C:  The cursor system variable. Currently, the only function of
+;;;  this system variable is to contain the subscript of the largest or
+;;;  smallest element found by the MAX and MIN functions. That information
+;;;  is better obtained through the optional output arguments to those
+;;;  routines. !C is included only for compatibility with old versions of IDL.
