@@ -38,7 +38,7 @@ from .deveny_grangle import deveny_amag
 from .utils import good_poly
 
 
-def dfocus(flog='last', thresh=100., debug=False):
+def dfocus(path, flog='last', thresh=100., debug=False):
     """dfocus Find the optimal DeVeny collimator focus value
 
     [extended_summary]
@@ -58,7 +58,7 @@ def dfocus(flog='last', thresh=100., debug=False):
     print("  DeVeny Collimator Focus Calculator")
 
     # Initialize a dictionary to hold lots of variables
-    focus = initialize_focus_values(flog)
+    focus = initialize_focus_values(path, flog)
 
     # Process the middle image to get line centers, arrays, trace
     centers, trace, mid_collfoc, mspectra = process_middle_image(focus, thresh,
@@ -145,13 +145,15 @@ def dfocus(flog='last', thresh=100., debug=False):
         pass
 
 
-def initialize_focus_values(flog):
+def initialize_focus_values(path, flog):
     """initialize_focus_values [summary]
 
     [extended_summary]
 
     Parameters
     ----------
+    path : `str`
+        The path to the current working directory
     flog : `str`
         Identifier for the focus log to be processed
 
@@ -161,7 +163,7 @@ def initialize_focus_values(flog):
         Dictionary of the various needed quantities
     """
     # Parse the log file to obtain file list
-    n_files, files, focus_id = parse_focus_log(flog)
+    n_files, files, focus_id = parse_focus_log(path, flog)
 
     # Pull the spectrograph setup from the first focus file:
     hdr0 = fits.getheader(f"../{files[0]}")
@@ -202,13 +204,15 @@ def initialize_focus_values(flog):
             'mnttemp': mnttemp}
 
 
-def parse_focus_log(flog):
+def parse_focus_log(path, flog):
     """parse_focus_log Parse the focus log file produced by the DeVeny LOUI
 
     [extended_summary]
 
     Parameters
     ----------
+    path : `str`
+        The path to the current working directory
     flog : `str`
         Identifier for the focus log to be processed
 
@@ -222,7 +226,7 @@ def parse_focus_log(flog):
         The focus ID
     """
     if flog.lower() == 'last':
-        focfiles = sorted(glob.glob('deveny_focus*'))
+        focfiles = sorted(glob.glob(f"{path}/deveny_focus*"))
         flog = focfiles[-1]
 
     files = []
@@ -692,7 +696,7 @@ def main(args):
     args : [type]
         [description]
     """
-    dfocus()
+    dfocus(os.getcwd().rstrip('/'))
 
 
 if __name__ == '__main__':
