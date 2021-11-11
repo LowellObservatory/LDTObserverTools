@@ -114,7 +114,8 @@ def dfocus(flog='last', thresh=100., debug=False):
     #med_min_focus = np.real(np.nanmedian(min_focus_values))
     med_opt_focus = np.real(np.nanmedian(optimal_focus_values))
 
-    print(f"Reecommended (Median) Optimal Focus Position: {med_opt_focus:.2f} mm")
+    print(f"*** Recommended (Median) Optimal Focus Position: {med_opt_focus:.2f} mm")
+    print(f"*** Note: Current Mount Temperature is: {focus['mnttemp']:.1f}ºC")
 
     #=========================================================================#
     # Make the multipage PDF plot
@@ -134,7 +135,14 @@ def dfocus(flog='last', thresh=100., debug=False):
                         focus['delta'], focus['start'], fnom=focus['nominal'],
                         pdf=pdf)
 
+    # Print the location of the plots, and open using os.system()
     print(f"\n  Plots have been saved to: {pdf_fn}\n")
+
+    # Try to open with Apple's Preview App... if can't, oh well.
+    try:
+        os.system(f"/usr/bin/open -a Preview {pdf_fn}")
+    except:
+        pass
 
 
 def initialize_focus_values(flog):
@@ -161,6 +169,7 @@ def initialize_focus_values(flog):
     grating = hdr0['GRATING']
     grangle = hdr0['GRANGLE']
     lampcal = hdr0['LAMPCAL']
+    mnttemp = hdr0['MNTTEMP']
 
     # Compute the nominal line width
     nominal_focus = 2.94 * slitasec * deveny_amag(grangle)
@@ -189,7 +198,8 @@ def initialize_focus_values(flog):
             'end': focus_1,
             'delta': delta_focus,
             'plot_title': dfl_title,
-            'opt_title': opt_title}
+            'opt_title': opt_title,
+            'mnttemp': mnttemp}
 
 
 def parse_focus_log(flog):
@@ -409,7 +419,7 @@ def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
         ax.set_ylim(0, (yrange := 1.2*max(newspec)))
         ax.plot(centers, newspec[centers.astype(int)]+0.02*yrange, 'k*')
         for cen in centers:
-            ax.text(cen, newspec[int(np.round(cen))]+0.03*yrange, f"{cen:.3f}",
+            ax.text(cen, newspec[int(np.round(cen))]+0.03*yrange, f"{cen:.0f}",
                     fontsize=tsz)
 
         # Make pretty & Save
@@ -540,7 +550,9 @@ def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
     ax.set_xlim(0,2050)
     ax.set_ylim(focus['start'], focus['end'])
     ax.set_title('Optimal focus position vs. line position, median =  ' + \
-                 f"{med_opt_focus:.2f} mm", fontsize=tsz*1.2)
+                 f"{med_opt_focus:.2f} mm  " + \
+                 f"(Mount Temp: {focus['mnttemp']:.1f}$^\\circ$C)",
+                 fontsize=tsz*1.2)
     ax.hlines(med_opt_focus, 0, 1, transform=ax.get_yaxis_transform(),
               color='magenta', ls='--')
     ax.set_xlabel(f"CCD Column\n{focus['opt_title']}", fontsize=tsz)
@@ -601,7 +613,7 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     for i, ax in enumerate(axs.flatten()):
         if i < n_c:
             # Plot the points and the polynomial fit
-            ax.plot(focus_x, line_width_array[:,i], 'k^')
+            ax.plot(focus_x, line_width_array[:,i], 'kD', fillstyle='none')
             ax.plot(focus_x, np.polyval(fit_pars[i,:], focus_idx), 'g-')
 
             # Plot vertical lines to indicate minimum and optimal focus
@@ -616,7 +628,7 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
                         np.max(focus_x)+delta_focus)
             ax.set_xlabel('Collimator Position (mm)', fontsize=tsz)
             ax.set_ylabel('FWHM (pix)', fontsize=tsz)
-            ax.set_title(f"LC: {centers[i]:.2f}  Fnom: {fnom:.2f} pixels",
+            ax.set_title(f"LC: {centers[i]:.0f}  Fnom: {fnom:.2f} pixels",
                          fontsize=tsz)
             ax.tick_params('both', labelsize=tsz, direction='in',
                            top=True, right=True)
