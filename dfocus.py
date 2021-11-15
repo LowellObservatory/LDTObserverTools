@@ -38,7 +38,7 @@ from .deveny_grangle import deveny_amag
 from .utils import good_poly
 
 
-def dfocus(path, flog='last', thresh=100., debug=False):
+def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
     """dfocus Find the optimal DeVeny collimator focus value
 
     [extended_summary]
@@ -52,6 +52,8 @@ def dfocus(path, flog='last', thresh=100., debug=False):
         Line intensity threshold above background for detection [Default: 100]
     debug : `bool`. optional
         Print debug statements  [Default: False]
+    launch_preview : `bool`, optional
+        Display the plots by launching Preview  [Default: True]
     """
     n_cols = (os.get_terminal_size()).columns
     print("="*n_cols)
@@ -139,10 +141,11 @@ def dfocus(path, flog='last', thresh=100., debug=False):
     print(f"\n  Plots have been saved to: {pdf_fn}\n")
 
     # Try to open with Apple's Preview App... if can't, oh well.
-    try:
-        os.system(f"/usr/bin/open -a Preview {pdf_fn}")
-    except:
-        pass
+    if launch_preview:
+        try:
+            os.system(f"/usr/bin/open -a Preview {pdf_fn}")
+        except:
+            pass
 
 
 def initialize_focus_values(path, flog):

@@ -82,3 +82,6 @@ newPythonFileTemplate.py
 
 # For now, at least, random CSV files I create as part of building/testing
 *.csv
+
+# Various testing RUN routines
+run*.py
