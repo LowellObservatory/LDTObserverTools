@@ -271,6 +271,8 @@ def good_poly(x, y, order, thresh, return_full=False):
     xx, yy = xx[good], yy[good]
     array_length = len(xx)
 
+    print(f"NBAD: {nbad}   ARRAY_LENGTH: {array_length}")
+
     # Do a second pass if there were any bad points removed
     if nbad != 0:
 
