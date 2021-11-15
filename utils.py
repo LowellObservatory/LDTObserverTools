@@ -237,11 +237,7 @@ def good_poly(x, y, order, thresh, return_full=False):
         yy = yy[good_idx]
 
     if (array_length := len(xx)) == 0:
-        warnings.warn("No good values to fit, return zeros.", UserWarning)
-        if return_full:
-            yfit = [0] * len(x)
-            return [0] * (order+1), yfit, xx, yy
-        return [0] * (order+1)
+        return warn_and_return_zeros(return_full, x, xx, yy, order)
 
     # Check for fewer data points than the requested polynomial order
     if array_length < order:
@@ -269,9 +265,8 @@ def good_poly(x, y, order, thresh, return_full=False):
     good = np.where(np.abs(flat-mean) < thresh * sigma)
     nbad = array_length - len(good)
     xx, yy = xx[good], yy[good]
-    array_length = len(xx)
-
-    print(f"NBAD: {nbad}   ARRAY_LENGTH: {array_length}")
+    if (array_length := len(xx)) == 0:
+        return warn_and_return_zeros(return_full, x, xx, yy, order)
 
     # Do a second pass if there were any bad points removed
     if nbad != 0:
@@ -285,7 +280,8 @@ def good_poly(x, y, order, thresh, return_full=False):
         good = np.where(np.abs(flat-mean) < thresh*sigma)
         nbad = array_length - len(good)
         xx, yy = xx[good], yy[good]
-        array_length = len(xx)
+        if (array_length := len(xx)) == 0:
+            return warn_and_return_zeros(return_full, x, xx, yy, order)
 
     # Do a third pass if there were any more bad points removed
     if nbad != 0:
@@ -298,3 +294,34 @@ def good_poly(x, y, order, thresh, return_full=False):
     if return_full:
         return coeff, yfit, xx, yy
     return coeff
+
+
+def warn_and_return_zeros(return_full, x, xx, yy, order):
+    """warn_and_return_zeros Set warning and return zeroes from good_poly()
+
+    This function is a DRY.  Since this block is used several times in
+    good_poly(), separate out as a function.
+
+    Parameters
+    ----------
+    return_full : [type]
+        [description]
+    x : [type]
+        [description]
+    xx : [type]
+        [description]
+    yy : [type]
+        [description]
+    order : [type]
+        [description]
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
+    warnings.warn("No good values to fit, return zeros.", UserWarning)
+    if return_full:
+        yfit = [0] * len(x)
+        return [0] * (order+1), yfit, xx, yy
+    return [0] * (order+1)
