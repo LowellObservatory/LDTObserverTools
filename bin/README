@@ -1,0 +1,7 @@
+These executable files are for use on dct-obs1 and dct-obs2
+
+In the /Users/observer/bin directory, there should be symlinks
+to these files.
+
+dfocus -- DeVeny Collimator Focus Calculator
+deveny_grangle -- Grating Angle Calculator GUI

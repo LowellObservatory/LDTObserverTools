@@ -413,7 +413,7 @@ def find_lines(image, thresh=20., minsep=11, verbose=True, do_plot=False,
     fwhm = (signal.peak_widths(newspec, centers))[0]
 
     if verbose:
-        print(f" Number of lines: {len(centers)}")
+        print(f" Number of lines found: {len(centers)}")
 
     # Produce a plot for posterity, if directed
     if do_plot:
