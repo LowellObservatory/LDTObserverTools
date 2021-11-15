@@ -12,6 +12,7 @@
 
 from .deveny_grangle import *
 from .dfocus import *
+from .celestial_time import *
 
 # Boilerplate variables
 __author__ = 'Timothy P. Ellsworth Bowers'
