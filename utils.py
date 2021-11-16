@@ -291,6 +291,10 @@ def good_poly(x, y, order, thresh, return_full=False):
         flat = (yy-yfit) + np.sum(yfit)/array_length
         mean, sigma = np.mean(flat), np.std(flat)
 
+    # Check that the fit coefficients are finite:
+    if not np.all(np.isfinite(coeff)):
+        return warn_and_return_zeros(return_full, x, xx, yy, order)
+
     if return_full:
         return coeff, yfit, xx, yy
     return coeff

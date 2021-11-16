@@ -61,6 +61,8 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
 
     # Initialize a dictionary to hold lots of variables
     focus = initialize_focus_values(path, flog)
+    if focus['delta'] == 0:
+        sys.exit(1)
 
     # Process the middle image to get line centers, arrays, trace
     centers, trace, mid_collfoc, mspectra = process_middle_image(focus, thresh,
@@ -182,8 +184,11 @@ def initialize_focus_values(path, flog):
     # Pull the collimator focus values from the first and last files
     focus_0 = hdr0['COLLFOC']
     focus_1 = (fits.getheader(f"../{files[-1]}"))['COLLFOC']
-    # Find the delta between focus values, and the nominal linewidth for focu
-    delta_focus = (focus_1 - focus_0) / (n_files - 1)
+    # Find the delta between focus values
+    try:
+        delta_focus = (focus_1 - focus_0) / (n_files - 1)
+    except ZeroDivisionError:
+        delta_focus = 0
 
     # Examine the middle image
     mid_file = f"../{files[int(n_files/2)]}"
