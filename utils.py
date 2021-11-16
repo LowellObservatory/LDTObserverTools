@@ -241,7 +241,7 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     # Check for fewer data points than the requested polynomial order
     if array_length < order:
-        coeff = np.empty(order+1)
+        coeff = np.zeros(order+1)
         if array_length != 1:
             sigma = np.std(yy)
             coeff[0] = np.mean(yy)
