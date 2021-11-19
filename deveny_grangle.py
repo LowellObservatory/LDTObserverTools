@@ -61,13 +61,16 @@ def deveny_grangle_cli():
           f"{PIXSCALE*amag:.2f}\n")
 
 
-def deveny_grangle_gui():
+def deveny_grangle_gui(max_gui=False):
     """Compute the desired grating angle given grating and central wavelength
 
     GUI version of deveny_grangle.  Uses PySimpleGUI.  Includes a drop-down
     menu for available gratings, and checks for a wavelength between 3000 and
     11,000 angstroms.  Uses the same subroutines as the CLI version and
     produces the same results.
+
+    This version optionally allows for the calcuation of the central wavelength
+    given a grating angle
     """
 
     # Global variables -- available to grating_eqn function
@@ -97,7 +100,13 @@ def deveny_grangle_gui():
                     default_value=gratings[1],key="Grat")]
     row2 = [sg.Text("Enter Central Wavelength:"),
             sg.Input(key="-WAVEIN-", size=(6,1)), sg.Text("Å")]
-    row3 = [sg.Button("Compute"), sg.Button("Done")]
+    if max_gui:
+        row8 = [sg.Text("Enter Grating Tilt:"),
+                sg.Input(key="-TILTIN-", size=(6,1)), sg.Text("º")]
+        row3 = [sg.Button("Compute Tilt"), sg.Button("Compute Wavelength"),
+                sg.Button("Done")]
+    else:
+        row3 = [sg.Button("Compute"), sg.Button("Done")]
     row4 = [sg.Text("             Grating: "),
             sg.Text(size=(20,1), key="-GRATOUT-")]
     row5 = [sg.Text("  Central Wavelength: "),
@@ -107,110 +116,14 @@ def deveny_grangle_gui():
     row7 = [sg.Text("Slit demagnification (0.34\"/pixel): "),
             sg.Text(size=(15,1), key="-DEMAGOUT-")]
 
-    # Create the Window
-    window = sg.Window(
-        "DeVeny Grating Angle Calculator",
-        [row1, row2, row3, row4, row5, row6, row7],
-        location=(0, 0),
-        finalize=True,
-        element_justification="center",
-        font="Helvetica 18")
-
-    # Wait for events
-    while True:
-        event, values = window.read()
-        if event in [sg.WIN_CLOSED, 'Done']:
-            break
-        if event == 'Compute':
-            # Check for non-numeric entries for Central Wavelength
-            if not values['-WAVEIN-'].isnumeric():
-                window['-GRATOUT-'].update("")
-                window['-WAVEOUT-'].update("Please Enter a Number")
-                window['-TILTOUT-'].update("")
-                window['-DEMAGOUT-'].update("")
-                # Wait for next event
-                continue
-
-            # Convert wavelen to float, and check for valid range
-            WAVELEN = float(values['-WAVEIN-'])
-            if WAVELEN < 3000 or WAVELEN > 11000:
-                window['-GRATOUT-'].update("")
-                window['-WAVEOUT-'].update("Wavelength out of range")
-                window['-TILTOUT-'].update("")
-                window['-DEMAGOUT-'].update("")
-                # Wait for next event
-                continue
-
-            # Compute the grating angle and anamorphic demagnification
-            GPMM = float(values['Grat'].split(' - ')[1].split(' g/mm')[0])
-            grangle, amag = compute_grangle()
-
-            # Update the window with the calculated values
-            window['-GRATOUT-'].update(values['Grat'])
-            window['-WAVEOUT-'].update(f"{values['-WAVEIN-']} Å")
-            window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f} deg")
-            window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
-
-    # All done, close window
-    window.close()
-
-
-def deveny_grangle_maxgui():
-    """Compute the desired grating angle given grating and central wavelength
-
-    GUI version of deveny_grangle.  Uses PySimpleGUI.  Includes a drop-down
-    menu for available gratings, and checks for a wavelength between 3000 and
-    11,000 angstroms.  Uses the same subroutines as the CLI version and
-    produces the same results.
-
-    This version also allows for the calcuation of the central wavelength given
-    a grating angle
-    """
-
-    # Global variables -- available to grating_eqn function
-    global GPMM, WAVELEN
-
-    # Mechanical Offset
-    tgoffset = 0.0
-
-    # Define the gratings for the drop-down menu
-    gratings = ["DV1 - 150 g/mm, 5000 Å",
-                "DV2 - 300 g/mm, 4000 Å",
-                "DV3 - 300 g/mm, 6750 Å",
-                "DV4 - 400 g/mm, 8500 Å",
-                "DV5 - 500 g/mm, 5500 Å",
-                "DV6 - 600 g/mm, 4900 Å",
-                "DV7 - 600 g/mm, 6750 Å",
-                "DV8 - 831 g/mm, 8000 Å",
-                "DV9 - 1200 g/mm, 5000 Å",
-                "DV10 - 2160 g/mm, 5000 Å"]
-
-    # Define the color scheme for the GUI
-    sg.theme('light grey 1')
-
-    # Define the window layout
-    row1 = [sg.Text("Select Grating:"),
-            sg.Drop(values=(gratings), auto_size_text=True,
-                    default_value=gratings[1],key="Grat")]
-    row2 = [sg.Text("Enter Central Wavelength:"),
-            sg.Input(key="-WAVEIN-", size=(6,1)), sg.Text("Å")]
-    row8 = [sg.Text("Enter Grating Tilt:"),
-            sg.Input(key="-TILTIN-", size=(6,1)), sg.Text("º")]
-    row3 = [sg.Button("Compute Tilt"), sg.Button("Compute Wavelength"),
-            sg.Button("Done")]
-    row4 = [sg.Text("             Grating: "),
-            sg.Text(size=(20,1), key="-GRATOUT-")]
-    row5 = [sg.Text("  Central Wavelength: "),
-            sg.Text(size=(20,1), key="-WAVEOUT-")]
-    row6 = [sg.Text("DeVeny Grating Tilt = "),
-            sg.Text(size=(20,1), key="-TILTOUT-")]
-    row7 = [sg.Text("Slit demagnification (0.34\"/pixel): "),
-            sg.Text(size=(15,1), key="-DEMAGOUT-")]
+    # Define the rows based on which GUI we're making
+    rows = [row1, row2, row8, row3, row4, row5, row6, row7] if max_gui else \
+        [row1, row2, row3, row4, row5, row6, row7]
 
     # Create the Window
     window = sg.Window(
         "DeVeny Grating Angle Calculator",
-        [row1, row2, row8, row3, row4, row5, row6, row7],
+        rows,
         location=(0, 0),
         finalize=True,
         element_justification="center",
@@ -222,14 +135,15 @@ def deveny_grangle_maxgui():
         if event in [sg.WIN_CLOSED, 'Done']:
             break
 
-        if event == 'Compute Tilt':
+        if event in ['Compute', 'Compute Tilt']:
             # Check for non-numeric entries for Central Wavelength
             if not values['-WAVEIN-'].isnumeric():
                 window['-GRATOUT-'].update("")
                 window['-WAVEOUT-'].update("Please Enter a Number")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
-                window['-TILTIN-'].update("")
+                if max_gui:
+                    window['-TILTIN-'].update("")
                 # Wait for next event
                 continue
 
@@ -240,7 +154,8 @@ def deveny_grangle_maxgui():
                 window['-WAVEOUT-'].update("Wavelength out of range")
                 window['-TILTOUT-'].update("")
                 window['-DEMAGOUT-'].update("")
-                window['-TILTIN-'].update("")
+                if max_gui:
+                    window['-TILTIN-'].update("")
                 # Wait for next event
                 continue
 
@@ -253,7 +168,8 @@ def deveny_grangle_maxgui():
             window['-WAVEOUT-'].update(f"{values['-WAVEIN-']} Å")
             window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f}º")
             window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
-            window['-TILTIN-'].update(f"{grangle+tgoffset:.2f}")
+            if max_gui:
+                window['-TILTIN-'].update(f"{grangle+tgoffset:.2f}")
 
         elif event == 'Compute Wavelength':
             # Check for non-numeric entries for Grating Tilt
@@ -388,7 +304,7 @@ def main(args):
         elif args[1].lower() == 'gui':
             deveny_grangle_gui()
         elif args[1].lower() == 'max':
-            deveny_grangle_maxgui()
+            deveny_grangle_gui(max_gui=True)
         else:
             print("This routine only accepts 'CLI', 'GUI', " + \
                 "or 'MAX' as arguments.")
