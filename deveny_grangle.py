@@ -33,6 +33,7 @@ import PySimpleGUI as sg
 PIXSCALE = 2.94             # Base pixels per arcsec: 1 / (0.34 arcsec / pixel)
 CAMCOL = np.deg2rad(55.00)  # DeVeny Optical Angle -- Camera-to-Collimator
 COLL = np.deg2rad(10.00)    # DeVeny Optical Angle -- Collimator-to-Grating
+TGOFFSET = 0.0              # Mechanical Offset in the grating angle
 
 
 def deveny_grangle_cli():
@@ -41,9 +42,6 @@ def deveny_grangle_cli():
     Command line version of deveny_grangle, direct copy of the IDL version.
     Takes no arguments, returns nothing, and prints output to screen.
     """
-    # Mechanical Offset
-    tgoffset = 0.0
-
     # Get input from user
     print(" Enter grating resolution (g/mm):")
     gpmm = float(input())
@@ -55,7 +53,7 @@ def deveny_grangle_cli():
 
     print(f"\n Grating: {gpmm:.0f} g/mm")
     print(f" Central Wavelength: {wavelen} A")
-    print(f" DeVeny grating tilt = {grangle+tgoffset:.2f} deg")
+    print(f" DeVeny grating tilt = {grangle+TGOFFSET:.2f} deg")
     print(" Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): " + \
           f"{PIXSCALE*amag:.2f}\n")
 
@@ -71,9 +69,6 @@ def deveny_grangle_gui(max_gui=False):
     This version optionally allows for the calcuation of the central wavelength
     given a grating angle
     """
-    # Mechanical Offset
-    tgoffset = 0.0
-
     # Define the gratings for the drop-down menu
     gratings = ["DV1 - 150 g/mm, 5000 Å",
                 "DV2 - 300 g/mm, 4000 Å",
@@ -112,14 +107,14 @@ def deveny_grangle_gui(max_gui=False):
             sg.Text(size=(15,1), key="-DEMAGOUT-")]
 
     # Define the rows based on which GUI we're making
-    rows = [row1, row2, row8, row3, row4, row5, row6, row7] if max_gui else \
-        [row1, row2, row3, row4, row5, row6, row7]
+    rows = [row1, row2, row8, row3, row4, row5, row6, row7] if max_gui \
+        else [row1, row2, row3, row4, row5, row6, row7]
 
     # Create the Window
     window = sg.Window(
         "DeVeny Grating Angle Calculator",
         rows,
-        location=(0, 0),
+        location=(10, 10),
         finalize=True,
         element_justification="center",
         font="Helvetica 18")
@@ -161,10 +156,10 @@ def deveny_grangle_gui(max_gui=False):
             # Update the window with the calculated values
             window['-GRATOUT-'].update(values['Grat'])
             window['-WAVEOUT-'].update(f"{values['-WAVEIN-']} Å")
-            window['-TILTOUT-'].update(f"{grangle+tgoffset:.2f}º")
+            window['-TILTOUT-'].update(f"{grangle+TGOFFSET:.2f}º")
             window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
             if max_gui:
-                window['-TILTIN-'].update(f"{grangle+tgoffset:.2f}")
+                window['-TILTIN-'].update(f"{grangle+TGOFFSET:.2f}")
 
         elif event == 'Compute Wavelength':
             # Check for non-numeric entries for Grating Tilt
@@ -196,7 +191,7 @@ def deveny_grangle_gui(max_gui=False):
             # Update the window with the calculated values
             window['-GRATOUT-'].update(values['Grat'])
             window['-WAVEOUT-'].update(f"{wavelen:.0f} Å")
-            window['-TILTOUT-'].update(f"{tilt+tgoffset:.2f}º")
+            window['-TILTOUT-'].update(f"{tilt+TGOFFSET:.2f}º")
             window['-DEMAGOUT-'].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
             window['-WAVEIN-'].update(f"{wavelen:.0f}")
         else:
