@@ -48,6 +48,7 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
     flog : `str`, optional
         Focus log to process.  If unspecified, process the last sequence in
         the directory.  [Default: 'last']
+        flog musy be of form: `deveny_focus.YYYYMMDD.HHMMSS`
     thresh : `float`, optional
         Line intensity threshold above background for detection [Default: 100]
     debug : `bool`. optional
@@ -473,6 +474,9 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
         Tuple of best fit focus, best fit linewidth, the minumum linewidth,
         and the actual fit parameters (for plotting)
     """
+    # Warning Filter -- Polyfit RankWarning, don't wanna hear about it
+    warnings.simplefilter('ignore', np.RankWarning)
+
     # Create the various arrays / lists needed
     n_focus, n_centers = fwhm.shape
     min_linewidth = []
