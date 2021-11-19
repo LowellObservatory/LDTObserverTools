@@ -64,7 +64,7 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
     # Initialize a dictionary to hold lots of variables
     focus = initialize_focus_values(path, flog)
     if focus['delta'] == 0:
-        print("No successful focus run completed in this directory.")
+        print("\n** No successful focus run completed in this directory. **\n")
         sys.exit(1)
 
     # Process the middle image to get line centers, arrays, trace

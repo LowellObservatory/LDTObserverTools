@@ -300,7 +300,7 @@ def good_poly(x, y, order, thresh, return_full=False):
     return coeff
 
 
-def warn_and_return_zeros(return_full, x, xx, yy, order):
+def warn_and_return_zeros(return_full, x, xx, yy, order, raise_warn=False):
     """warn_and_return_zeros Set warning and return zeroes from good_poly()
 
     This function is a DRY.  Since this block is used several times in
@@ -318,13 +318,16 @@ def warn_and_return_zeros(return_full, x, xx, yy, order):
         [description]
     order : [type]
         [description]
+    raise_warn : `bool`, optional
+        Actually raise the warning this function is meant to  [Default: False]
 
     Returns
     -------
     [type]
         [description]
     """
-    warnings.warn("No good values to fit, return zeros.", UserWarning)
+    if raise_warn:
+        warnings.warn("No good values to fit, return zeros.", UserWarning)
     if return_full:
         yfit = [0] * len(x)
         return [0] * (order+1), yfit, xx, yy
