@@ -243,7 +243,7 @@ def parse_focus_log(path, flog):
         file_object.readline()
         # Read in the remainder of the file, grabbing just the filenames
         for line in file_object:
-            files.append(line[2:20])
+            files.append(line.strip()[2:20])
 
     # Return the list of files, and the FocusID
     return len(files), files, flog[-15:]
