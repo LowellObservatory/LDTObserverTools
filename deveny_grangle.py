@@ -10,7 +10,7 @@
 #
 #  @author: tbowers
 
-"""PyDeVeny contains python ports of the various DeVeny IDL routines
+"""LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
