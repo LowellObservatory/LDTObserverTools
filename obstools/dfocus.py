@@ -39,10 +39,14 @@ from .deveny_grangle import deveny_amag
 from .utils import good_poly
 
 
+# User-facing Function =======================================================#
 def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
     """dfocus Find the optimal DeVeny collimator focus value
 
-    [extended_summary]
+    This is the user-facing `dfocus` function that calls all of the various
+    following subroutines.  This function operates identically to the original
+    IDL routine `dfocus.pro`, but with the additional options of debugging and
+    whether to launch Preview.app to show the PDF plots generated.
 
     Parameters
     ----------
@@ -57,6 +61,7 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
     launch_preview : `bool`, optional
         Display the plots by launching Preview  [Default: True]
     """
+    # Make a pretty title for the output of the routine
     n_cols = (os.get_terminal_size()).columns
     print("="*n_cols)
     print("  DeVeny Collimator Focus Calculator")
@@ -123,6 +128,7 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
 
     print(f"*** Recommended (Median) Optimal Focus Position: {med_opt_focus:.2f} mm")
     print(f"*** Note: Current Mount Temperature is: {focus['mnttemp']:.1f}ºC")
+    print(f"CCD is operating in binning {focus['binning']} (cxr)")
 
     #=========================================================================#
     # Make the multipage PDF plot
@@ -153,10 +159,12 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
             pass
 
 
+# Helper Functions (Chronological) ===========================================#
 def initialize_focus_values(path, flog):
-    """initialize_focus_values [summary]
+    """initialize_focus_values Initialize a dictionary of focus values
 
-    [extended_summary]
+    Create a dictionary of values (mainly from the header) that can be used by
+    subsequent routines.
 
     Parameters
     ----------
@@ -180,6 +188,7 @@ def initialize_focus_values(path, flog):
     grangle = hdr0['GRANGLE']
     lampcal = hdr0['LAMPCAL']
     mnttemp = hdr0['MNTTEMP']
+    binning = hdr0['CCDSUM'].replace(' ','x')
 
     # Compute the nominal line width
     nominal_focus = 2.94 * slitasec * deveny_amag(grangle)
@@ -197,10 +206,11 @@ def initialize_focus_values(path, flog):
     mid_file = f"../{files[int(n_files/2)]}"
 
     dfl_title = f"{mid_file}   Grating: {grating}   GRANGLE: " + \
-                f"{grangle:.2f}   {lampcal}"
+                f"{grangle:.2f}   Lamps: {lampcal}   Binning: {binning}"
 
     opt_title = f"Grating: {grating}   Slit width: {slitasec:.2f} arcsec" + \
-                f"   Nominal line width: {nominal_focus:.2f} pixels"
+                f"   Binning: {binning}   Nominal line width: " + \
+                f"{nominal_focus:.2f} pixels"
 
     return {'n': n_files,
             'files': files,
@@ -212,7 +222,8 @@ def initialize_focus_values(path, flog):
             'delta': delta_focus,
             'plot_title': dfl_title,
             'opt_title': opt_title,
-            'mnttemp': mnttemp}
+            'mnttemp': mnttemp,
+            'binning': binning}
 
 
 def parse_focus_log(path, flog):
@@ -540,6 +551,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
            np.asarray(min_linewidth), np.asarray(foc_fits)
 
 
+# Plotting Routines ==========================================================#
 def plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus,
                        debug=False, pdf=None):
     """plot_optimal_focus Make the Optimal Focus Plot (IDL2 Window)
@@ -664,6 +676,7 @@ def plot_focus_curves(centers, line_width_array, min_focus_values,
     plt.close()
 
 
+# Extra Routines =============================================================#
 def find_lines_in_spectrum(filename, thresh=100.):
     """find_lines_in_spectrum Find the line centers in a spectrum
 
