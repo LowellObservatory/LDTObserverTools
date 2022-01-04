@@ -117,14 +117,14 @@ def deveny_grangle_gui(max_gui=False):
     with open(os.devnull, 'w', encoding='utf8') as f_null:
         sys.stdout = f_null
 
-    # Create the Window
-    window = sg.Window(
-        "DeVeny Grating Angle Calculator",
-        rows,
-        location=(10, 10),
-        finalize=True,
-        element_justification="center",
-        font="Helvetica 18")
+        # Create the Window
+        window = sg.Window(
+            "DeVeny Grating Angle Calculator",
+            rows,
+            location=(10, 10),
+            finalize=True,
+            element_justification="center",
+            font="Helvetica 18")
 
     # Return the STDOUT to the command line
     sys.stdout = old_stdout
