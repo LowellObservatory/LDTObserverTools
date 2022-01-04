@@ -10,15 +10,27 @@
 #
 #  @author: tbowers
 
-from .deveny_grangle import *
-from .dfocus import *
-from .celestial_time import *
+"""Init File
+"""
 
 # Boilerplate variables
 __author__ = 'Timothy P. Ellsworth Bowers'
-__copyright__ = 'Copyright 2021'
+__copyright__ = 'Copyright 2022'
 __credits__ = ['Lowell Observatory']
 __license__ = 'MPL-2.0'
 __version__ = '0.1.0'
 __email__ = 'tbowers@lowell.edu'
-__status__ = 'Development Status :: 3 - Alpha'
+__status__ = 'Development Status :: 4 - Beta'
+
+
+# Import the user-facing functions to make them available under LDTObserverTools
+from .obstools.celestial_time import *
+from .obstools.deveny_grangle import main as deveny_grangle
+from .obstools.dfocus import dfocus
+from .obstools.etc_calc import (
+    exptime_given_snr_mag,
+    exptime_given_peak_mag,
+    snr_given_exptime_mag,
+    mag_given_snr_exptime,
+    peak_counts
+)

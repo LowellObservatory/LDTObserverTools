@@ -15,12 +15,12 @@ from setuptools import setup
 
 # Boilerplate variables
 __author__ = 'Timothy P. Ellsworth Bowers'
-__copyright__ = 'Copyright 2020'
+__copyright__ = 'Copyright 2022'
 __credits__ = ['Lowell Observatory']
 __license__ = 'MPL-2.0'
 __version__ = '0.2.0'
 __email__ = 'tbowers@lowell.edu'
-__status__ = 'Development Status :: 2 - Pre-Alpha'
+__status__ = 'Development Status :: 4 - Beta'
 
 
 setup(
