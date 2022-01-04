@@ -126,9 +126,10 @@ def dfocus(path, flog='last', thresh=100., debug=False, launch_preview=True):
     #med_min_focus = np.real(np.nanmedian(min_focus_values))
     med_opt_focus = np.real(np.nanmedian(optimal_focus_values))
 
+    if focus['binning'] != '1x1':
+        print(f"*** CCD is operating in binning {focus['binning']} (col x row)")
     print(f"*** Recommended (Median) Optimal Focus Position: {med_opt_focus:.2f} mm")
     print(f"*** Note: Current Mount Temperature is: {focus['mnttemp']:.1f}ºC")
-    print(f"CCD is operating in binning {focus['binning']} (cxr)")
 
     #=========================================================================#
     # Make the multipage PDF plot
@@ -206,10 +207,10 @@ def initialize_focus_values(path, flog):
     mid_file = f"../{files[int(n_files/2)]}"
 
     dfl_title = f"{mid_file}   Grating: {grating}   GRANGLE: " + \
-                f"{grangle:.2f}   Lamps: {lampcal}   Binning: {binning}"
+                f"{grangle:.2f}   Lamps: {lampcal}"
 
-    opt_title = f"Grating: {grating}   Slit width: {slitasec:.2f} arcsec" + \
-                f"   Binning: {binning}   Nominal line width: " + \
+    opt_title = f"Grating: {grating}    Slit width: {slitasec:.2f} arcsec" + \
+                f"    Binning: {binning}    Nominal line width: " + \
                 f"{nominal_focus:.2f} pixels"
 
     return {'n': n_files,
