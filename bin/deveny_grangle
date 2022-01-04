@@ -2,7 +2,7 @@
 
 if [[ $1 = 'cli' ]] || [[ $1 = 'CLI' ]]
 then
-    /Users/observer/opt/miniconda3/bin/python /Users/observer/opt/LDTObserverTools/deveny_grangle.py $1
+    /Users/observer/opt/miniconda3/bin/python /Users/observer/opt/LDTObserverTools/obstools/deveny_grangle.py $1
 else
-    /Users/observer/opt/miniconda3/bin/python /Users/observer/opt/LDTObserverTools/deveny_grangle.py $1 &>/dev/null
+    /Users/observer/opt/miniconda3/bin/python /Users/observer/opt/LDTObserverTools/obstools/deveny_grangle.py $1 &>/dev/null
 fi
