@@ -12,3 +12,5 @@ Future programs:
  - **`lmi_etc`**: Python GUI version of the LMI exposure time calculator (http://www2.lowell.edu/users/massey/LMI/etc_calc.php).
 
  - **`deveny_collfoc_range`**: Use the specified grating angle and mount temperature to suggest a range for use with the DeVeny LOUI collimator focus sequence function.  This is important because, unlike all other focus routines at LDT, this function takes the _**starting point**, step, and number of exoposures_ rather than the _**expected focus value**, step, and number of exposures_.  Having a routine to compute the desired values would make this step easier and less prone to error (_i.e._, only searching on one side of the expected focus).
+
+ - **`validate_input_list`**: The extant input list validation tool (https://jumar.lowell.edu/confluence/display/LDTOI/Validate+Input+List) was produced in 2015 using an old Java Runtime Environment that is not available on most modern operating systems.  As such, the tool is virtually useless.  This python program would provide this key functionality in a modern environment.
