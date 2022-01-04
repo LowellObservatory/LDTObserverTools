@@ -241,7 +241,7 @@ def parse_focus_log(path, flog):
         flog = focfiles[-1]
 
     files = []
-    with open(flog) as file_object:
+    with open(flog, 'r', encoding='utf8') as file_object:
         # Discard file header
         file_object.readline()
         # Read in the remainder of the file, grabbing just the filenames
@@ -697,21 +697,3 @@ def find_lines_in_spectrum(filename, thresh=100.):
     _, centers, _ = find_lines(spectra, thresh=thresh)
 
     return centers
-
-
-#=========================================================#
-def main(args):
-    """main [summary]
-
-    [extended_summary]
-
-    Parameters
-    ----------
-    args : [type]
-        [description]
-    """
-    dfocus(os.getcwd().rstrip('/'))
-
-
-if __name__ == '__main__':
-    main(sys.argv)

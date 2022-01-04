@@ -1,8 +1,19 @@
-#!/bin/bash
+#!/Users/observer/opt/miniconda3/bin/python
 
-if [[ $1 = 'cli' ]] || [[ $1 = 'CLI' ]]
-then
-    /Users/observer/opt/miniconda3/bin/python /Users/observer/opt/LDTObserverTools/obstools/deveny_grangle.py $1
-else
-    /Users/observer/opt/miniconda3/bin/python /Users/observer/opt/LDTObserverTools/obstools/deveny_grangle.py $1 &>/dev/null
-fi
+# Set up the environment to import the program
+import argparse
+import sys
+sys.path.append('/Users/observer/opt')
+from LDTObserverTools import deveny_grangle
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(prog='deveny_grangle',
+                    description='DeVeny Grating Angle Calculator')
+parser.add_argument('--cli', action='store_true',
+                    help='Use the command-line version of this tool')
+parser.add_argument('--max', action='store_true',
+                    help='Use the MAX version of the GUI (compute wavelength from angle)')
+args = parser.parse_args()
+
+# Giddy Up!
+deveny_grangle(cli=args.cli, max_gui=args.max)

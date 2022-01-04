@@ -21,6 +21,8 @@ Both a CLI (direct copy of the IDL version) and GUI version are included here.
 """
 
 # Built-In Libraries
+import os
+import sys
 
 # 3rd-Party Libraries
 import numpy as np
@@ -110,6 +112,11 @@ def deveny_grangle_gui(max_gui=False):
     rows = [row1, row2, row8, row3, row4, row5, row6, row7] if max_gui \
         else [row1, row2, row3, row4, row5, row6, row7]
 
+    # Make the pysimplegui "Error performing wm_overrideredirect" go away
+    old_stdout = sys.stdout
+    with open(os.devnull, 'w', encoding='utf8') as f_null:
+        sys.stdout = f_null
+
     # Create the Window
     window = sg.Window(
         "DeVeny Grating Angle Calculator",
@@ -118,6 +125,9 @@ def deveny_grangle_gui(max_gui=False):
         finalize=True,
         element_justification="center",
         font="Helvetica 18")
+
+    # Return the STDOUT to the command line
+    sys.stdout = old_stdout
 
     # Wait for events
     while True:
@@ -316,32 +326,36 @@ def check_float(potential_float):
 
 
 #=========================================================#
-def main(args):
-    """File is run from the command line
+def main(cli=False, max_gui=False):
+    """main Main driver for calling the appropriate functions
 
-    Direct run takes either 0 (default:GUI) or 1 (choose: CLI or GUI) command
-    line arguments.  Anything else gets an error message and end.
+    Parameters
+    ----------
+    cli : `bool`, optional
+        Run the command-line version of the tool [Default: False]
+    max_gui : `bool`, optional
+        Run the max-GUI version of the tool [Default: False]
     """
-    # Check for command line arguments
-    if len(args) == 1:
-        # If no command line argument, assume GUI
-        deveny_grangle_gui()
-    elif len(args) == 2:
-        # If exactly one command line argument, check what it is.
-        if args[1].lower() == 'cli':
-            deveny_grangle_cli()
-        elif args[1].lower() == 'gui':
-            deveny_grangle_gui()
-        elif args[1].lower() == 'max':
-            deveny_grangle_gui(max_gui=True)
-        else:
-            print("This routine only accepts 'CLI', 'GUI', " + \
-                "or 'MAX' as arguments.")
+    # If CLI, do this regardless of the MAX option
+    if cli:
+        deveny_grangle_cli()
     else:
-        # Can't deal with more than one command line argument
-        print("This routine accepts zero or one command line arguments.")
+        deveny_grangle_gui(max_gui=max_gui)
 
 
 if __name__ == "__main__":
-    import sys
-    main(sys.argv)
+
+    # Set up the environment to import the program
+    import argparse
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(prog='deveny_grangle',
+                        description='DeVeny Grating Angle Calculator')
+    parser.add_argument('--cli', action='store_true',
+                        help='Use the command-line version of this tool')
+    parser.add_argument('--max', action='store_true',
+                        help='Use the MAX version of the GUI (compute wavelength from angle)')
+    args = parser.parse_args()
+
+    # Giddy Up!
+    main(cli=args.cli, max_gui=args.max)
