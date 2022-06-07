@@ -33,7 +33,7 @@ NOTE: The LMI-specific pixel scale, gain, and readnoise are hard-coded into
 import pathlib
 
 # 3rd-Party Libraries
-from astropy.table import Table
+import astropy.table
 import numpy as np
 from pkg_resources import resource_filename
 
@@ -41,10 +41,10 @@ from pkg_resources import resource_filename
 # Local Libraries
 
 # Constants
-SCALE = 0.12         # "/pix
-READ_NOISE = 6.0     # e-
-GAIN = 2.89          # e-/ADU
-BIAS = 1050          # ADU (approx) for 2x2 binning
+SCALE = 0.12  # "/pix
+READ_NOISE = 6.0  # e-
+GAIN = 2.89  # e-/ADU
+BIAS = 1050  # ADU (approx) for 2x2 binning
 
 # Subdirectory Paths
 LOT_DATA = pathlib.Path(resource_filename("obstools", "data"))
@@ -93,7 +93,7 @@ def exptime_given_snr_mag(snr, mag, airmass, band, phase, seeing, binning=2):
     A = star_counts * star_counts
     B = -snr * snr * (star_counts + sky_counts)
     C = -snr * snr * (read_counts * read_counts)
-    return (-B + np.sqrt(B*B - 4.0*A*C)) / (2.0*A)
+    return (-B + np.sqrt(B * B - 4.0 * A * C)) / (2.0 * A)
 
 
 def exptime_given_peak_mag(peak, mag, airmass, band, phase, seeing, binning=2):
@@ -135,9 +135,10 @@ def exptime_given_peak_mag(peak, mag, airmass, band, phase, seeing, binning=2):
 
     # Do the computation
     fwhm = seeing / (SCALE * binning)
-    sky_count_per_pixel_per_sec  = sky_counts / number_pixels(seeing, binning)
-    return (peak - BIAS*GAIN) / \
-        (star_counts/(1.13*fwhm*fwhm) + sky_count_per_pixel_per_sec)
+    sky_count_per_pixel_per_sec = sky_counts / number_pixels(seeing, binning)
+    return (peak - BIAS * GAIN) / (
+        star_counts / (1.13 * fwhm * fwhm) + sky_count_per_pixel_per_sec
+    )
 
 
 def snr_given_exptime_mag(exptime, mag, airmass, band, phase, seeing, binning=2):
@@ -180,9 +181,9 @@ def snr_given_exptime_mag(exptime, mag, airmass, band, phase, seeing, binning=2)
 
     # Do the computation
     signal = star_counts * exptime
-    noise = np.sqrt(star_counts * exptime + \
-                    sky_counts * exptime + \
-                    read_counts * read_counts)
+    noise = np.sqrt(
+        star_counts * exptime + sky_counts * exptime + read_counts * read_counts
+    )
     return signal / noise
 
 
@@ -226,10 +227,10 @@ def mag_given_snr_exptime(snr, exptime, airmass, band, phase, seeing, binning=2)
     # Do the computation
     A = exptime * exptime
     B = -snr * snr * exptime
-    C = -snr * snr * (sky_counts*exptime + read_counts*read_counts)
-    cts_from_star_per_sec = (-B + np.sqrt(B*B - 4.0*A*C)) / (2.0*A)
-    mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_dict['Star20']) + 20.
-    return mag_raw - band_dict['extinction'] * airmass
+    C = -snr * snr * (sky_counts * exptime + read_counts * read_counts)
+    cts_from_star_per_sec = (-B + np.sqrt(B * B - 4.0 * A * C)) / (2.0 * A)
+    mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_dict["Star20"]) + 20.0
+    return mag_raw - band_dict["extinction"] * airmass
 
 
 def peak_counts(exptime, mag, airmass, band, phase, seeing, binning=2):
@@ -268,14 +269,14 @@ def peak_counts(exptime, mag, airmass, band, phase, seeing, binning=2):
 
     # Do the computation
     fwhm = seeing / (SCALE * binning)
-    sky_count_per_pixel_per_sec  = sky_counts / number_pixels(seeing, binning)
-    return (star_counts/(1.13*fwhm*fwhm) + \
-            sky_count_per_pixel_per_sec)*exptime + BIAS*GAIN
+    sky_count_per_pixel_per_sec = sky_counts / number_pixels(seeing, binning)
+    return (
+        star_counts / (1.13 * fwhm * fwhm) + sky_count_per_pixel_per_sec
+    ) * exptime + BIAS * GAIN
 
 
 # Helper Routines (Alphabetical) =============================================#
-def check_etc_inputs(airmass, phase, seeing, binning,
-                     exptime=None, mag=None, snr=None):
+def check_etc_inputs(airmass, phase, seeing, binning, exptime=None, mag=None, snr=None):
     """check_etc_inputs Check the ETC inputs for valid values
 
     Does a cursory check on the ETC inputs for proper range, etc.  These are
@@ -319,6 +320,7 @@ def check_etc_inputs(airmass, phase, seeing, binning,
     if snr and snr < 0.1:
         raise ValueError(f"Invalid signal-to-noise specified: {snr}")
 
+
 def counts_from_star_per_sec(band_dict, mag, airmass):
     """counts_from_star_per_sec Compute the counts per second from a star
 
@@ -339,8 +341,8 @@ def counts_from_star_per_sec(band_dict, mag, airmass):
     `float`
         Number of counts per second for the described star
     """
-    mag_corrected = mag + band_dict['extinction'] * airmass
-    return band_dict['Star20'] * np.power(10, -((mag_corrected - 20) / 2.5))
+    mag_corrected = mag + band_dict["extinction"] * airmass
+    return band_dict["Star20"] * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
 def get_band_specific_values(band):
@@ -362,8 +364,8 @@ def get_band_specific_values(band):
         dictionary.
     """
     # Read in the table, and index the filter column
-    table = Table.read(LOT_DATA.joinpath('etc_filter_info.ecsv'))
-    table.add_index('Filter')
+    table = astropy.table.Table.read(LOT_DATA.joinpath("etc_filter_info.ecsv"))
+    table.add_index("Filter")
 
     try:
         # Extract the row, and return it as a dictionary
@@ -443,10 +445,14 @@ def sky_count_per_sec_per_ap(band_dict, phase, seeing, binning):
     `float`
         Sky counts per second in the aperture
     """
-    sky_brightness_per_arcsec2 = band_dict['sky0'] + band_dict['sky1']*phase + \
-                                 band_dict['sky2']*phase*phase
-    sky_count_per_arcsec2_per_sec = band_dict['Star20'] * \
-        np.power(10, -((sky_brightness_per_arcsec2 - 20) / 2.5))
+    sky_brightness_per_arcsec2 = (
+        band_dict["sky0"]
+        + band_dict["sky1"] * phase
+        + band_dict["sky2"] * phase * phase
+    )
+    sky_count_per_arcsec2_per_sec = band_dict["Star20"] * np.power(
+        10, -((sky_brightness_per_arcsec2 - 20) / 2.5)
+    )
     rscale = SCALE * binning
     sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale * rscale
     return number_pixels(seeing, binning) * sky_count_per_pixel_per_sec

@@ -21,8 +21,8 @@ This file contains various celestial time utilities for LDT.
 # Built-In Libraries
 
 # 3rd-Party Libraries
-from astropy import coordinates as coord
-from astropy import time
+import astropy.coordinates
+import astropy.time
 
 # Local Libraries
 
@@ -44,6 +44,10 @@ def lst_midnight(utdates):
         List of the output LST in HH:MM:SS format
     """
     midnights = [f"{date}T07:00:00" for date in utdates]
-    times = time.Time(midnights, format='isot', scale='utc',
-            location=coord.EarthLocation.of_site('DCT'))
-    return times.sidereal_time('apparent').to_string(precision=0)
+    times = astropy.time.Time(
+        midnights,
+        format="isot",
+        scale="utc",
+        location=astropy.coordinates.EarthLocation.of_site("DCT"),
+    )
+    return times.sidereal_time("apparent").to_string(precision=0)

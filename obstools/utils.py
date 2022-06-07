@@ -25,7 +25,7 @@ import warnings
 
 # 3rd-Party Libraries
 import numpy as np
-from scipy import optimize
+import scipy.optimize
 
 # Local Libraries
 
@@ -90,10 +90,10 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
         # Find the estimates of a0, a1, a2:
         dx = np.diff(x)[0]
         a0 = np.max(y_modified)
-        a1 = x[0] + first_moment_1d(y_modified)*dx
+        a1 = x[0] + first_moment_1d(y_modified) * dx
         # Use points where value > (1/e)*max to estimate width
-        s_idx = np.where(y_modified > a0/np.e)
-        a2 = np.abs(x[s_idx][-1] - x[s_idx][0]) / 2.
+        s_idx = np.where(y_modified > a0 / np.e)
+        a2 = np.abs(x[s_idx][-1] - x[s_idx][0]) / 2.0
         if debug:
             print(f"Estimated values: a0={a0:.1f}  a1={a1:.2f}  a2={a2:.2f}")
 
@@ -110,7 +110,7 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
         if nterms > 3:
             estimates = estimates + list(np.flip(p))
         if nterms == 6:
-            estimates.append(0.)
+            estimates.append(0.0)
 
     # Else, make sure the number of estimate values equals nterms
     else:
@@ -122,16 +122,17 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
     if debug:
         print(bounds)
 
-    aa, cc = optimize.curve_fit(gaussian_function, x, y, p0=estimates,
-                                bounds=bounds, ftol=1e-6)
+    aa, cc = scipy.optimize.curve_fit(
+        gaussian_function, x, y, p0=estimates, bounds=bounds, ftol=1e-6
+    )
 
     if debug:
         print(f"Estimated/Fit Width: {a2} / {aa[2]}")
 
-    return  aa, cc
+    return aa, cc
 
 
-def gaussian_function(x, a0, a1, a2, a3=0., a4=0., a5=0.):
+def gaussian_function(x, a0, a1, a2, a3=0.0, a4=0.0, a5=0.0):
     """gaussian_function Gaussian Function
 
     [extended_summary]
@@ -160,10 +161,10 @@ def gaussian_function(x, a0, a1, a2, a3=0., a4=0., a5=0.):
         The Y values of the Gaussian corresponding to X
     """
     # Silence RuntimeWarning for overflow, this function only
-    warnings.simplefilter('ignore', RuntimeWarning)
+    warnings.simplefilter("ignore", RuntimeWarning)
     z = (x - a1) / a2
 
-    return a0 * np.exp(-z**2 / 2.) + a3 + a4*x + a5*x**2
+    return a0 * np.exp(-(z**2) / 2.0) + a3 + a4 * x + a5 * x**2
 
 
 def first_moment_1d(line):
@@ -241,7 +242,7 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     # Check for fewer data points than the requested polynomial order
     if array_length < order:
-        coeff = np.zeros(order+1)
+        coeff = np.zeros(order + 1)
         if array_length != 1:
             sigma = np.std(yy)
             coeff[0] = np.mean(yy)
@@ -256,13 +257,13 @@ def good_poly(x, y, order, thresh, return_full=False):
         return coeff
 
     # Initial fit with all the data.
-    coeff = np.polyfit(xx,yy,order)
+    coeff = np.polyfit(xx, yy, order)
     yfit = np.polyval(coeff, xx)
-    flat = (yy-yfit) + np.sum(yfit) / array_length
+    flat = (yy - yfit) + np.sum(yfit) / array_length
     mean, sigma = np.mean(flat), np.std(flat)
 
     # Remove all points beyond threshold sigma
-    good = np.where(np.abs(flat-mean) < thresh * sigma)
+    good = np.where(np.abs(flat - mean) < thresh * sigma)
     nbad = array_length - len(good)
     xx, yy = xx[good], yy[good]
     if (array_length := len(xx)) == 0:
@@ -273,11 +274,11 @@ def good_poly(x, y, order, thresh, return_full=False):
 
         coeff = np.polyfit(xx, yy, order)
         yfit = np.polyval(coeff, xx)
-        flat = (yy-yfit) + np.sum(yfit) / array_length
+        flat = (yy - yfit) + np.sum(yfit) / array_length
         mean, sigma = np.mean(flat), np.std(flat)
 
         # Remove all points beyond threshold sigma
-        good = np.where(np.abs(flat-mean) < thresh*sigma)
+        good = np.where(np.abs(flat - mean) < thresh * sigma)
         nbad = array_length - len(good)
         xx, yy = xx[good], yy[good]
         if (array_length := len(xx)) == 0:
@@ -286,9 +287,9 @@ def good_poly(x, y, order, thresh, return_full=False):
     # Do a third pass if there were any more bad points removed
     if nbad != 0:
 
-        coeff = np.polyfit(xx,yy,order)
+        coeff = np.polyfit(xx, yy, order)
         yfit = np.polyval(coeff, xx)
-        flat = (yy-yfit) + np.sum(yfit)/array_length
+        flat = (yy - yfit) + np.sum(yfit) / array_length
         mean, sigma = np.mean(flat), np.std(flat)
 
     # Check that the fit coefficients are finite:
@@ -330,5 +331,5 @@ def warn_and_return_zeros(return_full, x, xx, yy, order, raise_warn=False):
         warnings.warn("No good values to fit, return zeros.", UserWarning)
     if return_full:
         yfit = [0] * len(x)
-        return [0] * (order+1), yfit, xx, yy
-    return [0] * (order+1)
+        return [0] * (order + 1), yfit, xx, yy
+    return [0] * (order + 1)
