@@ -14,8 +14,6 @@
 
 # Imports for signal and log handling
 import os
-import signal
-import sys
 import warnings
 
 # Local Imports

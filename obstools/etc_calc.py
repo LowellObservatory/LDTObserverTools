@@ -30,11 +30,13 @@ NOTE: The LMI-specific pixel scale, gain, and readnoise are hard-coded into
 """
 
 # Built-In Libraries
+import pathlib
 
 # 3rd-Party Libraries
 from astropy.table import Table
-from importlib_resources import files as pkg_files
 import numpy as np
+from pkg_resources import resource_filename
+
 
 # Local Libraries
 
@@ -45,7 +47,7 @@ GAIN = 2.89          # e-/ADU
 BIAS = 1050          # ADU (approx) for 2x2 binning
 
 # Subdirectory Paths
-LOT_DATA = pkg_files('obstools.data')
+LOT_DATA = pathlib.Path(resource_filename("obstools", "data"))
 
 
 # User-Interface Computation Routines ========================================#
