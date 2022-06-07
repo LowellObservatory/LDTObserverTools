@@ -343,7 +343,7 @@ def main(cli=False, max_gui=False):
         deveny_grangle_gui(max_gui=max_gui)
 
 
-if __name__ == "__main__":
+def entry_point():
 
     # Set up the environment to import the program
     import argparse

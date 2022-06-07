@@ -45,7 +45,7 @@ GAIN = 2.89          # e-/ADU
 BIAS = 1050          # ADU (approx) for 2x2 binning
 
 # Subdirectory Paths
-LOT_DATA = pkg_files('LDTObserverTools.data')
+LOT_DATA = pkg_files('obstools.data')
 
 
 # User-Interface Computation Routines ========================================#

@@ -1,29 +1,63 @@
-# -*- coding: utf-8 -*-
-#
-#  This file is part of PyDeVeny.
-#
-#   This Source Code Form is subject to the terms of the Mozilla Public
-#   License, v. 2.0. If a copy of the MPL was not distributed with this
-#   file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-#  Created on 21-Sep-2021
-#
-#  @author: tbowers
+#!/usr/bin/env python
 
-# Built-In Libraries
+# NOTE: The configuration for the package, including the name, version, and
+# other information are set in the setup.cfg file.
+
+import os
+import sys
+
 from setuptools import setup
 
-# Boilerplate variables
-__author__ = 'Timothy P. Ellsworth Bowers'
-__copyright__ = 'Copyright 2022'
-__credits__ = ['Lowell Observatory']
-__license__ = 'MPL-2.0'
-__version__ = '0.2.0'
-__email__ = 'tbowers@lowell.edu'
-__status__ = 'Development Status :: 4 - Beta'
 
+# First provide helpful messages if contributors try and run legacy commands
+# for tests or docs.
 
-setup(
-    # Your setup arguments
-    python_requires='>=3.8',  # Your supported Python ranges
-)
+TEST_HELP = """
+Note: running tests is no longer done using 'python setup.py test'. Instead
+you will need to run:
+    tox -e test
+If you don't already have tox installed, you can install it with:
+    pip install tox
+If you only want to run part of the test suite, you can also use pytest
+directly with::
+    pip install -e .[test]
+    pytest
+For more information, see:
+  http://docs.astropy.org/en/latest/development/testguide.html#running-tests
+"""
+
+if 'test' in sys.argv:
+    print(TEST_HELP)
+    sys.exit(1)
+
+DOCS_HELP = """
+Note: building the documentation is no longer done using
+'python setup.py build_docs'. Instead you will need to run:
+    tox -e build_docs
+If you don't already have tox installed, you can install it with:
+    pip install tox
+You can also build the documentation with Sphinx directly using::
+    pip install -e .[docs]
+    cd docs
+    make html
+For more information, see:
+  http://docs.astropy.org/en/latest/install.html#builddocs
+"""
+
+if 'build_docs' in sys.argv or 'build_sphinx' in sys.argv:
+    print(DOCS_HELP)
+    sys.exit(1)
+
+VERSION_TEMPLATE = """
+# Note that we need to fall back to the hard-coded version if either
+# setuptools_scm can't be imported or setuptools_scm can't determine the
+# version, so we catch the generic 'Exception'.
+try:
+    from setuptools_scm import get_version
+    version = get_version(root='..', relative_to=__file__)
+except Exception:
+    version = '{version}'
+""".lstrip()
+
+setup(use_scm_version={'write_to': os.path.join('obstools', 'version.py'),
+                       'write_to_template': VERSION_TEMPLATE})

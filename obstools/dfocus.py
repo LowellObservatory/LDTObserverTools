@@ -21,6 +21,7 @@ DeVeny LOUI.
 """
 
 # Built-In Libraries
+import argparse
 import glob
 import os
 import sys
@@ -711,3 +712,22 @@ def find_lines_in_spectrum(filename, thresh=100.):
     _, centers, _ = find_lines(spectra, thresh=thresh)
 
     return centers
+
+
+def entry_point():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(prog='dfocus',
+                        description='DeVeny Collimator Focus Calculator')
+    parser.add_argument('--flog', action='store', type=str,
+                        help='focus log to use (default: last)',
+                        default='last')
+    parser.add_argument('--thresh', action='store', type=float,
+                        help='threshold for line detection (default: 100)',
+                        default=100.)
+    parser.add_argument('--nodisplay', action='store_false',
+                        help='DO NOT launch Preview.app to display plots')
+    args = parser.parse_args()
+
+    # Giddy Up!
+    dfocus('.', flog=args.flog, thresh=args.thresh, 
+        launch_preview=args.nodisplay)
