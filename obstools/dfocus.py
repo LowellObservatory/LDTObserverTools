@@ -396,7 +396,7 @@ def extract_spectrum(spectrum, traces, win):
     speca = np.empty(n_x, dtype=float)
 
     # Set extraction window size
-    half_window = int(np.floor(win / 2))
+    half_window = int(win) // 2
 
     for order in range(norders):
         # Because of python indexing, we need to "+1" the upper limit in order
@@ -697,7 +697,7 @@ def plot_focus_curves(
 
     # Set the plotting array
     ncols = 6
-    nrows = np.floor(n_c / ncols).astype(int) + 1
+    nrows = n_c // ncols + 1
     fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=(8.5, 11))
     tsz = 6  # type size
 
