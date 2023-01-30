@@ -31,7 +31,7 @@ import ccdproc
 
 def fix_ldt_header(files, keyword, new_value):
 
-    icl = ccdproc.ImageFileCollection(files)
+    icl = ccdproc.ImageFileCollection(filenames=files)
 
     for hdr in icl.headers(overwrite=True):
         hdr[keyword] = new_value
