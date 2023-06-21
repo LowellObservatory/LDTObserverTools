@@ -15,9 +15,8 @@
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
 
-This file contains the dfocus routine for computing the required collimator
-focus for the DeVeny Spectrograph based on a focus sequence completed by the
-DeVeny LOUI.
+This file contains various utility functions needed by other routines in this
+package.
 """
 
 # Built-In Libraries
@@ -33,7 +32,7 @@ import scipy.optimize
 
 
 def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
-    """gaussfit Function similar to IDL's GAUSSFIT
+    """Function similar to IDL's GAUSSFIT
 
     Big caveat: as implemented, can only estimate the initial parameters for
     POSITIVE gaussians (emission), and cannot correctly estimate parameters
@@ -133,7 +132,7 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
 
 
 def gaussian_function(x, a0, a1, a2, a3=0.0, a4=0.0, a5=0.0):
-    """gaussian_function Gaussian Function
+    """Gaussian Function
 
     [extended_summary]
 
@@ -168,18 +167,18 @@ def gaussian_function(x, a0, a1, a2, a3=0.0, a4=0.0, a5=0.0):
 
 
 def first_moment_1d(line):
-    """first_moment_1d Returns the 1st moment of line
+    """Returns the 1st moment of line
 
     [extended_summary]
 
     Parameters
     ----------
-    line : `array`
+    line : :obj`numpy.ndarray`
         1-dimensional array to find the 1st moment of
 
     Returns
     -------
-    `float`
+    :obj:`float`
         The first moment of the input array relative to element #
     """
     # Only use positive values -- set negative values to zero
@@ -193,7 +192,7 @@ def first_moment_1d(line):
 
 
 def good_poly(x, y, order, thresh, return_full=False):
-    """good_poly Robust fitting of a polynomial to data
+    """Robust fitting of a polynomial to data
 
     This is a python port of an IDL routine written years ago by M. Buie.
 
@@ -208,15 +207,15 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     Parameters
     ----------
-    x : `array`
+    x : :obj:`numpy.ndarray`
         Input dataset, independant values.
-    y : `array`
+    y : :obj:`numpy.ndarray`
         Input dataset, dependant values.
-    order : `int`
+    order : :obj:`int`
         Order of the polynomial fit (linear = 1).
-    thresh : `float`
+    thresh : :obj:`float`
         Sigma threshold for removing outliers.
-    return_full : `bool`, optional
+    return_full : :obj:`bool`, optional
         If True, also return:
             yfit : Fitted values for y that match the input vector.
             newx : X values from input that were considered good.
@@ -224,7 +223,7 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     Returns
     -------
-    `array`
+    :obj:`numpy.ndarray`
         Array of fit parameters, as in np.polyfit()
     Also, optionally, the `return_full` bits
     """
@@ -271,7 +270,6 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     # Do a second pass if there were any bad points removed
     if nbad != 0:
-
         coeff = np.polyfit(xx, yy, order)
         yfit = np.polyval(coeff, xx)
         flat = (yy - yfit) + np.sum(yfit) / array_length
@@ -286,7 +284,6 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     # Do a third pass if there were any more bad points removed
     if nbad != 0:
-
         coeff = np.polyfit(xx, yy, order)
         yfit = np.polyval(coeff, xx)
         flat = (yy - yfit) + np.sum(yfit) / array_length
@@ -301,16 +298,16 @@ def good_poly(x, y, order, thresh, return_full=False):
     return coeff
 
 
-def warn_and_return_zeros(return_full, x, xx, yy, order, raise_warn=False):
-    """warn_and_return_zeros Set warning and return zeroes from good_poly()
+def warn_and_return_zeros(return_full: bool, x, xx, yy, order, raise_warn=False):
+    """Set warning and return zeroes from good_poly()
 
     This function is a DRY.  Since this block is used several times in
     good_poly(), separate out as a function.
 
     Parameters
     ----------
-    return_full : [type]
-        [description]
+    return_full : :obj:`bool`
+        Return a bunch of stuff
     x : [type]
         [description]
     xx : [type]
@@ -319,13 +316,13 @@ def warn_and_return_zeros(return_full, x, xx, yy, order, raise_warn=False):
         [description]
     order : [type]
         [description]
-    raise_warn : `bool`, optional
+    raise_warn : :obj:`bool`, optional
         Actually raise the warning this function is meant to  [Default: False]
 
     Returns
     -------
-    [type]
-        [description]
+    :obj:`numpy.ndarray`
+        An array of zeros of the proper length
     """
     if raise_warn:
         warnings.warn("No good values to fit, return zeros.", UserWarning)

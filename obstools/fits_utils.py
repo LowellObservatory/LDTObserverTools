@@ -29,12 +29,28 @@ import ccdproc
 # CONSTANTS
 
 
-def fix_ldt_header(files, keyword, new_value):
+def fix_ldt_header(files, keyword: str, new_value):
+    """Change FITS header keywords
 
+    _extended_summary_
+
+    Parameters
+    ----------
+    files : str or list
+        _description_
+    keyword : str
+        _description_
+    new_value : Any
+        _description_
+    """
     icl = ccdproc.ImageFileCollection(filenames=files)
 
     for hdr in icl.headers(overwrite=True):
-        hdr[keyword] = new_value
+        # Attempt to get numerical values as numbers, not strings
+        try:
+            hdr[keyword] = float(new_value)
+        except ValueError:
+            hdr[keyword] = new_value
 
 
 def entry_point():

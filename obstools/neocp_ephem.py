@@ -101,7 +101,6 @@ from obstools import utils
 
 
 def neocp_ephem(neocp_id):
-
     now = datetime.datetime.fromisoformat("2022-11-23 22:00:00")
     now_p1d = now + datetime.timedelta(days=1)
 
@@ -141,7 +140,6 @@ def neocp_ephem(neocp_id):
             print(f"    {k}: {type(v)}")
 
     with open(f"{neocp_id}_LDT.eph", "w", encoding="utf-8") as f_obj:
-
         for point in result["eph"]:
             time = datetime.datetime.fromisoformat(point["time"])
             coord = astropy.coordinates.SkyCoord(
