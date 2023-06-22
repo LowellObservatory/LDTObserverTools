@@ -2,17 +2,4 @@ name: obstools
 channels:
   - default
 dependencies:
-  - python>=3.8,<3.10
-  - numpy>=1.21
-  - matplotlib>=3.4
-  - pytest>=6.2
-  - scipy
-  - pysimplegui
-  - tqdm
-  # Astropy Channel
-  - astropy::astropy>=4.3
-  # Conda-Forge Channel
-  - conda-forge::setuptools>=59.7
-  - conda-forge::setuptools_scm
-  - conda-forge::black
-  - conda-forge::pylint
+  - python>=3.9,<3.12
