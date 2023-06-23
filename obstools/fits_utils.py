@@ -32,16 +32,18 @@ import ccdproc
 def fix_ldt_header(files, keyword: str, new_value):
     """Change FITS header keywords
 
-    _extended_summary_
+    Sometimes at the telescope, incorrect or incomplete information is placed
+    into the FITS header.  This routine is a simple wraper around CCDPROC
+    functions for easily making changes to these keywords.
 
     Parameters
     ----------
-    files : str or list
-        _description_
-    keyword : str
-        _description_
-    new_value : Any
-        _description_
+    files : :obj:`str` or :obj:`~pathlib.Path` or :obj:`list`
+        The file(s) for which to update FITS keywords
+    keyword : :obj:`str`
+        FITS keyword to update
+    new_value : :obj:`~typing.Any`
+        New value for the FITS keyword
     """
     icl = ccdproc.ImageFileCollection(filenames=files)
 
@@ -54,10 +56,7 @@ def fix_ldt_header(files, keyword: str, new_value):
 
 
 def entry_point():
-    """Command-Line Entry Point for fix_ldt_header()
-
-    _extended_summary_
-    """
+    """Command-Line Entry Point"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         prog="fix_ldt_header", description="Fix a keyword in LDT FITS headers"

@@ -63,16 +63,23 @@ def deveny_grangle_cli():
     )
 
 
-def deveny_grangle_gui(max_gui=False):
-    """Compute the desired grating angle given grating and central wavelength
+def deveny_grangle_gui(max_gui: bool = False):
+    """Main Driver for the DeVeny Grangle GUI
 
-    GUI version of deveny_grangle.  Uses PySimpleGUI.  Includes a drop-down
-    menu for available gratings, and checks for a wavelength between 3000 and
-    11,000 angstroms.  Uses the same subroutines as the CLI version and
+    Compute the desired grating angle given grating and central wavelength
+
+    GUI version of deveny_grangle.  Uses ``PySimpleGUI``.  Includes a drop-down
+    menu for available gratings, and checks for a wavelength between 3000$\AA$ and
+    11,000$\AA$.  Uses the same subroutines as the CLI version and
     produces the same results.
 
     This version optionally allows for the calcuation of the central wavelength
     given a grating angle
+
+    Parameters
+    ----------
+    max_gui : :obj:`bool`, optional
+        Display the MAX GUI (forward and backward calculations)  (Default: False)
     """
     # Define the gratings for the drop-down menu
     gratings = [
@@ -234,23 +241,25 @@ def deveny_grangle_gui(max_gui=False):
     window.close()
 
 
-def compute_grangle(lpmm, wavelen):
-    """compute_grangle Compute the needed grating angle
+def compute_grangle(lpmm: float, wavelen: float):
+    """Compute the needed grating angle
 
-    [extended_summary]
+    Given the grating's line density and the desired central wavelength,
+    compute the required grating angle.  Uses :func:`scipy.optimize.newton` as
+    the root-solver.
 
     Parameters
     ----------
-    lpmm : `float`
+    lpmm : :obj:`float`
         The line density of the grating in g/mm
-    wavelen : `float`
+    wavelen : :obj:`float`
         The central wavelength in angstroms for which to compute the tilt
 
     Returns
     -------
-    grangle : `float`
+    grangle : :obj:`float`
         The desired grating angle
-    amag : `float`
+    amag : :obj:`float`
         The anamorphic demagnification of the spectrograph at this grangle
     """
     # Initial guess: 20º
@@ -264,24 +273,24 @@ def compute_grangle(lpmm, wavelen):
     return grangle, amag
 
 
-def grangle_eqn(theta, lpmm, wavelen):
-    """grangle_eqn The grating equation used to find the angle
+def grangle_eqn(theta: float, lpmm: float, wavelen: float):
+    """The grating equation used to find the angle
 
-    The scipy.optimize.newton() function looks for where this equation
-    equals zero.
+    This is the equation for which :func:`scipy.optimize.newton` is finding
+    the root.
 
     Parameters
     ----------
-    theta : `float`
+    theta : :obj:`float`
         The grating angle being tested for
-    lpmm : `float`
+    lpmm : :obj:`float`
         The line density of the grating in g/mm
-    wavelen : `float`
+    wavelen : :obj:`float`
         The central wavelength in angstroms for which to compute the tilt
 
     Returns
     -------
-    `float`
+    :obj:`float`
         The portion of the grating equation to be set to zero.
     """
     return (
@@ -289,23 +298,23 @@ def grangle_eqn(theta, lpmm, wavelen):
     ) * 1.0e7 / lpmm - wavelen
 
 
-def lambda_at_angle(theta, lpmm, radians=False):
-    """lambda_at_angle Compute the central wavelength given theta
+def lambda_at_angle(theta: float, lpmm: float, radians: bool = False):
+    """Compute the central wavelength given theta
 
     Use the grating equation to compute the central wavelength given theta
 
     Parameters
     ----------
-    theta : `float`
+    theta : :obj:`float`
         Grating Angle
-    lpmm : `float`
+    lpmm : :obj:`float`
         The line density of the grating in g/mm
-    radians : `bool`, optional
-        The input angle is in radians [Default: False]
+    radians : :obj:`bool`, optional
+        The input angle is in radians (Default: False)
 
     Returns
     -------
-    `float``
+    :obj:`float`
         The computed central wavelength
     """
     # Condition the inputs
@@ -319,19 +328,19 @@ def lambda_at_angle(theta, lpmm, radians=False):
     return (np.sin(COLL + theta) + np.sin(COLL + theta - CAMCOL)) * 1.0e7 / lpmm
 
 
-def deveny_amag(grangle):
-    """deveny_amag Compute the anamorphic demagnification of the slit
+def deveny_amag(grangle: float):
+    """Compute the anamorphic demagnification of the slit
 
     Computes the anamorphic demagnification of the slit given grangle
 
     Parameters
     ----------
-    grangle : `float`
+    grangle : :obj:`float`
         The desired grating angle (in degrees)
 
     Returns
     -------
-    `flaot`
+    :obj:`float`
         The anamorphic demagnification factor
     """
     alpha = np.deg2rad(grangle) + COLL
@@ -341,7 +350,19 @@ def deveny_amag(grangle):
 
 
 def check_float(potential_float):
-    """Simple funtion to check whether something is a float"""
+    """Simple funtion to check whether something is a float
+
+    Parameters
+    ----------
+    potential_float : :obj:`~typing.Any`
+        Value to check for float
+
+    Returns
+    -------
+    :obj:`bool`
+        Whether it am or it ain't a :obj:`float`.
+    """
+    """"""
     try:
         float(potential_float)
         return True
@@ -349,16 +370,16 @@ def check_float(potential_float):
         return False
 
 
-# =========================================================#
-def main(cli=False, max_gui=False):
+# Command Line Entry Point ===================================================#
+def main(cli: bool = False, max_gui: bool = False):
     """main Main driver for calling the appropriate functions
 
     Parameters
     ----------
-    cli : `bool`, optional
-        Run the command-line version of the tool [Default: False]
-    max_gui : `bool`, optional
-        Run the max-GUI version of the tool [Default: False]
+    cli : :obj:`bool`, optional
+        Run the command-line version of the tool (Default: False)
+    max_gui : :obj:`bool`, optional
+        Run the max-GUI version of the tool (Default: False)
     """
     # If CLI, do this regardless of the MAX option
     if cli:
@@ -368,10 +389,7 @@ def main(cli=False, max_gui=False):
 
 
 def entry_point():
-    """Command-Line Entry Point
-
-    _extended_summary_
-    """
+    """Command-Line Entry Point"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         prog="deveny_grangle", description="DeVeny Grating Angle Calculator"

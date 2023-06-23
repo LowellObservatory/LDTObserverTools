@@ -39,35 +39,33 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
     for negative (absorption) gaussians.  The function will still happily fit
     a negative gaussian if given the proper estimates.
 
-    Utilizes scipy.optimize.curvefit and the helper function gaussian_function
-    below.
+    Utilizes :func:`scipy.optimize.curve_fit` and the helper function
+    :func:`gaussian_function` below.
 
     Parameters
     ----------
-    x : [type]
-        [description]
-    y : [type]
-        [description]
-    nterms : int, optional
-        [description], by default 3
-    estimates : [type], optional
-        [description], by default None
-    bounds : [type], optional
-        [description], by default None
-    debug : `bool`, optional
-        Print debugging statements.  [Defualt: False]
+    x : :obj:`~numpy.ndarray`
+        Input abscissa values for the fitting
+    y : :obj:`~numpy.ndarray`
+        Input ordinate values for the fitting
+    nterms : :obj:`int`, optional
+        Number of terms to use in the Gaussian fit (Default: 3)
+    estimates : :obj:`~numpy.ndarray`, optional
+        Estimated values for the ``nterms`` parameters
+        (see :func:`~scipy.optimize.curve_fit`; Default: None)
+    bounds : :obj:`~numpy.ndarray`, optional
+        Bounds on the ``nterms`` parameters
+        (see :func:`~scipy.optimize.curve_fit`; Default: None)
+    debug : :obj:`bool`, optional
+        Print debugging statements.  (Defualt: False)
 
     Returns
     -------
-    [type]
-        [description]
+    popt : :obj:`~numpy.ndarray`
+        Optimal values for the parameters (see :func:`~scipy.optimize.curve_fit`)
 
-    Raises
-    ------
-    ValueError
-        [description]
-    ValueError
-        [description]
+    pcov : :obj:`~numpy.ndarray`
+        The estimated covariance of ``popt`` (see :func:`~scipy.optimize.curve_fit`)
     """
 
     if nterms < 3 or nterms > 6:
@@ -121,42 +119,50 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
     if debug:
         print(bounds)
 
-    aa, cc = scipy.optimize.curve_fit(
+    popt, pcov = scipy.optimize.curve_fit(
         gaussian_function, x, y, p0=estimates, bounds=bounds, ftol=1e-6
     )
 
     if debug:
-        print(f"Estimated/Fit Width: {a2} / {aa[2]}")
+        print(f"Estimated/Fit Width: {a2} / {popt[2]}")
 
-    return aa, cc
+    return popt, pcov
 
 
-def gaussian_function(x, a0, a1, a2, a3=0.0, a4=0.0, a5=0.0):
+def gaussian_function(
+    x: np.ndarray,
+    a0: float,
+    a1: float,
+    a2: float,
+    a3: float = 0.0,
+    a4: float = 0.0,
+    a5: float = 0.0,
+):
     """Gaussian Function
 
-    [extended_summary]
+    Construct a basic Gaussian using at least 3, but up to 6 parameters.
 
     Parameters
     ----------
-    x : `array`
+    x : :obj:`~numpy.ndarray`
         X values over which to compute the gaussian
-    a0 : `float`
+    a0 : :obj:`float`
         Gaussian amplitude
-    a1 : `float`
+    a1 : :obj:`float`
         Gaussian mean (mu)
-    a2 : `float`
+    a2 : :obj:`float`
         Gaussian width (sigma)
-    a3 : `float`, optional
-        Baseline atop which the Gaussian sits.  [Default: 0]
-    a4 : `float`, optional
-        Slope of the baseline atop which the Gaussian sits.  [Default: 0]
-    a5 : `float`, optional
+    a3 : :obj:`float`, optional
+        Baseline atop which the Gaussian sits.  (Default: 0)
+    a4 : :obj:`float`, optional
+        Slope of the baseline atop which the Gaussian sits.  (Default: 0)
+    a5 : :obj:`float`, optional
         Quadratic term of the baseline atop which the Gaussian sits.
-        [Default: 0]
+        (Default: 0)
 
     Returns
     -------
-    `array`
+    :obj:`~numpy.ndarray`
         The Y values of the Gaussian corresponding to X
     """
     # Silence RuntimeWarning for overflow, this function only
@@ -169,11 +175,9 @@ def gaussian_function(x, a0, a1, a2, a3=0.0, a4=0.0, a5=0.0):
 def first_moment_1d(line):
     """Returns the 1st moment of line
 
-    [extended_summary]
-
     Parameters
     ----------
-    line : :obj`numpy.ndarray`
+    line : :obj:`~numpy.ndarray`
         1-dimensional array to find the 1st moment of
 
     Returns
@@ -207,9 +211,9 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     Parameters
     ----------
-    x : :obj:`numpy.ndarray`
+    x : :obj:`~numpy.ndarray`
         Input dataset, independant values.
-    y : :obj:`numpy.ndarray`
+    y : :obj:`~numpy.ndarray`
         Input dataset, dependant values.
     order : :obj:`int`
         Order of the polynomial fit (linear = 1).
@@ -223,9 +227,9 @@ def good_poly(x, y, order, thresh, return_full=False):
 
     Returns
     -------
-    :obj:`numpy.ndarray`
-        Array of fit parameters, as in np.polyfit()
-    Also, optionally, the `return_full` bits
+    :obj:`~numpy.ndarray`
+        Array of fit parameters, as in :func:`numpy.polyfit`.
+    Also, optionally, the ``return_full`` bits
     """
     # Make copies to not mess up the inputs
     xx = x
@@ -299,29 +303,29 @@ def good_poly(x, y, order, thresh, return_full=False):
 
 
 def warn_and_return_zeros(return_full: bool, x, xx, yy, order, raise_warn=False):
-    """Set warning and return zeroes from good_poly()
+    """Set warning and return zeroes from :func:`good_poly`
 
     This function is a DRY.  Since this block is used several times in
-    good_poly(), separate out as a function.
+    :func:`good_poly`, separate out as a function.
 
     Parameters
     ----------
     return_full : :obj:`bool`
         Return a bunch of stuff
-    x : [type]
+    x :  :obj:`~numpy.ndarray`
         [description]
-    xx : [type]
+    xx :  :obj:`~numpy.ndarray`
         [description]
-    yy : [type]
+    yy :  :obj:`~numpy.ndarray`
         [description]
-    order : [type]
-        [description]
+    order : :obj:`int`
+        The order of the polynomial fit
     raise_warn : :obj:`bool`, optional
         Actually raise the warning this function is meant to  [Default: False]
 
     Returns
     -------
-    :obj:`numpy.ndarray`
+    :obj:`~numpy.ndarray`
         An array of zeros of the proper length
     """
     if raise_warn:

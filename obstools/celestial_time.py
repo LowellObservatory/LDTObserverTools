@@ -27,20 +27,22 @@ import astropy.time
 # Local Libraries
 
 
-def lst_midnight(utdates):
-    """lst_midnight Compute the LST at midnight for LDT on a list of UT dates
+def lst_midnight(utdates: list):
+    """Compute the LST at midnight for LDT on a list of UT dates
 
-    [extended_summary]
+    The "LST at Midnight" is a helpful guide for determining what objects may
+    be observable on a given night.  This routine returns this value for the
+    LDT given the input UT dates.
 
     Parameters
     ----------
-    utdates : `list` of `str`
-        List of UT dates for which to compute the LST at midnight.  Each
-        date must be of the form "YYYY-MM-DD"
+    utdates : :obj:`list`
+        List of (:obj:`str`) UT dates for which to compute the LST at midnight.
+        Each date must be of the form "YYYY-MM-DD"
 
     Returns
     -------
-    `list` of `str`
+    :obj:`list`
         List of the output LST in HH:MM:SS format
     """
     midnights = [f"{date}T07:00:00" for date in utdates]

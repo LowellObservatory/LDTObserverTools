@@ -18,6 +18,8 @@ http://www.lowell.edu
 This file contains the dfocus routine for computing the required collimator
 focus for the DeVeny Spectrograph based on a focus sequence completed by the
 DeVeny LOUI.
+
+.. include:: ../include/links.rst
 """
 
 # Built-In Libraries
@@ -52,27 +54,27 @@ def dfocus(
 ):
     """Find the optimal DeVeny collimator focus value
 
-    This is the user-facing `dfocus` function that calls all of the various
+    This is the user-facing ``dfocus`` function that calls all of the various
     following subroutines.  This function operates identically to the original
-    IDL routine `dfocus.pro`, but with the additional options of debugging and
+    IDL routine ``dfocus.pro``, but with the additional options of debugging and
     whether to launch Preview.app to show the PDF plots generated.
 
     Parameters
     ----------
-    path : :obj:`pathlib.Path`
-        The path in which to find the `deveny_focus.*` files.
+    path : :obj:`~pathlib.Path`
+        The path in which to find the ``deveny_focus.*`` files.
     flog : :obj:`str`, optional
         Focus log to process.  If unspecified, process the last sequence in
         the directory.  (Default: 'last')
-        flog musy be of form: `deveny_focus.YYYYMMDD.HHMMSS`
+        flog musy be of form: ``deveny_focus.YYYYMMDD.HHMMSS``
     thresh : :obj:`float`, optional
         Line intensity threshold above background for detection (Default: 100.0)
-    debug : :obj:`bool`. optional
+    debug : :obj:`bool`, optional
         Print debug statements  (Default: False)
     launch_preview : :obj:`bool`, optional
         Display the plots by launching Preview  (Default: True)
     leave_focus_files : :obj:`bool`, optional
-        Do NOT move the focus frames to the `focus/` directory  (Default: False)
+        Do NOT move the focus frames to the ``focus/`` directory  (Default: False)
     """
     # Make a pretty title for the output of the routine
     n_cols = (os.get_terminal_size()).columns
@@ -199,7 +201,7 @@ def initialize_focus_values(path: pathlib.Path, flog: str):
 
     Parameters
     ----------
-    path : :obj:`pathlib.Path`
+    path : :obj:`~pathlib.Path`
         The path to the current working directory
     flog : :obj:`str`
         Identifier for the focus log to be processed
@@ -270,11 +272,24 @@ def initialize_focus_values(path: pathlib.Path, flog: str):
 def parse_focus_log(path: pathlib.Path, flog: str):
     """Parse the focus log file produced by the DeVeny LOUI
 
-    [extended_summary]
+    The DeVeny focus log file consists of filename, collimator focus, and other
+    relevant information::
+
+        :  Image File Name  ColFoc    Grating  GrTilt  SltWth     Filter    LampCal  MntTmp
+        20230613.0026.fits    7.50   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+        20230613.0027.fits    8.00   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+        20230613.0028.fits    8.50   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+        20230613.0029.fits    9.00   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+        20230613.0030.fits    9.50   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+        20230613.0031.fits   10.00   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+        20230613.0032.fits   10.50   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
+
+    This function parses out the filenames of the focus images for this run,
+    largely discarding the remaining information in the focus log file.
 
     Parameters
     ----------
-    path : :obj:`pathlib.Path`
+    path : :obj:`~pathlib.Path`
         The path to the current working directory
     flog : :obj:`str`
         Identifier for the focus log to be processed
@@ -284,7 +299,7 @@ def parse_focus_log(path: pathlib.Path, flog: str):
     n_files : :obj:`int`
         Number of files for this focus run
     files: :obj:`list`
-        List of :obj:`pathlib.Path` files associated with this focus run
+        List of :obj:`~pathlib.Path` files associated with this focus run
     focus_id: :obj:`str`
         The focus ID
     """
@@ -311,7 +326,6 @@ def parse_focus_log(path: pathlib.Path, flog: str):
             files.append(path.parent / line.strip().split()[0])
 
     # Return the list of files, and the FocusID
-    print(files)
     return len(files), files, flog.name[-15:]
 
 
@@ -331,13 +345,13 @@ def process_middle_image(focus, thresh, debug=False):
 
     Returns
     -------
-    centers, :obj:`numpy.ndarray`
+    centers, :obj:`~numpy.ndarray`
         Centers
-    trace, :obj:`numpy.ndarray`
+    trace, :obj:`~numpy.ndarray`
         Trace
     mid_collfoc, :obj:`float`
         Collimator focus of the middle frame
-    mspectra, :obj:`numpy.ndarray`
+    mspectra, :obj:`~numpy.ndarray`
         The spectrum from the middle frame (for later plotting)
     """
     print(f"\n Processing center focus image {focus['mid_file']}...")
@@ -369,20 +383,20 @@ def trim_deveny_image(filename):
     special treatment in order to balance the two sides of the output image.
 
     The code below consists of the lines of code that were actually running
-    using the keywords passed from current version of dfocus.pro, and the
+    using the keywords passed from current version of ``dfocus.pro``, and the
     pieces of that code that are actually used.
 
     Specifically, this routine trims off the 50 prescan and 50 postscan pixels,
-    as well as several rows off the top and bottom.  (Extracts rows [12:512])
+    as well as several rows off the top and bottom.  (Extracts rows ``[12:512]``)
 
     Parameters
     ----------
-    filename : :obj:`pathlib.Path`
+    filename : :obj:`~pathlib.Path`
         Filename of the spectrum to get and trim
 
     Returns
     -------
-    :obj:`numpy.ndarray`
+    :obj:`~numpy.ndarray`
         The trimmed CCD image
     """
 
@@ -406,16 +420,16 @@ def extract_spectrum(spectrum, traces, win):
 
     Parameters
     ----------
-    spectrum : :obj:`numpy.ndarray`
+    spectrum : :obj:`~numpy.ndarray`
         The trimmed spectral image
-    traces : :obj:`numpy.ndarray`
+    traces : :obj:`~numpy.ndarray`
         The trace(s) along which to extract spectra
     win : :obj:`int`
         Window over which to average the spectrum
 
     Returns
     -------
-    :obj:`numpy.ndarray`
+    :obj:`~numpy.ndarray`
         2D or 3D array of spectra of individual orders
     """
     # Spec out the shape, and create an empty array to hold the output spectra
@@ -450,11 +464,11 @@ def find_lines(
 ):
     """Automatically find and centroid lines in a 1-row image
 
-    Uses scipy.signal.find_peaks() for this task
+    Uses :func:`scipy.signal.find_peaks` for this task
 
     Parameters
     ----------
-    image : :obj:`numpy.ndarray`
+    image : :obj:`~numpy.ndarray`
         Extracted spectrum
     thresh : :obj:`float`, optional
         Threshold above which to indentify lines [Default: 20 DN above bkgd]
@@ -471,9 +485,9 @@ def find_lines(
     -------
     n_c : :obj:`int`
         Number of lines found and returned
-    centers : :obj:`numpy.ndarray`
+    centers : :obj:`~numpy.ndarray`
         Line centers (pixel #)
-    fwhm : :obj:`numpy.ndarray`
+    fwhm : :obj:`~numpy.ndarray`
         The computed FWHM for each peak
     """
     # Get size and flatten to 1D
@@ -538,7 +552,7 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
     Parameters
     ----------
-    fwhm : :obj:`numpy.ndarray`
+    fwhm : :obj:`~numpy.ndarray`
         Array of FWHM for all lines as a function of COLLFOC
     fnom : :obj:`float`, optional
         Nominal FHWM of an in-focus line. (Default: 2.7)
@@ -549,13 +563,13 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
     Returns
     -------
-    min_cf_idx_value : :obj:`numpy.ndarray`
+    min_cf_idx_value : :obj:`~numpy.ndarray`
         Best fit focus values
-    optimal_cf_idx_value : :obj:`numpy.ndarray`
+    optimal_cf_idx_value : :obj:`~numpy.ndarray`
         Best fit linewidths
-    min_linewidth : :obj:`numpy.ndarray`
+    min_linewidth : :obj:`~numpy.ndarray`
         Minimum linewidths
-    foc_fits : :obj:`numpy.ndarray`
+    foc_fits : :obj:`~numpy.ndarray`
         Fit parameters (for plotting)
     """
     # Warning Filter -- Polyfit RankWarning, don't wanna hear about it
@@ -638,9 +652,9 @@ def plot_optimal_focus(
     ----------
     focus : :obj:`dict`
         Dictionary of the various focus-related quantities
-    centers : :obj:`numpy.ndarray`
+    centers : :obj:`~numpy.ndarray`
         Array of the centers of each line
-    optimal_focus_values : :obj:`numpy.ndarray`
+    optimal_focus_values : :obj:`~numpy.ndarray`
         Array of the optimal focus values for each line
     med_opt_focus : :obj:`float`
         Median optimal focus value
@@ -700,17 +714,17 @@ def plot_focus_curves(
 
     Parameters
     ----------
-    centers : :obj:`numpy.ndarray`
-        List of line centers from fine_lines()
-    line_width_array : :obj:`numpy.ndarray`
+    centers : :obj:`~numpy.ndarray`
+        List of line centers from find_lines()
+    line_width_array : :obj:`~numpy.ndarray`
         Array of line widths from each COLLFOC setting for each line
-    min_focus_values : :obj:`numpy.ndarray`
+    min_focus_values : :obj:`~numpy.ndarray`
         List of the minimum focus values found from the polynomial fit
-    optimal_focus_values : :obj:`numpy.ndarray`
+    optimal_focus_values : :obj:`~numpy.ndarray`
         List of the optimal focus values found from the polynomial fit
-    min_linewidths : :obj:`numpy.ndarray`
+    min_linewidths : :obj:`~numpy.ndarray`
         List of the minumum linewidths found from the fitting
-    fit_pars : :obj:`numpy.ndarray`
+    fit_pars : :obj:`~numpy.ndarray`
         Array of the polynomial fit parameters for each line
     df : :obj:`float`
         Spacing between COLLFOC settings
@@ -772,7 +786,7 @@ def plot_focus_curves(
 def find_lines_in_spectrum(filename, thresh=100.0):
     """Find the line centers in a spectrum
 
-    This function is not directly utilized in DFOCUS, but rather is included
+    This function is not directly utilized in ``dfocus``, but rather is included
     as a wrapper for several functions that can be used by other programs.
 
     Given the filename of an arc-lamp spectrum, this function returns a list
@@ -787,7 +801,7 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 
     Returns
     -------
-    :obj:`numpy.ndarray`
+    :obj:`~numpy.ndarray`
         List of line centers found in the image
     """
     # Get the trimmed image
@@ -806,10 +820,7 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 
 # Command-Line Entry Point ===================================================#
 def entry_point():
-    """Command-Line Entry Point
-
-    _extended_summary_
-    """
+    """Command-Line Entry Point"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         prog="dfocus", description="DeVeny Collimator Focus Calculator"

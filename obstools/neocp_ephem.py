@@ -27,29 +27,29 @@ The JPL Scout API Definition:
     https://ssd-api.jpl.nasa.gov/doc/scout.html
 
 The result from a query of JPL Scout is a dictionary with the following
-structure:
+structure::
 
-count: <str>         # Number of ephemeris time points
-object: <dict>       # Various information about the object
-signature: <dict>    # Signature of JPL Scout, including the version #
-eph: <list>          # The list of ephemeris points
-data-fields: <list>  # List of the data field names for each time point / orbit
-orbit-count: <int>   # The number of Monte Carlo orbits used to compute medians
+    count: <str>         # Number of ephemeris time points
+    object: <dict>       # Various information about the object
+    signature: <dict>    # Signature of JPL Scout, including the version #
+    eph: <list>          # The list of ephemeris points
+    data-fields: <list>  # List of the data field names for each time point / orbit
+    orbit-count: <int>   # The number of Monte Carlo orbits used to compute medians
 
 The ``eph`` member is a list of ``count`` ephermeris time points.  Each point
-is a dictionary with the following structure:
+is a dictionary with the following structure::
 
-sigma-pos: <str>     # The 1-sigma plane-of-sky uncertainty (arcmin)
-limits: <dict>       # Minimum / Maximum results from the Monte Carlo orbits
-time: <str>          # Time for this ephemeris position
-data: <list>         # List of the ``orbit-count`` individual Monte Carlo vals
-sun-flag: <str>      # Flag of where the sun is (null, a, n, c, *)
-median: <dict>       # Medial results from the Monte Carlo orbits
-sigma-limits: <dict> # The 1-sigma minimum/maximum results
+    sigma-pos: <str>     # The 1-sigma plane-of-sky uncertainty (arcmin)
+    limits: <dict>       # Minimum / Maximum results from the Monte Carlo orbits
+    time: <str>          # Time for this ephemeris position
+    data: <list>         # List of the ``orbit-count`` individual Monte Carlo vals
+    sun-flag: <str>      # Flag of where the sun is (null, a, n, c, *)
+    median: <dict>       # Medial results from the Monte Carlo orbits
+    sigma-limits: <dict> # The 1-sigma minimum/maximum results
 
 It is likely that the pieces of this that we really need are the median values
 for each timestamp to convert into something the LDT TCS can ingest.  The
-format of this dictionary is as follows:
+format of this dictionary is as follows::
 
     ra: <str>        # J2000 RA (degrees)
     dec: <str>       # J2000 Dec (degrees)
@@ -62,26 +62,29 @@ format of this dictionary is as follows:
     moon: <str>      # Lunar separation (degrees)
     el: <str>        # Elevation above the local horizon
 
-Assuming:
+Assuming::
 
-result = requests.get(f"https://ssd-api.jpl.nasa.gov/scout.api", params=query).json()
+    result = requests.get(f"https://ssd-api.jpl.nasa.gov/scout.api", params=query).json()
 
-then the pieces we need to be concerned about are:
+then the pieces we need to be concerned about are::
 
-for point in result['eph']:
-    time = datetime.datetime.fromisoformat(point['time'])
-    coord = astropy.coordinates.SkyCoord(
-        point['median']['ra']*u.deg,
-        point['median']['dec']*u.deg,
-        frame='fk5'
-    )
+    for point in result['eph']:
+        time = datetime.datetime.fromisoformat(point['time'])
+        coord = astropy.coordinates.SkyCoord(
+            point['median']['ra']*u.deg,
+            point['median']['dec']*u.deg,
+            frame='fk5'
+        )
 
-    <write appropriate versions to the output file>
+        <write appropriate versions to the output file>
 
-The output format for LDT TCS is:
+The output format for LDT TCS is::
 
     yyyy mm dd hh mm ss αh αm αs.sss ±δd δm δs.ss
 
+.. warning::
+    This module is not yet functional!
+    
 """
 
 # Built-In Libraries
@@ -93,14 +96,20 @@ import sys
 import astropy.coordinates
 import astropy.units as u
 import requests
-import yaml
 
 # Local Libraries
-from obstools import deveny_grangle
-from obstools import utils
 
 
 def neocp_ephem(neocp_id):
+    """NEO Confirmation Page Ephemeris Generator
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    neocp_id : :obj:`~typing.Any`
+        The NEOCP ID for the object
+    """
     now = datetime.datetime.fromisoformat("2022-11-23 22:00:00")
     now_p1d = now + datetime.timedelta(days=1)
 
@@ -167,10 +176,7 @@ def neocp_ephem(neocp_id):
 
 
 def entry_point():
-    """Command-Line Entry Point
-
-    _extended_summary_
-    """
+    """Command-Line Entry Point"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         prog="neocp_ephem", description="Generate LDT Ephemeris Files for NEOCP objects"

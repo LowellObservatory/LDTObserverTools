@@ -69,6 +69,7 @@ doc/_build/
 doc/build/
 #doc/_static
 doc/_templates
+doc/sphinx_warnings.out
 
 # PyBuilder
 target/
