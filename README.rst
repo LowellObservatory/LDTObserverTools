@@ -115,7 +115,7 @@ Future Tools (planned or in development):
      but those will need to be replaced at some point.  This python version will provide
      a future-proof solution.
    
-   - ``deveny_pickup_cleaner``: The DeVeny spectrograph suffers from EM ground-loop
+   - ``scrub_deveny_pickup``: The DeVeny spectrograph suffers from EM ground-loop
      pickup noise in the readout electronics.  While the Instrument Groups is working
      diligently to identify the source of this noise, it is still affecting frames at
      the 5-10 DN level.  This routine will attempt to clean the pattern from the raw

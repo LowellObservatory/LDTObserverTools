@@ -13,6 +13,7 @@ Submodules
    obstools.etc_calc
    obstools.fits_utils
    obstools.neocp_ephem
+   obstools.scrub_deveny_pickup
    obstools.utils
 
 Module contents
