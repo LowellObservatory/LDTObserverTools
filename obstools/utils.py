@@ -31,6 +31,26 @@ import scipy.optimize
 # CONSTANTS
 
 
+def check_float(potential_float):
+    """Simple funtion to check whether something is a float
+
+    Parameters
+    ----------
+    potential_float : :obj:`~typing.Any`
+        Value to check for float
+
+    Returns
+    -------
+    :obj:`bool`
+        Whether it am or it ain't a :obj:`float`.
+    """
+    try:
+        float(potential_float)
+        return True
+    except ValueError:
+        return False
+
+
 def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
     """Function similar to IDL's GAUSSFIT
 

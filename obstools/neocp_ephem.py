@@ -123,7 +123,7 @@ def neocp_ephem(neocp_id):
         # "orbits": "true"
     }
 
-    r = requests.get(f"https://ssd-api.jpl.nasa.gov/scout.api", params=query)
+    r = requests.get("https://ssd-api.jpl.nasa.gov/scout.api", params=query, timeout=10)
 
     print(r.url)
 
@@ -137,7 +137,7 @@ def neocp_ephem(neocp_id):
 
     print(f"eph: {len(result['eph'])}")
 
-    print(f"Type and length of each element in eph:")
+    print("Type and length of each element in eph:")
     for thing in result["eph"]:
         print(f"{thing['time']}  {len(thing['data'])}")
         print(f"{type(thing)}  {list(thing.keys())}")
@@ -168,7 +168,11 @@ def neocp_ephem(neocp_id):
                 .replace("  ", " ")
             )
             c = c_str.split(" ")
-            c_str = f"{int(c[0]):02d} {int(c[1]):02d} {float(c[2]):04.1f} {int(c[3]):+02d} {int(c[4]):02d} {float(c[5]):02.0f}"
+            c_str = (
+                f"{int(c[0]):02d} {int(c[1]):02d} "
+                f"{float(c[2]):04.1f} {int(c[3]):+02d} "
+                f"{int(c[4]):02d} {float(c[5]):02.0f}"
+            )
 
             f_obj.write(f"{timestamp} {c_str}\n")
 

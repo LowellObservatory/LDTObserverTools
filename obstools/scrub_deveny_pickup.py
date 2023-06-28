@@ -152,10 +152,10 @@ def clean_pickup(
 
     # These are the starting guesses and bounds for the sinusoidal fit
     #  [a, lam, phi, y0, lin, quad]
-    p0 = [4, pixel_period, 0.5, 2400]# + 4 * [0]
+    p0 = [4, pixel_period, 0.5, 2400]  # + 4 * [0]
     bounds = (
-        [0, pixel_period - 10, 0, 2000],# + 4 * [-np.inf],
-        [10, pixel_period + 10, 1, 3000],# + 4 * [np.inf],
+        [0, pixel_period - 10, 0, 2000],  # + 4 * [-np.inf],
+        [10, pixel_period + 10, 1, 3000],  # + 4 * [np.inf],
     )
 
     # Loop over the rows in the image to fit the pattern
@@ -168,7 +168,6 @@ def clean_pickup(
     )
 
     for img_row in range(nrow):
-
         # Pull this line, minus the last few pixels at each end
         line = ccd.data[img_row, 5:-5]
 
@@ -260,7 +259,6 @@ def clean_pickup(
 
     # Loop through the image and use the smoothed sinusoid fit coefficients
     for img_row, table_row in enumerate(fit_coeffs):
-
         # Apply the adjusted pattern to the entire row
         line = ccd.data[img_row, :]
 
@@ -747,7 +745,7 @@ def entry_point(args=None):
 
     # Use argparse for the Command-Line Script
     parser = argparse.ArgumentParser(
-        prog="clean_pickup",
+        prog="scrub_deveny_pickup",
         description="Clean RF pickup noise from DeVeny raw frames",
     )
     parser.add_argument(
@@ -766,7 +764,3 @@ def entry_point(args=None):
 
     # Giddy up!
     sys.exit(main(res.file, no_plots=res.no_plots))
-
-
-if __name__ == "__main__":
-    entry_point()

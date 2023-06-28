@@ -15,7 +15,7 @@
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
 
-This file contains the deveny_grangle routine for computing the needed grating
+This file contains the ``deveny_grangle`` routine for computing the needed grating
 tilt angle to be set in order to center the desired wavelength on the CCD.
 Both a CLI (direct copy of the IDL version) and GUI version are included here.
 """
@@ -31,6 +31,8 @@ import scipy.optimize
 import PySimpleGUI as sg
 
 # Local Libraries
+from obstools import utils
+
 
 # CONSTANTS
 PIXSCALE = 2.94  # Base pixels per arcsec: 1 / (0.34 arcsec / pixel)
@@ -42,7 +44,7 @@ TGOFFSET = 0.0  # Mechanical Offset in the grating angle
 def deveny_grangle_cli():
     """Compute the desired grating angle given grating and central wavelength
 
-    Command line version of deveny_grangle, direct copy of the IDL version.
+    Command line version of ``deveny_grangle``, direct port of the IDL version.
     Takes no arguments, returns nothing, and prints output to screen.
     """
     # Get input from user
@@ -64,14 +66,14 @@ def deveny_grangle_cli():
 
 
 def deveny_grangle_gui(max_gui: bool = False):
-    """Main Driver for the DeVeny Grangle GUI
+    r"""Main Driver for the DeVeny Grangle GUI
 
     Compute the desired grating angle given grating and central wavelength
 
-    GUI version of deveny_grangle.  Uses ``PySimpleGUI``.  Includes a drop-down
-    menu for available gratings, and checks for a wavelength between 3000$\AA$ and
-    11,000$\AA$.  Uses the same subroutines as the CLI version and
-    produces the same results.
+    GUI version of ``deveny_grangle`` built using ``PySimpleGUI``.  The GUI
+    includes a drop-down menu for available gratings, and checks for a requested
+    wavelength between 3000A and 11,000A.  This interface uses the same
+    subroutines as the CLI version and produces the same results.
 
     This version optionally allows for the calcuation of the central wavelength
     given a grating angle
@@ -203,7 +205,7 @@ def deveny_grangle_gui(max_gui: bool = False):
 
         elif event == "Compute Wavelength":
             # Check for non-numeric entries for Grating Tilt
-            if not check_float(values["-TILTIN-"]):
+            if not utils.check_float(values["-TILTIN-"]):
                 window["-GRATOUT-"].update("")
                 window["-WAVEOUT-"].update("")
                 window["-TILTOUT-"].update("Please Enter a Number")
@@ -267,13 +269,13 @@ def compute_grangle(lpmm: float, wavelen: float):
 
     # Call the newton method from scipy.optimize to solve the grating equation
     grangle = np.rad2deg(
-        scipy.optimize.newton(grangle_eqn, theta, args=(lpmm, wavelen))
+        scipy.optimize.newton(grangle_eqn, x0=theta, args=(lpmm, wavelen))
     )
     amag = deveny_amag(grangle)
     return grangle, amag
 
 
-def grangle_eqn(theta: float, lpmm: float, wavelen: float):
+def grangle_eqn(theta: float, lpmm: float, wavelen: float) -> float:
     """The grating equation used to find the angle
 
     This is the equation for which :func:`scipy.optimize.newton` is finding
@@ -282,7 +284,7 @@ def grangle_eqn(theta: float, lpmm: float, wavelen: float):
     Parameters
     ----------
     theta : :obj:`float`
-        The grating angle being tested for
+        The grating angle being tested for (in radians)
     lpmm : :obj:`float`
         The line density of the grating in g/mm
     wavelen : :obj:`float`
@@ -293,12 +295,10 @@ def grangle_eqn(theta: float, lpmm: float, wavelen: float):
     :obj:`float`
         The portion of the grating equation to be set to zero.
     """
-    return (
-        np.sin((COLL + theta)) + np.sin(COLL + theta - CAMCOL)
-    ) * 1.0e7 / lpmm - wavelen
+    return lambda_at_angle(theta, lpmm, radians=True) - wavelen
 
 
-def lambda_at_angle(theta: float, lpmm: float, radians: bool = False):
+def lambda_at_angle(theta: float, lpmm: float, radians: bool = False) -> float:
     """Compute the central wavelength given theta
 
     Use the grating equation to compute the central wavelength given theta
@@ -328,10 +328,31 @@ def lambda_at_angle(theta: float, lpmm: float, radians: bool = False):
     return (np.sin(COLL + theta) + np.sin(COLL + theta - CAMCOL)) * 1.0e7 / lpmm
 
 
-def deveny_amag(grangle: float):
-    """Compute the anamorphic demagnification of the slit
+def deveny_amag(grangle: float) -> float:
+    r"""Compute the anamorphic demagnification of the slit
 
-    Computes the anamorphic demagnification of the slit given grangle
+    The rays hitting the grating in the plane of α and β diffract to the camera
+    in such a way that the beam width changes as a function of α and β, whereas
+    rays incident on the grating in the perpendicular plane have the same beam
+    width upon incidence and reflection. Because there is a difference between
+    the beam widths for the two planes, there will be different magnification
+    levels (Schweizer, 1979). Whenever perpendicular planes have different
+    magnifications, this is called "anamorphic" (de)magnification. Schweizer
+    (1979), however, thinks the term "anamorphic magnification" is somewhat
+    inaccurate, and prefers "grating magnification". Historically, the DeVeny
+    manuals and associated code (`e.g.`, ``deveny_grangle``) use "anamorphic",
+    so we continue that there. The resulting magnification in the direction of
+    dispersion due to the grating, `r`, arising from differentiation of the
+    grating equation, is:
+
+    .. math::
+
+        r \equiv \frac{dβ}{dα} = \frac{cos α}{cosβ}
+
+    (Schweizer, 1979). Practical spectrograph design aligns the slit
+    perpendicular to the dispersion direction, and so the change in
+    magnification is in the direction of the slit width, hence our quoted
+    "anamorphic demagnification of slit width".
 
     Parameters
     ----------
@@ -344,50 +365,12 @@ def deveny_amag(grangle: float):
         The anamorphic demagnification factor
     """
     alpha = np.deg2rad(grangle) + COLL
-    mbeta = CAMCOL - np.deg2rad(np.rad2deg(alpha))
+    beta = CAMCOL - alpha
 
-    return np.cos(alpha) / np.cos(mbeta)
-
-
-def check_float(potential_float):
-    """Simple funtion to check whether something is a float
-
-    Parameters
-    ----------
-    potential_float : :obj:`~typing.Any`
-        Value to check for float
-
-    Returns
-    -------
-    :obj:`bool`
-        Whether it am or it ain't a :obj:`float`.
-    """
-    """"""
-    try:
-        float(potential_float)
-        return True
-    except ValueError:
-        return False
+    return np.cos(alpha) / np.cos(beta)
 
 
 # Command Line Entry Point ===================================================#
-def main(cli: bool = False, max_gui: bool = False):
-    """main Main driver for calling the appropriate functions
-
-    Parameters
-    ----------
-    cli : :obj:`bool`, optional
-        Run the command-line version of the tool (Default: False)
-    max_gui : :obj:`bool`, optional
-        Run the max-GUI version of the tool (Default: False)
-    """
-    # If CLI, do this regardless of the MAX option
-    if cli:
-        deveny_grangle_cli()
-    else:
-        deveny_grangle_gui(max_gui=max_gui)
-
-
 def entry_point():
     """Command-Line Entry Point"""
     # Parse command line arguments
@@ -405,4 +388,7 @@ def entry_point():
     args = parser.parse_args()
 
     # Giddy Up!
-    main(cli=args.cli, max_gui=args.max)
+    if args.cli:
+        sys.exit(deveny_grangle_cli())
+    else:
+        sys.exit(deveny_grangle_gui(max_gui=args.max))
