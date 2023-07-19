@@ -16,9 +16,9 @@
 .. |github| image:: https://img.shields.io/badge/GitHub-LDTObserverTools-brightgreen
    :target: https://github.com/LowellObservatory/LDTObserverTools
 
-.. image:: https://raw.githubusercontent.com/LowellObservatory/LDTObserverTools/main/doc/_static/ObserverTools.png
+.. image:: https://raw.githubusercontent.com/LowellObservatory/LDTObserverTools/main/doc/_static/obstools_logo.png
     :target: https://github.com/LowellObservatory/LDTObserverTools
-    :width: 485
+    :width: 500
 
 .. include:: include/links.rst
 
@@ -159,15 +159,23 @@ for more details.
 Installing LDTObserverTools via ``pip``
 ---------------------------------------
 
+.. note::
+  The commands here assume ``pip`` is associated with Python3.  To check, run
+  ``pip --version`` from the command line and check that the associated python
+  version is ``>= 3.9``.
+
+  Also, you will need ``git`` installed on your system / in your environment.
+
 To install the latest version of LDTObserverTools and its required dependencies,
 execute:
 
 .. code-block:: console
 
-    pip install obstools @ git+https://github.com/LowellObservatory/LDTObserverTools
+    pip install "obstools @ git+https://github.com/LowellObservatory/LDTObserverTools"
 
 This will download the latest version of the package from GitHub and install it along
-with its required dependencies.
+with its required dependencies.  (Note: whether or not you need quotation marks depends
+on your particular shell -- ``bash``, ``zsh``, etc.)
 
 As the package undergoes continued development, it will be necessary to upgrade
 your installation to access the latest features.  The upgrade process should
@@ -175,7 +183,7 @@ simply be a matter of executing:
 
 .. code-block:: console
 
-    pip install obstools @ git+https://github.com/LowellObservatory/LDTObserverTools --upgrade
+    pip install "obstools @ git+https://github.com/LowellObservatory/LDTObserverTools" --upgrade
 
 .. _optional-dependencies:
 

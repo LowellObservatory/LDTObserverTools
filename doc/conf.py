@@ -115,7 +115,7 @@ html_theme_options = {
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = "_static/ObserverTools.png"
+html_logo = "_static/obstools_logo.png"
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
