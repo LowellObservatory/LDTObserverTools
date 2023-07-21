@@ -20,6 +20,7 @@ This file contains FITS Header utility routines.
 
 # Built-In Libraries
 import argparse
+import pathlib
 
 # 3rd-Party Libraries
 import ccdproc
@@ -45,6 +46,12 @@ def fix_ldt_header(files, keyword: str, new_value):
     new_value : :obj:`~typing.Any`
         New value for the FITS keyword
     """
+    if isinstance(files, list):
+        files = [pathlib.Path(f).resolve() for f in files]
+    else:
+        files = [pathlib.Path(files).resolve()]
+
+    # Build the IFC
     icl = ccdproc.ImageFileCollection(filenames=files)
 
     for hdr in icl.headers(overwrite=True):
