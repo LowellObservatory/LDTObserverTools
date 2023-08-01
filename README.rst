@@ -81,6 +81,15 @@ Tools Contained in this Package:
      menu has been selected).  Online help is available with the ``-h`` option.
      [`Completed: 2022-10-17`]
 
+   - ``deveny_collfocus``: Use the specified grating angle and mount temperature
+     to suggest a range for use with the DeVeny LOUI collimator Focus Sequence
+     function.  This GUI computes the expected focus from an emperical equation
+     derived from DeVeny data from 2017-2020, and then suggests the focus range.
+     This is important because, unlike all other focus routines at LDT,
+     this function takes the **starting point**, step, and number of exoposures
+     rather than the **expected focus value**, step, and number of exposures.
+     [`Completed: 2023-07-31`]
+
 .. _future:
 
 Future Tools (planned or in development):
@@ -93,14 +102,6 @@ Future Tools (planned or in development):
      for short-shelf- life NEOs that have not yet been assigned a Horizons identifier.
      This tool will turn the returned data into a file that can be ingested into the
      LDT TCS for observations.
-
-   - ``deveny_collfoc_range``: Use the specified grating angle and mount temperature
-     to suggest a range for use with the DeVeny LOUI collimator focus sequence
-     function.  This is important because, unlike all other focus routines at LDT,
-     this function takes the **starting point**, step, and number of exoposures
-     rather than the **expected focus value**, step, and number of exposures.  Having
-     a routine to compute the desired values would make this step easier and less
-     prone to error (`i.e.`, only searching on one side of the expected focus).
 
    - ``validate_input_list``: The extant input list validation tool
      (https://confluence.lowell.edu/display/LDTOI/Validate+Input+List) was

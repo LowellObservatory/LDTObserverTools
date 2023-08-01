@@ -20,16 +20,20 @@ package.
 """
 
 # Built-In Libraries
+import pathlib
 import warnings
 
 # 3rd-Party Libraries
+from pkg_resources import resource_filename
 import numpy as np
 import scipy.optimize
+
 
 # Local Libraries
 
 # CONSTANTS
 SG_THEME = "light grey 1"
+CONFIG = pathlib.Path(resource_filename("obstools", "config"))
 
 
 def check_float(potential_float):

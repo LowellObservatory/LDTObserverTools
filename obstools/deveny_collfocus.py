@@ -16,13 +16,13 @@ Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
 
 This file contains the ``deveny_collfocus`` routine for computing the estimated
-collimator focus value and range for the LOUI Focus Sequence tab.  The GUI will
+collimator focus value and range for the LOUI Focus Sequence tab.  The GUI can
 gather current information (mount temperature and grating angle) from the
-ActiveMQ broker, if available, but the user can also manually enter these
+ActiveMQ broker, if available, but the user may also manually enter these
 values when the tool is used away from the telescope.
 
-This calculator was originally written by B. Shafransky (TO), and has been
-incorporated into the LDT Observer Tools package.
+This calculator was originally written by B. Shafransky (LDT TO), and has been
+incorporated into the LDTObserverTools package.
 """
 
 # Built-In Libraries
@@ -34,15 +34,14 @@ import sys
 import numpy as np
 import PySimpleGUI as sg
 
-try:
-    import stomp
-
-    USE_STOMP = True
-except ImportError:
-    USE_STOMP = False
-
 # Local Libraries
 from obstools import utils
+
+try:
+    from obstools import broker_listener
+except ImportError:
+    pass
+
 
 # CONSTANTS
 MIN_COLLFOC = 7.5  # Smallest collimator focus value (in mm)
@@ -54,19 +53,27 @@ def deveny_collfocus():
 
     Compute the estimated focus and LOUI Focus Sequence range given the mount
     temperature, grating tilt angle, and presence of an order-blocking filter.
+    Optionally, read in the current mount temperature and grating tilt angle
+    from the ActiveMQ broker, if running at the site.
     """
+    # Check that stomp was imported (in broker_listener) and that the config file exists
+    use_stomp = "stomp" in sys.modules and (utils.CONFIG / "activemq_joe.yaml").exists()
+    # Fire up the broker Listener
+    if use_stomp:
+        am_radio = broker_listener.ActiveMQ_Listener(utils.CONFIG / "activemq_joe.yaml")
+
     # Define the color scheme for the GUI
     sg.theme(utils.SG_THEME)
 
     # Define the window layout
     row1 = [
         sg.Text("Enter Mount Temperature:", font="courier 18"),
-        sg.Input(key="-TEMPIN-", size=(6, 1)),
+        sg.Input(key="-TEMPIN-", size=(12, 1)),
         sg.Text("ºC"),
     ]
     row2 = [
         sg.Text("     Enter Grating Tilt:", font="courier 18"),
-        sg.Input(key="-TILTIN-", size=(6, 1)),
+        sg.Input(key="-TILTIN-", size=(12, 1)),
         sg.Text("º"),
     ]
     row3 = [
@@ -78,10 +85,14 @@ def deveny_collfocus():
             key="-FILTER-",
         ),
     ]
-    row4 = [sg.Button("Compute"), sg.Button("Done")]
+    row4 = [
+        sg.Button("Compute"),
+        sg.Button("Get Values from Broker") if use_stomp else sg.Text(""),
+        sg.Button("Done"),
+    ]
     row5 = [
         sg.Text("     Estimated Focus Value:"),
-        sg.Text(size=(15, 1), key="-FOCUSOUT-"),
+        sg.Text(size=(21, 1), key="-FOCUSOUT-"),
     ]
     row6 = [sg.Text("Suggested Focus Sequence: ", font="Helvetica 18 underline")]
     row7 = [
@@ -164,14 +175,20 @@ def deveny_collfocus():
             window["-STEPSIZE-"].update(f"{np.round(focseq_range[1],1)}")
             window["-NSTEPS-"].update(f"{focseq_range[2]}")
 
-        elif event == "Get from Broker":
+        elif event == "Get Values from Broker":
             # Retrieve the current values from the broker
-            pass
+            window["-TEMPIN-"].update(
+                extract_broker_values(am_radio.mounttemp_from_broker)
+            )
+            window["-TILTIN-"].update(
+                extract_broker_values(am_radio.grangle_from_broker)
+            )
 
     # All done, close window
     window.close()
 
 
+# Computation Utility Functions ==============================================#
 def calculate_collimator_focus(
     mount_temp: float, grating_tilt: float, order_blocker: bool
 ) -> float:
@@ -183,6 +200,15 @@ def calculate_collimator_focus(
 
     The smallest value returned is 7.75mm -- a physical limit due to the limit
     switch on the collimator focus stage.
+
+    Parameters
+    ----------
+    mount_temp : :obj:`float`
+        The current mount temperature in degrees Celsius
+    grating_tilt : :obj:`float`
+        The current grating tilt angle in degrees
+    order_blocker : :obj:`bool`
+        Whether an order-blocking filter (`e.g.`, OG570) is in place
 
     Returns
     -------
@@ -202,7 +228,11 @@ def calculate_collimator_focus(
 def calculate_focus_sequence(estimated_focus: float) -> tuple[float, float, int]:
     """Calculate Estimated Focus Sequence
 
-    _extended_summary_
+    The DeVeny LOUI Focus Sequence tab requests three pieces of information in
+    order to execute a focus run: starting position, step size, and number of
+    steps.  This function computes these three values based on the estimated
+    focus value (from temperature and tilt) and some prior information about
+    the behavior of the collimator.
 
     Parameters
     ----------
@@ -229,6 +259,36 @@ def calculate_focus_sequence(estimated_focus: float) -> tuple[float, float, int]
     )
     # Return
     return startpos, STEPSIZE, int(n_steps)
+
+
+def extract_broker_values(status_dict: dict) -> tuple[str, str]:
+    """Get Current Values from the Broker
+
+    When running at LDT, we can use the ActiveMQ broker to get the current
+    mount temperature and grating tilt.  This is a fancy little trick that
+    will make the software developer very happy.
+
+    Parameters
+    ----------
+    status_dict : :obj:`dict`
+        The status dictionary from the broker listener
+
+    Returns
+    -------
+    :obj:`str`
+        The string value (or ``"~ Not Found ~"``) corresponding to this
+        dictionary
+    """
+    # Grating Tilt Angle
+    if "GratingTilt" in status_dict:
+        return f"{status_dict['GratingTilt']:.2f}"
+
+    # Mount Temperature
+    if "MountTemp" in status_dict:
+        return f"{status_dict['MountTemp']:.1f}"
+
+    # Else, nothing found
+    return "~ Not Found ~"
 
 
 # Command Line Entry Point ===================================================#

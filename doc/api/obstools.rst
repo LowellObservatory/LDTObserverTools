@@ -7,7 +7,9 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   obstools.broker_listener
    obstools.celestial_time
+   obstools.deveny_collfocus
    obstools.deveny_grangle
    obstools.dfocus
    obstools.etc_calc
