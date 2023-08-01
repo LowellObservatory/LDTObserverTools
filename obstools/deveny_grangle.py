@@ -98,7 +98,7 @@ def deveny_grangle_gui(max_gui: bool = False):
     ]
 
     # Define the color scheme for the GUI
-    sg.theme("light grey 1")
+    sg.theme(utils.SG_THEME)
 
     # Define the window layout
     row1 = [
@@ -243,6 +243,7 @@ def deveny_grangle_gui(max_gui: bool = False):
     window.close()
 
 
+# Computation Utility Functions ==============================================#
 def compute_grangle(lpmm: float, wavelen: float):
     """Compute the needed grating angle
 

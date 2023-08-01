@@ -29,6 +29,7 @@ import scipy.optimize
 # Local Libraries
 
 # CONSTANTS
+SG_THEME = "light grey 1"
 
 
 def check_float(potential_float):
