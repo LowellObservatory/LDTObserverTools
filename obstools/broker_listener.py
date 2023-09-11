@@ -8,7 +8,7 @@
 #
 #  Created on 31-May-2023
 #
-#  @author: bshafransky, tbowers
+#  @author: tbowers
 
 """LDTObserverTools contains python ports of various LDT Observer Tools
 
@@ -113,7 +113,7 @@ class ActiveMQ_Listener:
             topic = message.headers["destination"]
 
             if self.parent.config["mounttemp_incoming_topic"] in topic:
-                self.parent.mounttemp_from_broker = {"MountTemp": message.body}
+                self.parent.mounttemp_from_broker = {"MountTemp": float(message.body)}
 
             if self.parent.config["grangle_incoming_topic"] in topic:
                 status = xmltodict.parse(message.body)["DevenyTelemetry"]

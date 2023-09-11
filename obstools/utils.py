@@ -56,7 +56,7 @@ def check_float(potential_float):
         return False
 
 
-def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
+def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = False):
     """Function similar to IDL's GAUSSFIT
 
     Big caveat: as implemented, can only estimate the initial parameters for
@@ -140,7 +140,8 @@ def gaussfit(x, y, nterms=3, estimates=None, bounds=None, debug=False):
             raise ValueError("Estimate array must contain NTERMS elements.")
 
     if bounds is None:
-        bounds = (-np.inf, np.inf)
+        bounds = (np.full(nterms, -np.inf), np.full(nterms, np.inf))
+        bounds[0][2] = 0
     if debug:
         print(bounds)
 
@@ -211,7 +212,7 @@ def first_moment_1d(line):
         The first moment of the input array relative to element #
     """
     # Only use positive values -- set negative values to zero
-    line[np.where(line < 0)] = 0
+    line[line < 0] = 0
 
     # Make the counting array
     yy = np.arange(len(line))
