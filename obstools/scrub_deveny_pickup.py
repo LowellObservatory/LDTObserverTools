@@ -16,7 +16,7 @@ Lowell Observatory.
 This module cleans the RF pickup noise from DeVeny spectral 2D images by
 fitting a sinusoid to and then subtracting it from each row of the image.
 
-The frequency of the sinusoid tends to vary from frame to frame but is
+The frequency of the sinusoid tends to vary from frame to frame but is roughly
 CONSTANT within each frame.  Between the non-integer wavelength and the slight
 delay between row read-out (caused by the advancement of the parallel register)
 the phase shifts from row to row, yielding an ever-changing pattern in the
@@ -52,9 +52,11 @@ import astropy.io.fits
 import astropy.nddata
 import astropy.table
 import astropy.units as u
+import astropy.visualization
 import astropy.wcs
 import matplotlib.pyplot as plt
 import numpy as np
+from pypeit.spec2dobj import Spec2DObj
 import scipy.fft
 import scipy.ndimage
 import scipy.optimize
@@ -71,84 +73,104 @@ warnings.simplefilter("ignore", astropy.wcs.FITSFixedWarning)
 warnings.simplefilter("ignore", astropy.io.fits.verify.VerifyWarning)
 
 
-def main(files, use_hann=False, no_plots=False):
-    """Main driver
+# Narrative Functions ========================================================#
+def iterative_pypeit_clean(filename: pathlib.Path):
+    """Iteratively use PypeIt to clean pickup noise
 
-    Main driver function that takes the input list and calls the cleaning
-    function for each one.
-
-    Parameters
-    ----------
-    files : list or str
-        File or files to process
-    use_hann : bool
-        Use a Hann window when cleaning the image for FFT (Default: False)
-    no_plots : bool
-        Create a plots during the image analysis?  (Default: False)
+    As part of the data-reduction process, PypeIt fits and extracts images as
+    well as the sky background.  We can use the reduced ``spec2d`` files to
+    get the "source-free" noise background, which _should_ make identifying the
+    sinusoidal noise more straightforward.
     """
-    # Ensure the input is a list
-    if not isinstance(files, list):
-        files = [files]
+    # Get the corresponding `spec2d` file for this raw file
+    setup_dirs = sorted(filename.parent.glob("ldt_deveny_?"))
+    spec2d_file = [
+        next(sd.joinpath("Science").glob(f"spec2d_{filename.stem}*"))
+        for sd in setup_dirs
+    ][0]
 
-    # Giddy up!
-    for file in files:
-        clean_pickup(
-            pathlib.Path(file),
-            use_hann=use_hann,
-            sine_plot=not no_plots,
-            fft_plot=not no_plots,
-        )
+    # Load in the spec2d file
+    spec2d = Spec2DObj.from_file(spec2d_file, "DET01")
+    print(spec2d)
+    interval = astropy.visualization.ZScaleInterval(n_samples=10000)
 
+    img_gpm = spec2d.select_flag(invert=True)
 
-def clean_pickup(
-    filename: pathlib.Path,
-    use_hann=False,
-    sine_plot=True,
-    fft_plot=False,
-):
-    """Clean the Pickup Noise
+    resid_thing = (spec2d.sciimg - spec2d.skymodel - spec2d.objmodel) * img_gpm.astype(
+        float
+    )
 
-    This is the main functional method of the module.
-
-    Parameters
-    ----------
-    filename : :obj:`pathlib.Path`
-        The name of the file to clean
-    use_hann : bool
-        Use a Hann window when cleaning the image for FFT (Default: False)
-    sine_plot : bool
-        Create a plot of the sinusoid pattern fits for this image?
-        (Default: True)
-    fft_plot : bool
-        Create a plot of the FFT analysis for this image?
-        (Default: False)
-    """
-    # Read in the image and create copy arrays on which to work
-    ccd = astropy.nddata.CCDData.read(filename)
-    nrow, ncol = ccd.data.shape
-
-    # Check if this images has already been post-processed by this routine
-    if "postproc" in ccd.header and ccd.header["postproc"] == "deveny_pickup":
-        print(
-            f"\n   Skipping file {filename.name}; already processed with deveny_pickup"
-        )
-        return
-
-    # Check image type; only process OBJECT and BIAS
-    if (imgtyp := ccd.header["imagetyp"]) in ["OBJECT", "BIAS"]:
-        print(f"\n   Processing {imgtyp} file {filename.name}")
-    else:
-        print(f"\n   Skipping {imgtyp} file {filename.name}")
-        return
+    resid_thing = np.rot90(resid_thing, k=-1)
+    orig_thing = np.rot90(spec2d.sciimg, k=-1)
 
     # Get the expected pixel period from the FFT of the flattened array
-    pixel_period = flatten_clean_fft(
-        ccd.data.copy(), imgtyp, use_hann=use_hann, fft_plot=fft_plot
-    )
-    print(f"This is the FFT-predicted pixel period: {pixel_period:.1f} pix")
+    orig_pixperiod = flatten_clean_fft(orig_thing.copy(), "OBJECT")
+    print(f"This is the FFT-predicted pixel period (orig): {orig_pixperiod:.1f} pix")
+    resid_pixperiod = flatten_clean_fft(resid_thing.copy(), "BIAS")
+    print(f"This is the FFT-predicted pixel period (resid): {resid_pixperiod:.1f} pix")
 
-    # Compute once, use forever!
-    img_mean = np.mean(ccd.data)
+    # Fit the actual images
+    orig_fitc = fit_lines(orig_thing.copy(), orig_pixperiod)
+    resid_fitc = fit_lines(resid_thing.copy(), resid_pixperiod)
+
+    for fit_coeffs in [orig_fitc, resid_fitc]:
+        # Smooth the fit coefficients as a function of row to remove artifacts due
+        #  to cosmic rays or strong sources.
+        # NOTE: scipy.signal.medfilt() uses zero-padding for the ends of the signal,
+        #       therefore subtract the mean and re-add it to eliminate edge weirdness
+        fit_coeffs["smooth_a"] = smooth_coeffs(fit_coeffs["a"])
+        fit_coeffs["smooth_lambda"] = smooth_coeffs(fit_coeffs["lambda"])
+        fit_coeffs["smooth_phi"] = smooth_coeffs(fit_coeffs["phi"], ftype="savgol")
+        # Print a happy statement of fact
+        print(
+            f"This is the mean fit pixel period: {fit_coeffs['smooth_lambda'].mean():.1f} pix"
+        )
+
+    cleaned_orig, pattern_orig = apply_pattern(orig_thing, orig_fitc)
+    cleaned_resid, pattern_resid = apply_pattern(resid_thing, resid_fitc)
+
+    # Display the thing
+    _, axes = plt.subplots(nrows=2, figsize=(9, 4))
+
+    # Draw the resid image
+    vmin, vmax = interval.get_limits(resid_thing)
+    axes[0].imshow(resid_thing, vmin=vmin, vmax=vmax, origin="lower")
+    axes[0].axis("off")
+
+    # Draw the model
+    # vmin, vmax = interval.get_limits(pattern_resid)
+    axes[1].imshow(pattern_resid, vmin=vmin, vmax=vmax, origin="lower")
+    axes[1].axis("off")
+
+    plt.tight_layout()
+    plt.savefig("scrub_thing.pdf")
+    plt.close()
+
+
+def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Table:
+    """Fit a sinusoid to each line in the image
+
+    This is like a mini-driver function that fits a sinusoid to each line in
+    the image.
+
+    Parameters
+    ----------
+    data_array : :obj:`~numpy.ndarray`
+        The image array to be processed.  This should be HORIZONTAL and in the
+        same orientation as images written out by lois directly from the
+        instrument.
+    pixel_period : :obj:`float`
+        The predicted pixel period for this image array, as computed by
+        :func:`flatten_clean_fft`.
+
+    Returns
+    -------
+    :obj:`~astropy.table.Table`
+        A table object containing the fit coefficients, one table row per row
+        of the input ``data_array``.
+    """
+    # Array shape
+    nrow, _ = data_array.shape
 
     # These are the starting guesses and bounds for the sinusoidal fit
     #  [a, lam, phi, y0, lin, quad]
@@ -169,7 +191,7 @@ def clean_pickup(
 
     for img_row in range(nrow):
         # Pull this line, minus the last few pixels at each end
-        line = ccd.data[img_row, 5:-5]
+        line = data_array[img_row, 5:-5]
 
         # To mitigate cosmic rays and night sky lines, sigma clip @ 5σ
         sig_clip = np.std(line) * 5.0 + np.median(line)
@@ -225,42 +247,75 @@ def clean_pickup(
 
     progress_bar.close()
     # After the image has been fit, convert the list of dict into a Table
-    fit_coeffs = astropy.table.Table(fit_coeffs)
+    return astropy.table.Table(fit_coeffs)
 
-    # Smooth the fit coefficients as a function of row to remove artifacts due
-    #  to cosmic rays or strong sources.
-    # NOTE: scipy.signal.medfilt() uses zero-padding for the ends of the signal,
-    #       therefore subtract the mean and re-add it to eliminate edge weirdness
-    fit_coeffs["smooth_a"] = (
-        scipy.signal.medfilt(
-            fit_coeffs["a"] - (med_a := np.median(fit_coeffs["a"])), kernel_size=21
-        )
-        + med_a
-    )
-    fit_coeffs["smooth_lambda"] = (
-        scipy.signal.medfilt(
-            fit_coeffs["lambda"] - (med_lambda := np.median(fit_coeffs["lambda"])),
-            kernel_size=21,
-        )
-        + med_lambda
-    )
 
-    fit_coeffs["smooth_phi"] = scipy.signal.savgol_filter(
-        fit_coeffs["phi"], window_length=21, polyorder=2, mode="nearest"
-    )
-    # Print a happy statement of fact
-    print(
-        f"This is the mean fit pixel period: {fit_coeffs['smooth_lambda'].mean():.1f} pix"
-    )
+def smooth_coeffs(
+    col: astropy.table.Column, kernel_size: int = 21, ftype: str = "median"
+) -> np.ndarray:
+    """Smooth out the coefficients from the fit coefficients table
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    col : :obj:`~astropy.table.Column`
+        _description_
+    kernel_size : :obj:`int`, optional
+        Kernel or window size for the smoothing function (Default: 21)
+    ftype : :obj:`str`, optional
+        Smoothing function to use.  Options are "median" and "savgol".
+        (Default: "median")
+
+    Returns
+    -------
+    :obj:`~numpy.ndarray`
+        The smoothed coefficients
+    """
+    if ftype == "median":
+        return (
+            scipy.signal.medfilt(col - (med := np.median(col)), kernel_size=kernel_size)
+            + med
+        )
+    if ftype == "savgol":
+        return scipy.signal.savgol_filter(
+            col, window_length=kernel_size, polyorder=2, mode="nearest"
+        )
+    raise ValueError(f"Filter type {ftype} not supported by this function.")
+
+
+def apply_pattern(
+    input_array: np.ndarray, fit_coeffs: astropy.table.Table
+) -> tuple[np.ndarray, np.ndarray]:
+    """Construct the pattern from the fit coefficients
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    input_array : :obj:`~numpy.ndarray`
+        The input array to be cleaned
+    fit_coeffs : `astropy.table.Table`
+        _description_
+
+    Returns
+    -------
+    cleaned_array : :obj:`~numpy.ndarray`
+        The cleaned sience array
+    pattern_array : :obj:`~numpy.ndarray`
+        The pattern removed from ``input_array``
+    """
+    # Compute the image mean for the pattern array
+    img_mean = np.nanmean(input_array)
 
     # Create the arrays that the processed data will go into
-    cleaned_array = ccd.data.copy().astype(np.float64)
-    pattern_array = ccd.data.copy().astype(np.float64)
+    cleaned_array = input_array.copy().astype(np.float64)
+    pattern_array = input_array.copy().astype(np.float64)
 
     # Loop through the image and use the smoothed sinusoid fit coefficients
     for img_row, table_row in enumerate(fit_coeffs):
         # Apply the adjusted pattern to the entire row
-        line = ccd.data[img_row, :]
+        line = input_array[img_row, :]
 
         # Compute the pattern
         pattern = sinusoid(
@@ -274,6 +329,74 @@ def clean_pickup(
         # Fill in the new arrays with the cleaned data and pattern
         cleaned_array[img_row, :] = line - pattern
         pattern_array[img_row, :] = pattern + img_mean
+
+    # Return when done
+    return cleaned_array, pattern_array
+
+
+def clean_pickup(
+    filename: pathlib.Path,
+    use_hann=False,
+    sine_plot=True,
+    fft_plot=False,
+):
+    """Clean the Pickup Noise
+
+    This is the main functional method of the module.
+
+    Parameters
+    ----------
+    filename : :obj:`pathlib.Path`
+        The name of the file to clean
+    use_hann : bool
+        Use a Hann window when cleaning the image for FFT (Default: False)
+    sine_plot : bool
+        Create a plot of the sinusoid pattern fits for this image?
+        (Default: True)
+    fft_plot : bool
+        Create a plot of the FFT analysis for this image?
+        (Default: False)
+    """
+    # Read in the image and create copy arrays on which to work
+    ccd = astropy.nddata.CCDData.read(filename)
+    nrow, ncol = ccd.data.shape
+
+    # Check if this images has already been post-processed by this routine
+    if "postproc" in ccd.header and ccd.header["postproc"] == "deveny_pickup":
+        print(
+            f"\n   Skipping file {filename.name}; already processed with deveny_pickup"
+        )
+        return
+
+    # Check image type; only process OBJECT and BIAS
+    if (imgtyp := ccd.header["imagetyp"]) in ["OBJECT", "BIAS"]:
+        print(f"\n   Processing {imgtyp} file {filename.name}")
+    else:
+        print(f"\n   Skipping {imgtyp} file {filename.name}")
+        return
+
+    # Get the expected pixel period from the FFT of the flattened array
+    pixel_period = flatten_clean_fft(
+        ccd.data.copy(), imgtyp, use_hann=use_hann, fft_plot=fft_plot
+    )
+    print(f"This is the FFT-predicted pixel period: {pixel_period:.1f} pix")
+
+    # Compute the fit coefficients
+    fit_coeffs = fit_lines(ccd.data, pixel_period)
+
+    # Smooth the fit coefficients as a function of row to remove artifacts due
+    #  to cosmic rays or strong sources.
+    # NOTE: scipy.signal.medfilt() uses zero-padding for the ends of the signal,
+    #       therefore subtract the mean and re-add it to eliminate edge weirdness
+    fit_coeffs["smooth_a"] = smooth_coeffs(fit_coeffs["a"])
+    fit_coeffs["smooth_lambda"] = smooth_coeffs(fit_coeffs["lambda"])
+    fit_coeffs["smooth_phi"] = smooth_coeffs(fit_coeffs["phi"], ftype="savgol")
+    # Print a happy statement of fact
+    print(
+        f"This is the mean fit pixel period: {fit_coeffs['smooth_lambda'].mean():.1f} pix"
+    )
+
+    cleaned_array, pattern_array = apply_pattern(ccd.data, fit_coeffs)
 
     # Make a plot, if desired
     if sine_plot:
@@ -419,7 +542,7 @@ def clean_pickup(
 
 
 def flatten_clean_fft(
-    data_array: np.ndarray, imgtyp: str, use_hann=False, fft_plot=False
+    data_array: np.ndarray, imgtyp: str, use_hann: bool = False, fft_plot: bool = False
 ):
     """Find the peak frequency of sinusoidal noise
 
@@ -732,6 +855,37 @@ def pixper_tofrom_hz(x):
 
 
 # Command Line Interface Entry Point =========================================#
+def main(files, use_hann=False, no_plots=False):
+    """Main driver
+
+    Main driver function that takes the input list and calls the cleaning
+    function for each one.
+
+    Parameters
+    ----------
+    files : list or str
+        File or files to process
+    use_hann : bool
+        Use a Hann window when cleaning the image for FFT (Default: False)
+    no_plots : bool
+        Create a plots during the image analysis?  (Default: False)
+    """
+    # Ensure the input is a list
+    if not isinstance(files, list):
+        files = [files]
+
+    # Giddy up!
+    for file in files:
+        iterative_pypeit_clean(pathlib.Path(file).resolve())
+
+        # clean_pickup(
+        #     pathlib.Path(file),
+        #     use_hann=use_hann,
+        #     sine_plot=not no_plots,
+        #     fft_plot=not no_plots,
+        # )
+
+
 def entry_point(args=None):
     """Main entry point for the package
 
