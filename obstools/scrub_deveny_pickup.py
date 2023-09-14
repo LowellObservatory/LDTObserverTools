@@ -8,10 +8,10 @@
 #
 #  @author: tbowers
 
-"""Clean RF Pickup Noise from DeVeny Spectrographs 2D Images
+"""LDTObserverTools contains python ports of various LDT Observer Tools
 
-This module is part of the DeVeny Pickup package, written at
-Lowell Observatory.
+Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
+http://www.lowell.edu
 
 This module cleans the RF pickup noise from DeVeny spectral 2D images by
 fitting a sinusoid to and then subtracting it from each row of the image.
@@ -64,6 +64,7 @@ import scipy.signal
 from tqdm import tqdm
 
 # Internal Imports
+from obstools import utils
 
 # Mean pixel readout time (7.25 µs)
 PIX_DWELL = 7.25e-6
@@ -444,7 +445,7 @@ def flatten_clean_fft(
         medval = np.median(vert_profile)
         # Fit a gaussian
         popt, _ = scipy.optimize.curve_fit(
-            gauss1d,
+            utils.gaussian_function,
             np.arange(nrow),
             vert_profile,
             p0=[
@@ -854,32 +855,6 @@ def make_sinusoid_fit_plots(
 
 
 # Utility Functions (Alphabetical) ===========================================#
-def gauss1d(x: np.ndarray, a: float, mu: float, sig: float, y0: float) -> np.ndarray:
-    """Return a basic gaussian (for use with :func:`scipy.optimize.curve_fit`)
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    x : :obj:`~numpy.ndarray`
-        The abscissa values for which to return the ordinate
-    a : :obj:`float`
-        The amplitude of the gaussian (in units of ordinate)
-    mu : :obj:`float`
-        The mean of the gaussian (in units of abscissa).
-    sig : :obj:`float`
-        The width of the gaussian (in units of abscissa).
-    y0 : :obj:`float`
-        The vertical offset of the gaussian from zero (in units of ordinate)
-
-    Returns
-    -------
-    :obj:`~numpy.ndarray`
-        The gaussian ordinate
-    """
-    return a * np.exp(-((x - mu) ** 2) / (2.0 * sig**2)) + y0
-
-
 def nearest_odd(x: float) -> int:
     """Find the nearest odd integer
 

@@ -10,7 +10,9 @@
 #
 #  @author: tbowers
 
-"""LDTObserverTools contains python ports of various LDT Observer Tools
+"""LMI Exposure Time Calculator Module
+
+LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu

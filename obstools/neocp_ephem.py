@@ -10,7 +10,9 @@
 #
 #  @author: tbowers
 
-"""LDTObserverTools contains python ports of various LDT Observer Tools
+"""NEO Confirmation Page Object Ephemeris Generator Module
+
+LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu

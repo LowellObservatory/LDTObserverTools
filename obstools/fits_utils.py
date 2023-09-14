@@ -10,7 +10,9 @@
 #
 #  @author: tbowers
 
-"""LDTObserverTools contains python ports of various LDT Observer Tools
+"""FITS File Utility Module
+
+LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
@@ -62,6 +64,7 @@ def fix_ldt_header(files, keyword: str, new_value):
             hdr[keyword] = new_value
 
 
+# Command-Line Entry Point ===================================================#
 def entry_point():
     """Command-Line Entry Point"""
     # Parse command line arguments

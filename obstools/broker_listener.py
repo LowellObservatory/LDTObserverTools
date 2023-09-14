@@ -10,7 +10,9 @@
 #
 #  @author: tbowers
 
-"""LDTObserverTools contains python ports of various LDT Observer Tools
+"""Apache ActiveMQ Broker Listener Module
+
+LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 http://www.lowell.edu
