@@ -58,6 +58,29 @@ def check_float(potential_float):
         return False
 
 
+def first_moment_1d(line):
+    """Returns the 1st moment of line
+
+    Parameters
+    ----------
+    line : :obj:`~numpy.ndarray`
+        1-dimensional array to find the 1st moment of
+
+    Returns
+    -------
+    :obj:`float`
+        The first moment of the input array relative to element #
+    """
+    # Only use positive values -- set negative values to zero
+    line[line < 0] = 0
+
+    # Make the counting array
+    yy = np.arange(len(line))
+
+    # Return the first moment
+    return np.sum(yy * line) / np.sum(line)
+
+
 def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = False):
     """Function similar to IDL's GAUSSFIT
 
@@ -200,29 +223,6 @@ def gaussian_function(
     return a0 * np.exp(-(z**2) / 2.0) + a3 + a4 * x + a5 * x**2
 
 
-def first_moment_1d(line):
-    """Returns the 1st moment of line
-
-    Parameters
-    ----------
-    line : :obj:`~numpy.ndarray`
-        1-dimensional array to find the 1st moment of
-
-    Returns
-    -------
-    :obj:`float`
-        The first moment of the input array relative to element #
-    """
-    # Only use positive values -- set negative values to zero
-    line[line < 0] = 0
-
-    # Make the counting array
-    yy = np.arange(len(line))
-
-    # Return the first moment
-    return np.sum(yy * line) / np.sum(line)
-
-
 def good_poly(x, y, order, thresh, return_full=False):
     """Robust fitting of a polynomial to data
 
@@ -328,6 +328,80 @@ def good_poly(x, y, order, thresh, return_full=False):
     if return_full:
         return coeff, yfit, xx, yy
     return coeff
+
+
+def nearest_odd(x: float) -> int:
+    """Find the nearest odd integer
+
+    https://www.mathworks.com/matlabcentral/answers/45932-round-to-nearest-odd-integer#accepted_answer_56149
+
+    Parameters
+    ----------
+    x : :obj:`float`
+        Input number
+
+    Returns
+    -------
+    :obj:`int`
+        The nearest odd integer
+    """
+    return int(2 * np.floor(x / 2) + 1)
+
+
+def sinusoid(
+    x: np.ndarray,
+    a: float,
+    lam: float,
+    phi: float,
+    y0: float,
+    lin: float = 0,
+    quad: float = 0,
+    cube: float = 0,
+    quar: float = 0,
+) -> np.ndarray:
+    """Return a basic sinusoid (for use with :func:`scipy.optimize.curve_fit`)
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    x : :obj:`~numpy.ndarray`
+        The abscissa values for which to return the ordinate
+    a : :obj:`float`
+        The amplitude of the sinusoid (in units of ordinate)
+    lam : :obj:`float`
+        The wavelength of the sinusoid (in units of abscissa), equivalent to
+        `2π/k` (where `k` is the wavenumber).
+    phi : :obj:`float`
+        The phase shift of the sinusoid (in units of phase, nominally 0-1)
+    y0 : :obj:`float`
+        The vertical offset of the sinusoid from zero (in units of ordinate)
+    lin : :obj:`float`, optional
+        The linear term added to the fit (in units of ordinate/abscissa)
+        Default: 0
+    quad : :obj:`float`, optional
+        The quadratic term added to the fit (in units of ordinate/abscissa**2)
+        Default: 0
+    cube : :obj:`float`, optional
+        The cubic term added to the fit (in units of ordinate/abscissa**3)
+        Default: 0
+    quar : :obj:`float`, optional
+        The quartic term added to the fit (in units of ordinate/abscissa**4)
+        Default: 0
+
+    Returns
+    -------
+    array_like
+        The sinusoid ordinate
+    """
+    return (
+        a * np.sin(2.0 * np.pi * x / lam + 2.0 * np.pi * phi)
+        + y0
+        + lin * x
+        + quad * x**2
+        + cube * x**3
+        + quar * x**4
+    )
 
 
 def warn_and_return_zeros(return_full: bool, x, xx, yy, order, raise_warn=False):

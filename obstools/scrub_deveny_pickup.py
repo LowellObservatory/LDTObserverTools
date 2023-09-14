@@ -558,13 +558,13 @@ def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Tabl
         line[line > sig_clip] = sig_clip
 
         # Smooth the line with a median filter at 1/10th the pixel period
-        line = smooth_coeffs(line, kernel_size=nearest_odd(pixel_period / 10.0))
+        line = smooth_coeffs(line, kernel_size=utils.nearest_odd(pixel_period / 10.0))
 
         # Perform the curve fit
         try:
             xp = np.arange(line.size)
             popt, pcov = scipy.optimize.curve_fit(
-                sinusoid, xp, line, p0=p0, bounds=bounds
+                utils.sinusoid, xp, line, p0=p0, bounds=bounds
             )
         except RuntimeError:
             # Reached max function evaluations; set popt and pcov
@@ -578,7 +578,7 @@ def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Tabl
             # Make a diagnostic plot
             _, axis = plt.subplots(figsize=(9, 3))
             axis.plot(xp, line, "k-", linewidth=0.75)
-            axis.plot(xp, sinusoid(xp, *popt), "r-")
+            axis.plot(xp, utils.sinusoid(xp, *popt), "r-")
             plt.show()
             plt.close()
 
@@ -693,7 +693,7 @@ def apply_pattern(
         line = input_array[img_row, :]
 
         # Compute the pattern
-        pattern = sinusoid(
+        pattern = utils.sinusoid(
             np.arange(line.size),
             table_row["smooth_a"],
             table_row["smooth_lambda"],
@@ -855,24 +855,6 @@ def make_sinusoid_fit_plots(
 
 
 # Utility Functions (Alphabetical) ===========================================#
-def nearest_odd(x: float) -> int:
-    """Find the nearest odd integer
-
-    https://www.mathworks.com/matlabcentral/answers/45932-round-to-nearest-odd-integer#accepted_answer_56149
-
-    Parameters
-    ----------
-    x : :obj:`float`
-        Input number
-
-    Returns
-    -------
-    :obj:`int`
-        The nearest odd integer
-    """
-    return int(2 * np.floor(x / 2) + 1)
-
-
 def pixper_tofrom_hz(x: np.ndarray) -> np.ndarray:
     """Convert to/from pixel period and Hertz
 
@@ -890,62 +872,6 @@ def pixper_tofrom_hz(x: np.ndarray) -> np.ndarray:
     """
     warnings.simplefilter("ignore", RuntimeWarning)
     return 1.0 / (PIX_DWELL * x)
-
-
-def sinusoid(
-    x: np.ndarray,
-    a: float,
-    lam: float,
-    phi: float,
-    y0: float,
-    lin: float = 0,
-    quad: float = 0,
-    cube: float = 0,
-    quar: float = 0,
-) -> np.ndarray:
-    """Return a basic sinusoid (for use with :func:`scipy.optimize.curve_fit`)
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    x : :obj:`~numpy.ndarray`
-        The abscissa values for which to return the ordinate
-    a : :obj:`float`
-        The amplitude of the sinusoid (in units of ordinate)
-    lam : :obj:`float`
-        The wavelength of the sinusoid (in units of abscissa), equivalent to
-        `2π/k` (where `k` is the wavenumber).
-    phi : :obj:`float`
-        The phase shift of the sinusoid (in units of phase, nominally 0-1)
-    y0 : :obj:`float`
-        The vertical offset of the sinusoid from zero (in units of ordinate)
-    lin : :obj:`float`, optional
-        The linear term added to the fit (in units of ordinate/abscissa)
-        Default: 0
-    quad : :obj:`float`, optional
-        The quadratic term added to the fit (in units of ordinate/abscissa**2)
-        Default: 0
-    cube : :obj:`float`, optional
-        The cubic term added to the fit (in units of ordinate/abscissa**3)
-        Default: 0
-    quar : :obj:`float`, optional
-        The quartic term added to the fit (in units of ordinate/abscissa**4)
-        Default: 0
-
-    Returns
-    -------
-    array_like
-        The sinusoid ordinate
-    """
-    return (
-        a * np.sin(2.0 * np.pi * x / lam + 2.0 * np.pi * phi)
-        + y0
-        + lin * x
-        + quad * x**2
-        + cube * x**3
-        + quar * x**4
-    )
 
 
 # Command Line Interface Entry Point =========================================#
