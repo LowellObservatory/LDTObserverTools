@@ -81,6 +81,11 @@ def iterative_pypeit_clean(filename: pathlib.Path):
     well as the sky background.  We can use the reduced ``spec2d`` files to
     get the "source-free" noise background, which _should_ make identifying the
     sinusoidal noise more straightforward.
+
+    Parameters
+    ----------
+    filename : :obj:`pathlib.Path`
+        The name of the file to clean
     """
     # Get the corresponding `spec2d` file for this raw file
     setup_dirs = sorted(filename.parent.glob("ldt_deveny_?"))
@@ -192,238 +197,18 @@ def iterative_pypeit_clean(filename: pathlib.Path):
     make_sinusoid_fit_plots(resid_fitc, filename, resid_pixperiod)
 
 
-def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Table:
-    """Fit a sinusoid to each line in the image
-
-    This is like a mini-driver function that fits a sinusoid to each line in
-    the image.
-
-    Parameters
-    ----------
-    data_array : :obj:`~numpy.ndarray`
-        The image array to be processed.  This should be HORIZONTAL and in the
-        same orientation as images written out by lois directly from the
-        instrument.
-    pixel_period : :obj:`float`
-        The predicted pixel period for this image array, as computed by
-        :func:`flatten_clean_fft`.
-
-    Returns
-    -------
-    :obj:`~astropy.table.Table`
-        A table object containing the fit coefficients, one table row per row
-        of the input ``data_array``.
-    """
-    # Array shape
-    nrow, _ = data_array.shape
-    img_mean = np.nanmean(data_array)
-
-    # TODO: Do some sigma-clipping here to the whole image, maybe?
-
-    # These are the starting guesses and bounds for the sinusoidal fit
-    #  [a, lam, phi, y0, lin, quad]
-    p0 = [4, pixel_period, 0.5, img_mean]  # + 4 * [0]
-    bounds = (
-        [0, pixel_period / 2, 0, img_mean - 100],  # + 4 * [-np.inf],
-        [10, pixel_period * 2, 1, img_mean + 100],  # + 4 * [np.inf],
-    )
-
-    # Loop over the rows in the image to fit the pattern
-    fit_coeffs = []
-    progress_bar = tqdm(
-        total=nrow,
-        unit="row",
-        unit_scale=False,
-        colour="#87CEEB",
-    )
-
-    for img_row in range(nrow):
-        # Pull this line, minus the last few pixels at each end
-        line = data_array[img_row, 5:-5]
-
-        # To mitigate cosmic rays and night sky lines, sigma clip @ 5σ
-        sig_clip = np.std(line) * 5.0 + np.median(line)
-        line[line > sig_clip] = sig_clip
-
-        # Smooth the line with a median filter at 1/10th the pixel period
-        line = smooth_coeffs(line, kernel_size=nearest_odd(pixel_period / 10.0))
-
-        # Perform the curve fit
-        try:
-            xp = np.arange(line.size)
-            popt, pcov = scipy.optimize.curve_fit(
-                sinusoid, xp, line, p0=p0, bounds=bounds
-            )
-        except RuntimeError:
-            # Reached max function evaluations; set popt and pcov
-            print("Runtime error!")
-            popt = [0, pixel_period, 0.5, 2400]
-            pcov = np.diag(np.ones(len(popt)))
-
-        diagnostic = False
-        if diagnostic:
-            # ======
-            # Make a diagnostic plot
-            _, axis = plt.subplots(figsize=(9, 3))
-            axis.plot(xp, line, "k-", linewidth=0.75)
-            axis.plot(xp, sinusoid(xp, *popt), "r-")
-            plt.show()
-            plt.close()
-
-        # Compute standard deviations and correlation matrix
-        pstd = np.sqrt(np.diag(pcov))
-        # Check for zero stddev, replace with small stddev
-        pstd[pstd == 0] = 1.0e-8
-        inv_pstd = np.linalg.inv(np.diag(pstd))
-        pcor = np.matmul(np.matmul(inv_pstd, pcov), inv_pstd)
-
-        # Make sure the phase shift is a smoothly varying function, even if
-        #  it goes outside the range 0 - 1.
-        # NOTE: This explicitely assumes the phase shift from one line to the
-        #       next is always less than 0.5 (π radians, 180º).
-        if fit_coeffs:
-            while popt[2] - fit_coeffs[-1]["phi"] > 0.5:
-                popt[2] -= 1.0
-            while popt[2] - fit_coeffs[-1]["phi"] < -0.5:
-                popt[2] += 1.0
-
-        # Add the fit coefficients to the list
-        fit_coeffs.append(
-            {
-                "a": popt[0],
-                "a_err": pstd[0],
-                "lambda": popt[1],
-                "lambda_err": pstd[1],
-                "phi": popt[2],
-                "phi_err": pstd[2],
-                "y0": popt[3],
-                "y0_err": pstd[3],
-                "corr_a_lambda": pcor[0][1],
-                "corr_a_phi": pcor[0][2],
-                "corr_a_y0": pcor[0][3],
-                "corr_lambda_phi": pcor[1][2],
-                "corr_lambda_y0": pcor[1][3],
-                "corr_phi_y0": pcor[2][3],
-            }
-        )
-        progress_bar.update(1)
-
-    progress_bar.close()
-    # After the image has been fit, convert the list of dict into a Table
-    return astropy.table.Table(fit_coeffs)
-
-
-def nearest_odd(x: float) -> int:
-    """Find the nearest odd integer
-
-    https://www.mathworks.com/matlabcentral/answers/45932-round-to-nearest-odd-integer#accepted_answer_56149
-
-    Parameters
-    ----------
-    x : :obj:`float`
-        Input number
-
-    Returns
-    -------
-    :obj:`int`
-        The nearest odd integer
-    """
-    return int(2 * np.floor(x / 2) + 1)
-
-
-def smooth_coeffs(
-    col: astropy.table.Column, kernel_size: int = 21, ftype: str = "median"
-) -> np.ndarray:
-    """Smooth out the coefficients from the fit coefficients table
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    col : :obj:`~astropy.table.Column`
-        _description_
-    kernel_size : :obj:`int`, optional
-        Kernel or window size for the smoothing function (Default: 21)
-    ftype : :obj:`str`, optional
-        Smoothing function to use.  Options are "median" and "savgol".
-        (Default: "median")
-
-    Returns
-    -------
-    :obj:`~numpy.ndarray`
-        The smoothed coefficients
-    """
-    if ftype == "median":
-        return (
-            scipy.signal.medfilt(col - (med := np.median(col)), kernel_size=kernel_size)
-            + med
-        )
-    if ftype == "savgol":
-        return scipy.signal.savgol_filter(
-            col, window_length=kernel_size, polyorder=2, mode="nearest"
-        )
-    raise ValueError(f"Filter type {ftype} not supported by this function.")
-
-
-def apply_pattern(
-    input_array: np.ndarray, fit_coeffs: astropy.table.Table
-) -> tuple[np.ndarray, np.ndarray]:
-    """Construct the pattern from the fit coefficients
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    input_array : :obj:`~numpy.ndarray`
-        The input array to be cleaned
-    fit_coeffs : `astropy.table.Table`
-        _description_
-
-    Returns
-    -------
-    cleaned_array : :obj:`~numpy.ndarray`
-        The cleaned sience array
-    pattern_array : :obj:`~numpy.ndarray`
-        The pattern removed from ``input_array``
-    """
-    # Compute the image mean for the pattern array
-    img_mean = np.nanmean(input_array)
-
-    # Create the arrays that the processed data will go into
-    cleaned_array = input_array.copy().astype(np.float64)
-    pattern_array = input_array.copy().astype(np.float64)
-
-    # Loop through the image and use the smoothed sinusoid fit coefficients
-    for img_row, table_row in enumerate(fit_coeffs):
-        # Apply the adjusted pattern to the entire row
-        line = input_array[img_row, :]
-
-        # Compute the pattern
-        pattern = sinusoid(
-            np.arange(line.size),
-            table_row["smooth_a"],
-            table_row["smooth_lambda"],
-            table_row["smooth_phi"],
-            0,
-        )
-
-        # Fill in the new arrays with the cleaned data and pattern
-        cleaned_array[img_row, :] = line - pattern
-        pattern_array[img_row, :] = pattern + img_mean
-
-    # Return when done
-    return cleaned_array, pattern_array
-
-
 def clean_pickup(
     filename: pathlib.Path,
-    use_hann=False,
-    sine_plot=True,
-    fft_plot=False,
+    use_hann: bool = False,
+    sine_plot: bool = True,
+    fft_plot: bool = False,
 ):
     """Clean the Pickup Noise
 
-    This is the main functional method of the module.
+    This is the first version of the cleaning code, which operates directly on
+    the raw DeVeny image.  It suffers from confusion from bright night-sky
+    lines and brighter objects.  These deficiencies led to the development of
+    the iterative scrubber.  This code is kept here for historical purposes.
 
     Parameters
     ----------
@@ -440,7 +225,7 @@ def clean_pickup(
     """
     # Read in the image and create copy arrays on which to work
     ccd = astropy.nddata.CCDData.read(filename)
-    nrow, ncol = ccd.data.shape
+    _, ncol = ccd.data.shape
 
     # Check if this images has already been post-processed by this routine
     if "postproc" in ccd.header and ccd.header["postproc"] == "deveny_pickup":
@@ -582,66 +367,10 @@ def clean_pickup(
     hdul.writeto(out_fn, overwrite=True)
 
 
-def make_sinusoid_fit_plots(
-    fit_coeffs: astropy.table.Table, filename: pathlib.Path, pixel_period: float
-):
-    """Create a set of diagnostic plots from the set of sinusoid fits
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    fit_coeffs : :obj:`~astropy.table.Table`
-        The fit coefficients table
-    filename : :obj:`~pathlib.Path`
-        The filename of the original file, used in the plot title
-    pixel_period : :obj:`float`
-        The estimated pixel period of the sinusoidal noise from the FFT
-    """
-    _, axes = plt.subplots(nrows=3, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0})
-    tsz = 8
-
-    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"])
-    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_a"])
-    axes[0].set_ylabel("Sinusoid Amplitude (ADU)")
-
-    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["lambda"])
-    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_lambda"])
-    axes[1].hlines(
-        pixel_period,
-        0,
-        1,
-        transform=axes[1].get_yaxis_transform(),
-        linestyle="--",
-        zorder=0,
-        color="C2",
-    )
-    axes[1].set_ylabel("Sinusoid Period (pixels)")
-
-    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["phi"])
-    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_phi"])
-    axes[2].set_ylabel("Sinusoid Phase Shift (phase)")
-    axes[2].set_xlabel("Image Row Number")
-
-    for axis in axes:
-        axis.tick_params(
-            axis="both",
-            which="both",
-            direction="in",
-            top=True,
-            right=True,
-            labelsize=tsz,
-        )
-    axes[0].set_title(f"Sinusoid Pattern Fits for {filename.name}", fontsize=tsz + 2)
-
-    plt.tight_layout()
-    plt.savefig("sinusoid_fits.pdf")
-    plt.close()
-
-
+# Task-Oriented Helper Functions =============================================#
 def flatten_clean_fft(
     data_array: np.ndarray, imgtyp: str, use_hann: bool = False, fft_plot: bool = False
-):
+) -> float:
     """Find the peak frequency of sinusoidal noise
 
     The function name describes what it does:
@@ -774,95 +503,229 @@ def flatten_clean_fft(
     return pixper_tofrom_hz(peak_freq)
 
 
-def sinusoid(x, a, lam, phi, y0, lin=0, quad=0, cube=0, quar=0):
-    """Return a basic sinusoid (for use with :func:`scipy.optimize.curve_fit`)
+def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Table:
+    """Fit a sinusoid to each line in the image
 
-    _extended_summary_
+    This is like a mini-driver function that fits a sinusoid to each line in
+    the image.
 
     Parameters
     ----------
-    x : array_like
-        The abscissa values for which to return the ordinate
-    a : float
-        The amplitude of the sinusoid (in units of ordinate)
-    lam : float
-        The wavelength of the sinusoid (in units of abscissa), equivalent to
-        `2π/k` (where `k` is the wavenumber).
-    phi : float
-        The phase shift of the sinusoid (in units of phase, nominally 0-1)
-    y0 : float
-        The vertical offset of the sinusoid from zero (in units of ordinate)
-    lin : float, optional
-        The linear term added to the fit (in units of ordinate/abscissa)
-        Default: 0
-    quad : float, optional
-        The quadratic term added to the fit (in units of ordinate/abscissa**2)
-        Default: 0
-    cube : float, optional
-        The cubic term added to the fit (in units of ordinate/abscissa**3)
-        Default: 0
-    quar : float, optional
-        The quartic term added to the fit (in units of ordinate/abscissa**4)
-        Default: 0
+    data_array : :obj:`~numpy.ndarray`
+        The image array to be processed.  This should be HORIZONTAL and in the
+        same orientation as images written out by lois directly from the
+        instrument.
+    pixel_period : :obj:`float`
+        The predicted pixel period for this image array, as computed by
+        :func:`flatten_clean_fft`.
 
     Returns
     -------
-    array_like
-        The sinusoid ordinate
+    :obj:`~astropy.table.Table`
+        A table object containing the fit coefficients, one table row per row
+        of the input ``data_array``.
     """
-    return (
-        a * np.sin(2.0 * np.pi * x / lam + 2.0 * np.pi * phi)
-        + y0
-        + lin * x
-        + quad * x**2
-        + cube * x**3
-        + quar * x**4
+    # Array shape
+    nrow, _ = data_array.shape
+    img_mean = np.nanmean(data_array)
+
+    # TODO: Do some sigma-clipping here to the whole image, maybe?
+
+    # These are the starting guesses and bounds for the sinusoidal fit
+    #  [a, lam, phi, y0, lin, quad]
+    p0 = [4, pixel_period, 0.5, img_mean]  # + 4 * [0]
+    bounds = (
+        [0, pixel_period / 2, 0, img_mean - 100],  # + 4 * [-np.inf],
+        [10, pixel_period * 2, 1, img_mean + 100],  # + 4 * [np.inf],
     )
 
+    # Loop over the rows in the image to fit the pattern
+    fit_coeffs = []
+    progress_bar = tqdm(
+        total=nrow,
+        unit="row",
+        unit_scale=False,
+        colour="#87CEEB",
+    )
 
-def gauss1d(x, a, mu, sig, y0):
-    """Return a basic gaussian (for use with :func:`scipy.optimize.curve_fit`)
+    for img_row in range(nrow):
+        # Pull this line, minus the last few pixels at each end
+        line = data_array[img_row, 5:-5]
+
+        # To mitigate cosmic rays and night sky lines, sigma clip @ 5σ
+        sig_clip = np.std(line) * 5.0 + np.median(line)
+        line[line > sig_clip] = sig_clip
+
+        # Smooth the line with a median filter at 1/10th the pixel period
+        line = smooth_coeffs(line, kernel_size=nearest_odd(pixel_period / 10.0))
+
+        # Perform the curve fit
+        try:
+            xp = np.arange(line.size)
+            popt, pcov = scipy.optimize.curve_fit(
+                sinusoid, xp, line, p0=p0, bounds=bounds
+            )
+        except RuntimeError:
+            # Reached max function evaluations; set popt and pcov
+            print("Runtime error!")
+            popt = [0, pixel_period, 0.5, 2400]
+            pcov = np.diag(np.ones(len(popt)))
+
+        diagnostic = False
+        if diagnostic:
+            # ======
+            # Make a diagnostic plot
+            _, axis = plt.subplots(figsize=(9, 3))
+            axis.plot(xp, line, "k-", linewidth=0.75)
+            axis.plot(xp, sinusoid(xp, *popt), "r-")
+            plt.show()
+            plt.close()
+
+        # Compute standard deviations and correlation matrix
+        pstd = np.sqrt(np.diag(pcov))
+        # Check for zero stddev, replace with small stddev
+        pstd[pstd == 0] = 1.0e-8
+        inv_pstd = np.linalg.inv(np.diag(pstd))
+        pcor = np.matmul(np.matmul(inv_pstd, pcov), inv_pstd)
+
+        # Make sure the phase shift is a smoothly varying function, even if
+        #  it goes outside the range 0 - 1.
+        # NOTE: This explicitely assumes the phase shift from one line to the
+        #       next is always less than 0.5 (π radians, 180º).
+        if fit_coeffs:
+            while popt[2] - fit_coeffs[-1]["phi"] > 0.5:
+                popt[2] -= 1.0
+            while popt[2] - fit_coeffs[-1]["phi"] < -0.5:
+                popt[2] += 1.0
+
+        # Add the fit coefficients to the list
+        fit_coeffs.append(
+            {
+                "a": popt[0],
+                "a_err": pstd[0],
+                "lambda": popt[1],
+                "lambda_err": pstd[1],
+                "phi": popt[2],
+                "phi_err": pstd[2],
+                "y0": popt[3],
+                "y0_err": pstd[3],
+                "corr_a_lambda": pcor[0][1],
+                "corr_a_phi": pcor[0][2],
+                "corr_a_y0": pcor[0][3],
+                "corr_lambda_phi": pcor[1][2],
+                "corr_lambda_y0": pcor[1][3],
+                "corr_phi_y0": pcor[2][3],
+            }
+        )
+        progress_bar.update(1)
+
+    progress_bar.close()
+    # After the image has been fit, convert the list of dict into a Table
+    return astropy.table.Table(fit_coeffs)
+
+
+def smooth_coeffs(
+    col: astropy.table.Column, kernel_size: int = 21, ftype: str = "median"
+) -> np.ndarray:
+    """Smooth out the coefficients from the fit coefficients table
+
+    Attempt to allow for a smooth noise pattern from row to row.
+
+     Parameters
+     ----------
+     col : :obj:`~astropy.table.Column`
+         _description_
+     kernel_size : :obj:`int`, optional
+         Kernel or window size for the smoothing function (Default: 21)
+     ftype : :obj:`str`, optional
+         Smoothing function to use.  Options are "median" and "savgol".
+         (Default: "median")
+
+     Returns
+     -------
+     :obj:`~numpy.ndarray`
+         The smoothed coefficients
+    """
+    if ftype == "median":
+        return (
+            scipy.signal.medfilt(col - (med := np.median(col)), kernel_size=kernel_size)
+            + med
+        )
+    if ftype == "savgol":
+        return scipy.signal.savgol_filter(
+            col, window_length=kernel_size, polyorder=2, mode="nearest"
+        )
+    raise ValueError(f"Filter type {ftype} not supported by this function.")
+
+
+def apply_pattern(
+    input_array: np.ndarray, fit_coeffs: astropy.table.Table
+) -> tuple[np.ndarray, np.ndarray]:
+    """Construct the pattern from the fit coefficients
 
     _extended_summary_
 
     Parameters
     ----------
-    x : array_like
-        The abscissa values for which to return the ordinate
-    a : float
-        The amplitude of the gaussian (in units of ordinate)
-    mu : float
-        The mean of the gaussian (in units of abscissa).
-    sig : float
-        The width of the gaussian (in units of abscissa).
-    y0 : float
-        The vertical offset of the gaussian from zero (in units of ordinate)
+    input_array : :obj:`~numpy.ndarray`
+        The input array to be cleaned
+    fit_coeffs : `astropy.table.Table`
+        _description_
 
     Returns
     -------
-    array_like
-        The gaussian ordinate
+    cleaned_array : :obj:`~numpy.ndarray`
+        The cleaned sience array
+    pattern_array : :obj:`~numpy.ndarray`
+        The pattern removed from ``input_array``
     """
-    return a * np.exp(-((x - mu) ** 2) / (2.0 * sig**2)) + y0
+    # Compute the image mean for the pattern array
+    img_mean = np.nanmean(input_array)
+
+    # Create the arrays that the processed data will go into
+    cleaned_array = input_array.copy().astype(np.float64)
+    pattern_array = input_array.copy().astype(np.float64)
+
+    # Loop through the image and use the smoothed sinusoid fit coefficients
+    for img_row, table_row in enumerate(fit_coeffs):
+        # Apply the adjusted pattern to the entire row
+        line = input_array[img_row, :]
+
+        # Compute the pattern
+        pattern = sinusoid(
+            np.arange(line.size),
+            table_row["smooth_a"],
+            table_row["smooth_lambda"],
+            table_row["smooth_phi"],
+            0,
+        )
+
+        # Fill in the new arrays with the cleaned data and pattern
+        cleaned_array[img_row, :] = line - pattern
+        pattern_array[img_row, :] = pattern + img_mean
+
+    # Return when done
+    return cleaned_array, pattern_array
 
 
-def create_fft_plot(flat_array, y_fft, x_fft, peak_freq):
+# Plotting Functions for QA / Debugging ======================================#
+def create_fft_plot(
+    flat_array: np.ndarray, y_fft: np.ndarray, x_fft: np.ndarray, peak_freq: float
+):
     """Create the FFT analysis plot
 
     _extended_summary_
 
     Parameters
     ----------
-    data_array : _type_
-        _description_
-    flat_array : _type_
-        _description_
-    y_fft : _type_
-        _description_
-    x_fft : _type_
-        _description_
-    peak_freq : _type_
-        _description_
+    flat_array : :obj:`~numpy.ndarray`
+        The flattened (1D) pixel array
+    y_fft : :obj:`~numpy.ndarray`
+        The (complex) FFT values
+    x_fft : :obj:`~numpy.ndarray`
+        The FFT frequencies for the values in ``y_fft``
+    peak_freq : :obj:`float`
+        The peak frequency measured from the FFT
     """
     # Compute the power spectrum as |FFT|^2; smoothed with a 10-Hz Gaussian
     pspec = scipy.ndimage.gaussian_filter1d(np.abs(y_fft) ** 2, 10)
@@ -933,27 +796,185 @@ def create_fft_plot(flat_array, y_fft, x_fft, peak_freq):
     plt.close()
 
 
-def pixper_tofrom_hz(x):
+def make_sinusoid_fit_plots(
+    fit_coeffs: astropy.table.Table, filename: pathlib.Path, pixel_period: float
+):
+    """Create a set of diagnostic plots from the set of sinusoid fits
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    fit_coeffs : :obj:`~astropy.table.Table`
+        The fit coefficients table
+    filename : :obj:`~pathlib.Path`
+        The filename of the original file, used in the plot title
+    pixel_period : :obj:`float`
+        The estimated pixel period of the sinusoidal noise from the FFT
+    """
+    _, axes = plt.subplots(nrows=3, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0})
+    tsz = 8
+
+    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"])
+    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_a"])
+    axes[0].set_ylabel("Sinusoid Amplitude (ADU)")
+
+    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["lambda"])
+    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_lambda"])
+    axes[1].hlines(
+        pixel_period,
+        0,
+        1,
+        transform=axes[1].get_yaxis_transform(),
+        linestyle="--",
+        zorder=0,
+        color="C2",
+    )
+    axes[1].set_ylabel("Sinusoid Period (pixels)")
+
+    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["phi"])
+    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_phi"])
+    axes[2].set_ylabel("Sinusoid Phase Shift (phase)")
+    axes[2].set_xlabel("Image Row Number")
+
+    for axis in axes:
+        axis.tick_params(
+            axis="both",
+            which="both",
+            direction="in",
+            top=True,
+            right=True,
+            labelsize=tsz,
+        )
+    axes[0].set_title(f"Sinusoid Pattern Fits for {filename.name}", fontsize=tsz + 2)
+
+    plt.tight_layout()
+    plt.savefig("sinusoid_fits.pdf")
+    plt.close()
+
+
+# Utility Functions (Alphabetical) ===========================================#
+def gauss1d(x: np.ndarray, a: float, mu: float, sig: float, y0: float) -> np.ndarray:
+    """Return a basic gaussian (for use with :func:`scipy.optimize.curve_fit`)
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    x : :obj:`~numpy.ndarray`
+        The abscissa values for which to return the ordinate
+    a : :obj:`float`
+        The amplitude of the gaussian (in units of ordinate)
+    mu : :obj:`float`
+        The mean of the gaussian (in units of abscissa).
+    sig : :obj:`float`
+        The width of the gaussian (in units of abscissa).
+    y0 : :obj:`float`
+        The vertical offset of the gaussian from zero (in units of ordinate)
+
+    Returns
+    -------
+    :obj:`~numpy.ndarray`
+        The gaussian ordinate
+    """
+    return a * np.exp(-((x - mu) ** 2) / (2.0 * sig**2)) + y0
+
+
+def nearest_odd(x: float) -> int:
+    """Find the nearest odd integer
+
+    https://www.mathworks.com/matlabcentral/answers/45932-round-to-nearest-odd-integer#accepted_answer_56149
+
+    Parameters
+    ----------
+    x : :obj:`float`
+        Input number
+
+    Returns
+    -------
+    :obj:`int`
+        The nearest odd integer
+    """
+    return int(2 * np.floor(x / 2) + 1)
+
+
+def pixper_tofrom_hz(x: np.ndarray) -> np.ndarray:
     """Convert to/from pixel period and Hertz
 
     _extended_summary_
 
     Parameters
     ----------
-    x : array-like
-        Input value to convert
+    x : :obj:`~numpy.ndarray`
+        Input value(s) to convert
 
     Returns
     -------
     array-like
-        Converted output
+        Converted output(s)
     """
     warnings.simplefilter("ignore", RuntimeWarning)
     return 1.0 / (PIX_DWELL * x)
 
 
+def sinusoid(
+    x: np.ndarray,
+    a: float,
+    lam: float,
+    phi: float,
+    y0: float,
+    lin: float = 0,
+    quad: float = 0,
+    cube: float = 0,
+    quar: float = 0,
+) -> np.ndarray:
+    """Return a basic sinusoid (for use with :func:`scipy.optimize.curve_fit`)
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    x : :obj:`~numpy.ndarray`
+        The abscissa values for which to return the ordinate
+    a : :obj:`float`
+        The amplitude of the sinusoid (in units of ordinate)
+    lam : :obj:`float`
+        The wavelength of the sinusoid (in units of abscissa), equivalent to
+        `2π/k` (where `k` is the wavenumber).
+    phi : :obj:`float`
+        The phase shift of the sinusoid (in units of phase, nominally 0-1)
+    y0 : :obj:`float`
+        The vertical offset of the sinusoid from zero (in units of ordinate)
+    lin : :obj:`float`, optional
+        The linear term added to the fit (in units of ordinate/abscissa)
+        Default: 0
+    quad : :obj:`float`, optional
+        The quadratic term added to the fit (in units of ordinate/abscissa**2)
+        Default: 0
+    cube : :obj:`float`, optional
+        The cubic term added to the fit (in units of ordinate/abscissa**3)
+        Default: 0
+    quar : :obj:`float`, optional
+        The quartic term added to the fit (in units of ordinate/abscissa**4)
+        Default: 0
+
+    Returns
+    -------
+    array_like
+        The sinusoid ordinate
+    """
+    return (
+        a * np.sin(2.0 * np.pi * x / lam + 2.0 * np.pi * phi)
+        + y0
+        + lin * x
+        + quad * x**2
+        + cube * x**3
+        + quar * x**4
+    )
+
+
 # Command Line Interface Entry Point =========================================#
-def main(files, use_hann=False, no_plots=False):
+def main(files: list | str, use_hann: bool = False, no_plots: bool = False):
     """Main driver
 
     Main driver function that takes the input list and calls the cleaning
