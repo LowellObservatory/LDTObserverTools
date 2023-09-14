@@ -84,6 +84,7 @@ def iterative_pypeit_clean(filename: pathlib.Path):
     """
     # Get the corresponding `spec2d` file for this raw file
     setup_dirs = sorted(filename.parent.glob("ldt_deveny_?"))
+    print(setup_dirs)
     spec2d_file = [
         next(sd.joinpath("Science").glob(f"spec2d_{filename.stem}*"))
         for sd in setup_dirs
@@ -106,20 +107,21 @@ def iterative_pypeit_clean(filename: pathlib.Path):
     # Get the expected pixel period from the FFT of the flattened array
     orig_pixperiod = flatten_clean_fft(orig_thing.copy(), "OBJECT")
     print(f"This is the FFT-predicted pixel period (orig): {orig_pixperiod:.1f} pix")
-    resid_pixperiod = flatten_clean_fft(resid_thing.copy(), "BIAS")
+    resid_pixperiod = flatten_clean_fft(resid_thing.copy(), "BIAS", fft_plot=True)
     print(f"This is the FFT-predicted pixel period (resid): {resid_pixperiod:.1f} pix")
 
     # Fit the actual images
-    orig_fitc = fit_lines(orig_thing.copy(), orig_pixperiod)
     resid_fitc = fit_lines(resid_thing.copy(), resid_pixperiod)
+    orig_fitc = fit_lines(orig_thing.copy(), orig_pixperiod)
 
     for fit_coeffs in [orig_fitc, resid_fitc]:
         # Smooth the fit coefficients as a function of row to remove artifacts due
         #  to cosmic rays or strong sources.
         # NOTE: scipy.signal.medfilt() uses zero-padding for the ends of the signal,
         #       therefore subtract the mean and re-add it to eliminate edge weirdness
-        fit_coeffs["smooth_a"] = smooth_coeffs(fit_coeffs["a"])
-        fit_coeffs["smooth_lambda"] = smooth_coeffs(fit_coeffs["lambda"])
+        fit_coeffs["smooth_a"] = smooth_coeffs(fit_coeffs["a"], kernel_size=9)
+        fit_coeffs["smooth_lambda"] = smooth_coeffs(fit_coeffs["lambda"], kernel_size=9)
+        # fit_coeffs["smooth_phi"] = fit_coeffs["phi"]
         fit_coeffs["smooth_phi"] = smooth_coeffs(fit_coeffs["phi"], ftype="savgol")
         # Print a happy statement of fact
         print(
@@ -129,22 +131,65 @@ def iterative_pypeit_clean(filename: pathlib.Path):
     cleaned_orig, pattern_orig = apply_pattern(orig_thing, orig_fitc)
     cleaned_resid, pattern_resid = apply_pattern(resid_thing, resid_fitc)
 
+    # =====================================================#
     # Display the thing
-    _, axes = plt.subplots(nrows=2, figsize=(9, 4))
+    _, axes = plt.subplots(nrows=6, figsize=(9, 15))
+    tsz = 8
 
-    # Draw the resid image
-    vmin, vmax = interval.get_limits(resid_thing)
-    axes[0].imshow(resid_thing, vmin=vmin, vmax=vmax, origin="lower")
+    # Panel #1: Draw the original science image
+    vmin, vmax = interval.get_limits(spec2d.sciimg)
+    axes[0].imshow(np.rot90(spec2d.sciimg, k=-1), vmin=vmin, vmax=vmax, origin="lower")
     axes[0].axis("off")
+    axes[0].set_ylabel("sciimg", fontsize=tsz)
 
-    # Draw the model
-    # vmin, vmax = interval.get_limits(pattern_resid)
-    axes[1].imshow(pattern_resid, vmin=vmin, vmax=vmax, origin="lower")
+    # Panel #2: Draw the sky model
+    vmin, vmax = interval.get_limits(spec2d.skymodel)
+    axes[1].imshow(
+        np.rot90(spec2d.skymodel, k=-1), vmin=vmin, vmax=vmax, origin="lower"
+    )
     axes[1].axis("off")
+    axes[1].set_ylabel("skymodel", fontsize=tsz)
+
+    # Panel #6: Draw the cleaned science image
+    axes[5].imshow(
+        np.rot90(spec2d.sciimg, k=-1) - pattern_resid + np.median(pattern_resid),
+        vmin=vmin,
+        vmax=vmax,
+        origin="lower",
+    )
+    axes[5].axis("off")
+    axes[5].set_ylabel("sciimg - pattern", fontsize=tsz)
+
+    # Panel #3: Draw the resid image
+    vmin, vmax = interval.get_limits(resid_thing)
+    axes[2].imshow(resid_thing, vmin=vmin, vmax=vmax, origin="lower")
+    axes[2].axis("off")
+    axes[2].set_ylabel("resid", fontsize=tsz)
+
+    # Panel #4: Draw the model
+    # vmin, vmax = interval.get_limits(pattern_resid)
+    axes[3].imshow(pattern_resid, vmin=vmin, vmax=vmax, origin="lower")
+    axes[3].axis("off")
+    axes[3].set_ylabel("pattern", fontsize=tsz)
+
+    # Panel #5: Draw the cleaned image
+    axes[4].imshow(
+        resid_thing - pattern_resid + np.median(pattern_resid),
+        vmin=vmin,
+        vmax=vmax,
+        origin="lower",
+    )
+    axes[4].axis("off")
+    axes[4].set_ylabel("resid - pattern", fontsize=tsz)
+
+    axes[0].set_title(filename.name, fontsize=tsz + 2)
 
     plt.tight_layout()
     plt.savefig("scrub_thing.pdf")
     plt.close()
+
+    # Make disgnostic plot
+    make_sinusoid_fit_plots(resid_fitc, filename, resid_pixperiod)
 
 
 def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Table:
@@ -171,13 +216,16 @@ def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Tabl
     """
     # Array shape
     nrow, _ = data_array.shape
+    img_mean = np.nanmean(data_array)
+
+    # TODO: Do some sigma-clipping here to the whole image, maybe?
 
     # These are the starting guesses and bounds for the sinusoidal fit
     #  [a, lam, phi, y0, lin, quad]
-    p0 = [4, pixel_period, 0.5, 2400]  # + 4 * [0]
+    p0 = [4, pixel_period, 0.5, img_mean]  # + 4 * [0]
     bounds = (
-        [0, pixel_period - 10, 0, 2000],  # + 4 * [-np.inf],
-        [10, pixel_period + 10, 1, 3000],  # + 4 * [np.inf],
+        [0, pixel_period / 2, 0, img_mean - 100],  # + 4 * [-np.inf],
+        [10, pixel_period * 2, 1, img_mean + 100],  # + 4 * [np.inf],
     )
 
     # Loop over the rows in the image to fit the pattern
@@ -197,15 +245,30 @@ def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Tabl
         sig_clip = np.std(line) * 5.0 + np.median(line)
         line[line > sig_clip] = sig_clip
 
+        # Smooth the line with a median filter at 1/10th the pixel period
+        line = smooth_coeffs(line, kernel_size=nearest_odd(pixel_period / 10.0))
+
         # Perform the curve fit
         try:
+            xp = np.arange(line.size)
             popt, pcov = scipy.optimize.curve_fit(
-                sinusoid, np.arange(line.size), line, p0=p0, bounds=bounds
+                sinusoid, xp, line, p0=p0, bounds=bounds
             )
         except RuntimeError:
             # Reached max function evaluations; set popt and pcov
-            popt = p0.copy()
+            print("Runtime error!")
+            popt = [0, pixel_period, 0.5, 2400]
             pcov = np.diag(np.ones(len(popt)))
+
+        diagnostic = False
+        if diagnostic:
+            # ======
+            # Make a diagnostic plot
+            _, axis = plt.subplots(figsize=(9, 3))
+            axis.plot(xp, line, "k-", linewidth=0.75)
+            axis.plot(xp, sinusoid(xp, *popt), "r-")
+            plt.show()
+            plt.close()
 
         # Compute standard deviations and correlation matrix
         pstd = np.sqrt(np.diag(pcov))
@@ -248,6 +311,24 @@ def fit_lines(data_array: np.ndarray, pixel_period: float) -> astropy.table.Tabl
     progress_bar.close()
     # After the image has been fit, convert the list of dict into a Table
     return astropy.table.Table(fit_coeffs)
+
+
+def nearest_odd(x: float) -> int:
+    """Find the nearest odd integer
+
+    https://www.mathworks.com/matlabcentral/answers/45932-round-to-nearest-odd-integer#accepted_answer_56149
+
+    Parameters
+    ----------
+    x : :obj:`float`
+        Input number
+
+    Returns
+    -------
+    :obj:`int`
+        The nearest odd integer
+    """
+    return int(2 * np.floor(x / 2) + 1)
 
 
 def smooth_coeffs(
@@ -400,47 +481,7 @@ def clean_pickup(
 
     # Make a plot, if desired
     if sine_plot:
-        _, axes = plt.subplots(nrows=3, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0})
-        tsz = 8
-
-        axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"])
-        axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_a"])
-        axes[0].set_ylabel("Sinusoid Amplitude (ADU)")
-
-        axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["lambda"])
-        axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_lambda"])
-        axes[1].hlines(
-            pixel_period,
-            0,
-            1,
-            transform=axes[1].get_yaxis_transform(),
-            linestyle="--",
-            zorder=0,
-            color="C2",
-        )
-        axes[1].set_ylabel("Sinusoid Period (pixels)")
-
-        axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["phi"])
-        axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_phi"])
-        axes[2].set_ylabel("Sinusoid Phase Shift (phase)")
-        axes[2].set_xlabel("Image Row Number")
-
-        for axis in axes:
-            axis.tick_params(
-                axis="both",
-                which="both",
-                direction="in",
-                top=True,
-                right=True,
-                labelsize=tsz,
-            )
-        axes[0].set_title(
-            f"Sinusoid Pattern Fits for {filename.name}", fontsize=tsz + 2
-        )
-
-        plt.tight_layout()
-        plt.savefig("sinusoid_fits.pdf")
-        plt.close()
+        make_sinusoid_fit_plots(fit_coeffs, filename, pixel_period)
 
     # Package everything into a multiextension FITS file ===========#
     time_str = datetime.datetime.utcnow().isoformat(sep=" ", timespec="seconds")
@@ -539,6 +580,63 @@ def clean_pickup(
     fn_parts = filename.name.split(".")
     out_fn = f"{fn_parts[0]}.C{fn_parts[1]}.{'.'.join(fn_parts[2:])}"
     hdul.writeto(out_fn, overwrite=True)
+
+
+def make_sinusoid_fit_plots(
+    fit_coeffs: astropy.table.Table, filename: pathlib.Path, pixel_period: float
+):
+    """Create a set of diagnostic plots from the set of sinusoid fits
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    fit_coeffs : :obj:`~astropy.table.Table`
+        The fit coefficients table
+    filename : :obj:`~pathlib.Path`
+        The filename of the original file, used in the plot title
+    pixel_period : :obj:`float`
+        The estimated pixel period of the sinusoidal noise from the FFT
+    """
+    _, axes = plt.subplots(nrows=3, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0})
+    tsz = 8
+
+    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"])
+    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_a"])
+    axes[0].set_ylabel("Sinusoid Amplitude (ADU)")
+
+    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["lambda"])
+    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_lambda"])
+    axes[1].hlines(
+        pixel_period,
+        0,
+        1,
+        transform=axes[1].get_yaxis_transform(),
+        linestyle="--",
+        zorder=0,
+        color="C2",
+    )
+    axes[1].set_ylabel("Sinusoid Period (pixels)")
+
+    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["phi"])
+    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["smooth_phi"])
+    axes[2].set_ylabel("Sinusoid Phase Shift (phase)")
+    axes[2].set_xlabel("Image Row Number")
+
+    for axis in axes:
+        axis.tick_params(
+            axis="both",
+            which="both",
+            direction="in",
+            top=True,
+            right=True,
+            labelsize=tsz,
+        )
+    axes[0].set_title(f"Sinusoid Pattern Fits for {filename.name}", fontsize=tsz + 2)
+
+    plt.tight_layout()
+    plt.savefig("sinusoid_fits.pdf")
+    plt.close()
 
 
 def flatten_clean_fft(
