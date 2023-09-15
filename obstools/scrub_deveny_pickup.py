@@ -79,7 +79,9 @@ warnings.simplefilter("ignore", astropy.io.fits.verify.VerifyWarning)
 
 
 # Narrative Functions ========================================================#
-def iterative_pypeit_clean(filename: pathlib.Path, overwrite_raw: bool = False):
+def iterative_pypeit_clean(
+    filename: pathlib.Path, overwrite_raw: bool = False, debug_plots: bool = False
+):
     """Iteratively use PypeIt to clean pickup noise
 
     As part of the data-reduction process, PypeIt fits and extracts images as
@@ -89,11 +91,13 @@ def iterative_pypeit_clean(filename: pathlib.Path, overwrite_raw: bool = False):
 
     Parameters
     ----------
-    filename : :obj:`pathlib.Path`
+    filename : :obj:`~pathlib.Path`
         The name of the file to clean
     overwrite_raw : :obj:`bool`, optional
         Overwrite the raw file rather than create a new file with the '_scrub'
         suffix  (Default: False)
+    debug_plots : :obj:`bool`, optional
+        Create a plots during the image analysis?  (Default: False)
     """
     # Print a welcome statement
     print(f"\nProcessing frame {filename.name}")
@@ -116,7 +120,7 @@ def iterative_pypeit_clean(filename: pathlib.Path, overwrite_raw: bool = False):
 
     # To guide the fitting of sinusoids to individual lines, compute the
     #   expected (average) pixel period from the FFT of the flattened array
-    resid_pixperiod = flatten_clean_fft(resid_img.copy(), "BIAS", fft_plot=True)
+    resid_pixperiod = flatten_clean_fft(resid_img.copy(), "BIAS", fft_plot=debug_plots)
     print(f"This is the FFT-predicted pixel period (resid): {resid_pixperiod:.1f} pix")
 
     # Fit a sinusoid to each line in the image using the pixel period as a guess
@@ -145,9 +149,10 @@ def iterative_pypeit_clean(filename: pathlib.Path, overwrite_raw: bool = False):
     # Construct the pattern image and apply it to the input (pattern has mean = 0)
     _, pattern_resid = create_and_apply_pattern(resid_img, resid_fitc)
 
-    # Make disgnostic plots
-    make_image_comparison_plots(filename, spec2d, resid_img, pattern_resid)
-    make_sinusoid_fit_plots(resid_fitc, filename, resid_pixperiod)
+    if debug_plots:
+        # Make disgnostic plots
+        make_image_comparison_plots(filename, spec2d, resid_img, pattern_resid)
+        make_sinusoid_fit_plots(resid_fitc, filename, resid_pixperiod)
 
     # Next, use the pattern to clean the raw image and repackage
     # Load in the raw dataframe
@@ -192,6 +197,7 @@ def clean_pickup(
     .. warning::
 
         Deprecated -- do not use.  Only included for historical purposes.
+        Use :func:`iterative_pypeit_clean` instead.
 
     This is the first version of the cleaning code, which operates directly on
     the raw DeVeny image.  It suffers from confusion from bright night-sky
@@ -200,7 +206,7 @@ def clean_pickup(
 
     Parameters
     ----------
-    filename : :obj:`pathlib.Path`
+    filename : :obj:`~pathlib.Path`
         The name of the file to clean
     use_hann : :obj:`bool`
         Use a Hann window when cleaning the image for FFT (Default: False)
@@ -336,7 +342,7 @@ def flatten_clean_fft(
         vert_profile = np.median(data_array, axis=1)
         medval = np.median(vert_profile)
         # Fit a gaussian
-        popt, _ = scipy.optimize.curve_fit(
+        popt, _, _, _, _ = scipy.optimize.curve_fit(
             utils.gaussian_function,
             np.arange(nrow),
             vert_profile,
@@ -347,6 +353,7 @@ def flatten_clean_fft(
                 medval,  # y0
             ],
             bounds=[0, [2**16 - medval, vert_profile.size, 15, np.max(vert_profile)]],
+            full_output=True,
         )
         # Build the mask at ±5σ, if the object is bright enough to matter
         if popt[0] > 20:
@@ -472,10 +479,10 @@ def fit_lines(
 
         # Perform the curve fit
         try:
-            xp = np.arange(line.size)
+            xpl = np.arange(line.size)
             popt, pcov, infodict, mesg, ier = scipy.optimize.curve_fit(
                 utils.sinusoid,
-                xp,
+                xpl,
                 line,
                 p0=p0,
                 bounds=bounds,
@@ -495,10 +502,10 @@ def fit_lines(
         if show_diagnostic and img_row in [76, 193, 285, 412]:
             axis = axes[pidx]
             # Add this to the plot
-            axis.plot(xp, line, "k-", linewidth=0.75)
+            axis.plot(xpl, line, "k-", linewidth=0.75)
             axis.plot(
-                xp,
-                utils.sinusoid(xp, *popt),
+                xpl,
+                utils.sinusoid(xpl, *popt),
                 "r-",
                 label=make_sine_label(popt, infodict, mesg, ier),
             )
@@ -615,14 +622,14 @@ def create_and_apply_pattern(
 
     .. note::
 
-        The returned ``pattern_array`` has a mean = 0 (_i.e._, the pattern is
+        The returned ``pattern_array`` has a mean = 0 (*i.e.*, the pattern is
         constructed from the pure sinusoid w/o offset or other additive terms).
 
     Parameters
     ----------
     input_array : :obj:`~numpy.ndarray`
         The input array to be cleaned
-    fit_coeffs : `astropy.table.Table`
+    fit_coeffs : :obj:`~astropy.table.Table`
         The fit coefficient table produced by :func:`fit_lines`
 
     Returns
@@ -632,9 +639,6 @@ def create_and_apply_pattern(
     pattern_array : :obj:`~numpy.ndarray`
         The pattern removed from ``input_array`` -- mean = 0
     """
-    # Compute the image mean for the pattern array
-    img_mean = np.nanmean(input_array)
-
     # Create the arrays that the processed data will go into
     cleaned_array = input_array.copy().astype(np.float64)
     pattern_array = input_array.copy().astype(np.float64)
@@ -673,12 +677,13 @@ def package_into_fits(
     """Package the cleaned data into a FITS file
 
     Package everything into a multiextension FITS file:
-        0. Primary HDU -- contains the raw file's FITS header
-        1. Cleaned Image HDU -- raw - pattern
-        2. Original Image HDU -- raw
-        3. Pattern Image HDU -- pattern
-        3. Pattern about Raw Mean Image HDU -- pattern + mean(raw)
-        4. Fit Coefficients BinTable HDU -- fit_coeffs
+
+    0. Primary HDU -- contains the raw file's FITS header
+    1. Cleaned Image HDU -- raw - pattern
+    2. Original Image HDU -- raw
+    3. Pattern Image HDU -- pattern
+    4. Pattern about Raw Mean Image HDU -- pattern + mean(raw)
+    5. Fit Coefficients BinTable HDU -- fit_coeffs
 
     The output filename is the same (including path) as the input raw file,
     but with "_scrub" appended before ".fits".
@@ -808,7 +813,17 @@ def create_fft_plot(
 ):
     """Create the FFT analysis plot
 
-    _extended_summary_
+    This function creates a multipanel plot saved as ``fft_analysis.pdf`` in
+    the current working directory.  The panels are:
+
+    1. The flattened time-like array, where pixels are in the order in which
+       they were read out by the CCD electronics.
+    2. The real part of the FFT of the flattened array, where the abscissa is
+       shown as the sinusoid period in pixels.
+    3. The imaginary part of the FFT of the flattened array, where the abscissa
+       is shown as the sinusoid period in pixels.
+    4. The absolute value squared of the FFT of the flattened array, to show
+       the power as a function of frequency.
 
     Parameters
     ----------
@@ -895,7 +910,14 @@ def make_sinusoid_fit_plots(
 ):
     """Create a set of diagnostic plots from the set of sinusoid fits
 
-    _extended_summary_
+    This function creates a multipanel plot saved as ``sinusoid_fits.pdf`` in
+    the current working directory.  The panels are:
+
+    1. The row-by-row sinusoid amplitude
+    2. The row-by-row sinusoid period
+    3. The row-by-row sinusoid phase shift
+    4. The row-by-row rms residual when the sinusoidal fit is subtracted from
+       the original line
 
     Parameters
     ----------
@@ -959,7 +981,18 @@ def make_image_comparison_plots(
 ):
     """Make a set of Image Comparison plots
 
-    _extended_summary_
+    This function creates a multipanel plot saved as ``scrub_thing.pdf`` in
+    the current working directory.  The panels are:
+
+    1. The PypeIt-reduced 2-dimensional spectrum (``spec2d.sciimg``)
+    2. The PypeIt sky spectrum model (``spec2d.skymodel``).
+    3. The PypeIt-reduced residual image (``spec2d.sciimg`` -
+       ``spec2d.skymodel`` - ``spec2d.objmodel``) modified by the good pixel
+       mask
+    4. The noise pattern image generated here from the sinusoidal fits to each
+       row of the residual image
+    5. The cleaned residual image (``resid`` - ``pattern``)
+    6. The cleaned 2-dimensional spectrum (``spec2d.sciimg`` - ``pattern``)
 
     Parameters
     ----------
@@ -1056,37 +1089,37 @@ def make_sine_label(popt: np.ndarray, infodict: dict, mesg: str, ier: int) -> st
     )
 
 
-def pixper_tofrom_hz(x: np.ndarray) -> np.ndarray:
+def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
     """Convert to/from pixel period and Hertz
 
     _extended_summary_
 
     Parameters
     ----------
-    x : :obj:`~numpy.ndarray`
+    val : :obj:`~numpy.ndarray`
         Input value(s) to convert
 
     Returns
     -------
-    array-like
+    :obj:`~numpy.ndarray`
         Converted output(s)
     """
     warnings.simplefilter("ignore", RuntimeWarning)
-    return 1.0 / (PIX_DWELL * x)
+    return 1.0 / (PIX_DWELL * val)
 
 
 # Command Line Interface Entry Point =========================================#
-def main(files: list | str, no_plots: bool = False, overwrite_raw: bool = False):
-    """Main driver
+def main(files: list | str, debug_plots: bool = False, overwrite_raw: bool = False):
+    """Main Driver
 
-    Main driver function that takes the input list and calls the cleaning
+    Simple function that takes the input file list and calls the cleaning
     function for each one.
 
     Parameters
     ----------
     files : :obj:`list` or :obj:`str`
         File or files to process
-    no_plots : :obj:`bool`, optional
+    debug_plots : :obj:`bool`, optional
         Create a plots during the image analysis?  (Default: False)
     overwrite_raw : :obj:`bool`, optional
         Overwrite the raw file rather than create a new file with the '_scrub'
@@ -1099,7 +1132,9 @@ def main(files: list | str, no_plots: bool = False, overwrite_raw: bool = False)
     # Giddy up!
     for file in files:
         iterative_pypeit_clean(
-            pathlib.Path(file).resolve(), overwrite_raw=overwrite_raw
+            pathlib.Path(file).resolve(),
+            overwrite_raw=overwrite_raw,
+            debug_plots=debug_plots,
         )
 
         # clean_pickup(
@@ -1111,9 +1146,7 @@ def main(files: list | str, no_plots: bool = False, overwrite_raw: bool = False)
 
 
 def entry_point(args=None):
-    """Main entry point for the package
-
-    _extended_summary_
+    """Command-line Entry Point
 
     Parameters
     ----------
@@ -1133,10 +1166,10 @@ def entry_point(args=None):
         help="File(s) to clean",
     )
     parser.add_argument(
-        "--no_plots",
-        default=False,
+        "--debug_plots",
+        default=True,
         action="store_true",
-        help="Do not create any plots during the analysis (Default: create plots)",
+        help="Create plots during the analysis for debugging purposes",
     )
     parser.add_argument(
         "--overwrite_raw",
@@ -1147,4 +1180,6 @@ def entry_point(args=None):
     res = parser.parse_args(args)
 
     # Giddy up!
-    sys.exit(main(res.file, no_plots=res.no_plots, overwrite_raw=res.overwrite_raw))
+    sys.exit(
+        main(res.file, debug_plots=res.debug_plots, overwrite_raw=res.overwrite_raw)
+    )
