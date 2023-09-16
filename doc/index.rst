@@ -8,6 +8,34 @@
 ==================
 
 .. toctree::
+   :caption: LMI Tools
+   :maxdepth: 1
+   :hidden:
+
+   Exposure Time Calculator <lmi_etc>
+
+.. toctree::
+   :caption: DeVeny Tools
+   :maxdepth: 1
+   :hidden:
+
+   Grating Angle Calculator <deveny_grangle>
+   Collimator Focus Estimator <deveny_collfocus>
+   Collimator Focus Measure <dfocus>
+   Pickup Noise Scrubber <scrub_deveny_pickup>
+
+.. toctree::
+   :caption: General LDT Tools
+   :maxdepth: 1
+   :hidden:
+
+   FITS Header Fixer <fix_ldt_header>
+   NEO CP Ephemeris Generator <neocp_ephem>
+   Input List Validator <input_validator>
+   Observer Target List Tool <observer_target>
+
+
+.. toctree::
    :caption: For developers
    :maxdepth: 1
    :hidden:

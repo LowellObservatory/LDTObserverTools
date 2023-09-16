@@ -15,7 +15,7 @@
 LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
-http://www.lowell.edu
+https://lowell.edu
 
 This file contains the ``ActiveMQ_Listener`` class used by the
 ``deveny_collfocus`` routine for retrieving current values from the LDT's

@@ -15,7 +15,7 @@
 LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
-http://www.lowell.edu
+https://lowell.edu
 
 This file contains the LMI exposure time calculator routine (ported from PHP)
 from Phil Massey's webpage.

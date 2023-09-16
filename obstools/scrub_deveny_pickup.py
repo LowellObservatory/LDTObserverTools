@@ -14,7 +14,7 @@
 LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
-http://www.lowell.edu
+https://lowell.edu
 
 This module cleans the RF pickup noise from DeVeny spectral 2D images by
 fitting a sinusoid to and then subtracting it from each row of the image.

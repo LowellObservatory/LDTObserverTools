@@ -15,7 +15,7 @@
 LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
-http://www.lowell.edu
+https://lowell.edu
 
 This file contains the ``deveny_grangle`` routine for computing the needed grating
 tilt angle to be set in order to center the desired wavelength on the CCD.
