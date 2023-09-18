@@ -7,8 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Get tags
-        run: git fetch --tags origin
+        with:
+          # we want to find git tags to pass version to sphinx
+          fetch-depth: 0
       - uses: actions/setup-python@v3
       - name: Install dependencies
         run: |

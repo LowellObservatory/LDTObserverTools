@@ -7,6 +7,9 @@
 .. |forks| image:: https://img.shields.io/github/forks/LowellObservatory/LDTObserverTools?style=social
    :target: https://github.com/LowellObservatory/LDTObserverTools
 
+.. |issues| image:: https://img.shields.io/github/issues/LowellObservatory/LDTObserverTools?style=social
+   :target: https://github.com/LowellObservatory/LDTObserverTools
+
 .. |stars| image:: https://img.shields.io/github/stars/LowellObservatory/LDTObserverTools?style=social
    :target: https://github.com/LowellObservatory/LDTObserverTools
 
@@ -32,8 +35,13 @@ LDTObserverTools |forks| |stars| |watch|
 
 **Version**: |version|
 
-LDTObserverTools is a collection of command-line and GUI tools for observers at
-the Lowell Discovery Telescope (LDT) in Happy Jack, AZ.
+The LDTObserverTools package is a collection of command-line and GUI tools
+for observers at the Lowell Discovery Telescope (LDT) in Happy Jack, AZ.
+
+Some of these tools are Python ports of existing tools written in other
+languages, and others are newly written to meet particular needs of the
+observing community.  Please use the GitHub Issues and/or Pull Request features
+to report bugs or suggest new tools and features.
 
 .. contents:: Table of Contents
     :depth: 1
@@ -51,81 +59,28 @@ List of Programs
 Tools Contained in this Package:
 --------------------------------
 
-   - ``deveny_grangle``: Compute the desired grating angle based on selected
-     grating and desired central wavelength.  This routine comes with two interfaces.
-     The default GUI features a dropdown menu for grating selection and contains error
-     checking on the input for central wavelength.  There is a ``MAX_GUI`` option for
-     computing central wavelength given the grating angle in addition to the standard
-     GUI features.  Also included is a command-line interface, identical to the old
-     IDL function.  Online help is available with the ``-h`` option.
-     [`Completed: 2021-01-26`]
+  - DeVeny Spectrograph grating angle calculator (``deveny_grangle``)
 
-   - ``dfocus``: Compute the needed collimator focus based on a series of arc line
-     frames taken at various collimator settings.  Read in the arc lamp frames in
-     the current night's focus directory, find the appropriate spectral lines in each
-     frame, compute the FHWM (or other measure) of those lines, plot the FHWM as a
-     function of collimator position and suggest the optimal focus position.  This
-     program is executed identically to the old IDL version.  The python version
-     uses :obj:`scipy.signal` processing routines for identifying line peaks and widths,
-     resulting in more accurate and consistent estimates of the correct collimator
-     focus position.  Rather than separately producing plots to the screen and disk,
-     this version writes all plots to a PDF, then launches ``Preview.app`` to display
-     the plots on the screen.  Newly added is a readout of the mount temperature so
-     the user can determine when/if the collimator needs to be refocused during the
-     night.  Online help is available with the ``-h`` option.  [`Completed: 2021-11-19`]
+  - DeVeny Spectrograph collimator focus sequence estimator (``deveny_collfocus``)
 
-   - ``fix_ldt_header``: Replace / add / update FITS keyword values.  While named for
-     the LDT, it can beused with any FITS file (or list of files).  The inspiration for
-     this script is the cases when the LDT / LOUI does not input the proper information
-     in FITS headers (`e.g.`, ``GRATING = UNKNOWN`` for DeVeny before the drop-down
-     menu has been selected).  Online help is available with the ``-h`` option.
-     [`Completed: 2022-10-17`]
+  - DeVeny Spectrograph collimator focus calculator (``dfocus``)
 
-   - ``deveny_collfocus``: Use the specified grating angle and mount temperature
-     to suggest a range for use with the DeVeny LOUI collimator Focus Sequence
-     function.  This GUI computes the expected focus from an emperical equation
-     derived from DeVeny data from 2017-2020, and then suggests the focus range.
-     This is important because, unlike all other focus routines at LDT,
-     this function takes the **starting point**, step, and number of exoposures
-     rather than the **expected focus value**, step, and number of exposures.
-     [`Completed: 2023-07-31`]
+  - Simple FITS header fixing tool (``fix_ldt_header``)
 
 .. _future:
 
 Future Tools (planned or in development):
 -----------------------------------------
 
-   - ``lmi_etc``: Python GUI version of the LMI exposure time calculator
-     (http://www2.lowell.edu/users/massey/LMI/etc_calc.php).
+  - LMI Exposure Time Calculator (``lmi_etc``)
 
-   - ``neocp_ephem``: An ephemeris-generating tool for querying the JPL Scout database
-     for short-shelf- life NEOs that have not yet been assigned a Horizons identifier.
-     This tool will turn the returned data into a file that can be ingested into the
-     LDT TCS for observations.
+  - NEO Confirmation Page ephemeris generator (``neocp_ephem``)
 
-   - ``validate_input_list``: The extant input list validation tool
-     (https://confluence.lowell.edu/display/LDTOI/Validate+Input+List) was
-     produced in 2015 using an old Java Runtime Environment that is not available on
-     most modern operating systems.  As such, the tool is virtually useless.  This
-     python program would provide this key functionality in a modern environment.
+  - Input List Validator (``validate_input_list``)
 
-   - ``observer_target_list``: The extant observer target list tool
-     (https://confluence.lowell.edu/display/LDTOI/Observer+Target+List+User+Manual)
-     was produced in 2015 using an old Java Runtime Environment that is not available on
-     most modern operating systems.  It still runs happily on the LDT observer machines,
-     but those will need to be replaced at some point.  This python version will provide
-     a future-proof solution.
-   
-   - ``scrub_deveny_pickup``: The DeVeny spectrograph suffers from EM ground-loop
-     pickup noise in the readout electronics.  While the Instrument Groups is working
-     diligently to identify the source of this noise, it is still affecting frames at
-     the 5-10 DN level.  This routine will attempt to clean the pattern from the raw
-     frames.  It works in an iterative fashion with the spectroscopic data reduciton
-     pipeline `PypeIt <https://pypeit.readthedocs.io/en/release/index.html>`_ to
-     identify and extract sources and sky signal before attempting to fit and remove
-     the remaining pickup noise.  If you wish to use this routine, please follow the
-     instructions in :ref:`optional-dependencies` to include PypeIt in your
-     LDTObserverTools installation.
+  - Observer Target List Tool (``observer_target_list``)
+
+  - DeVeny Spectrograph Pickup Noise Scrubber (``scrub_deveny_pickup``)
 
 ==================
 
