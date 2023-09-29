@@ -2,6 +2,8 @@
 DeVeny Collimator Focus Calculator
 ==================================
 
+Status: Completed 2021-11-19
+
 Overview
 ========
 
@@ -17,10 +19,13 @@ Overview
      this version writes all plots to a PDF, then launches ``Preview.app`` to display
      the plots on the screen.  Newly added is a readout of the mount temperature so
      the user can determine when/if the collimator needs to be refocused during the
-     night.  Online help is available with the ``-h`` option.  [`Completed: 2021-11-19`]
+     night.
 
 
 Usage
 =====
 
-Yeah, use it!
+The script usage can be displayed by calling the script with the
+``-h`` option:
+
+.. include:: help/dfocus.rst

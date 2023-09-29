@@ -5,6 +5,11 @@
 
 .. include:: ../README.rst
 
+Dependencies Table
+^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: include/dependencies_table.rst
+
 ==================
 
 .. toctree::

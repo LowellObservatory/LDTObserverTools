@@ -42,3 +42,8 @@ and with the raw image mean), and a table of the row-by-row sinusoidal fit
 coefficients.  This cleaned image may be processed with PypeIt as usual (the
 parameters for DeVeny data within PypeIt recognize this post-processed image
 format).
+
+The script usage can be displayed by calling the script with the
+``-h`` option:
+
+.. include:: help/scrub_deveny_pickup.rst

@@ -37,6 +37,7 @@ import astropy.io.fits
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
+from pypeit.scripts import scriptbase
 import scipy.signal
 from tqdm import tqdm
 
@@ -342,7 +343,7 @@ def process_middle_image(focus, thresh, debug=False):
         Dictionary containing needed variables for plot
     thresh : :obj:`float`
         Line intensity threshold above background for detection
-    debug : :obj:`bool`. optional
+    debug : :obj:`bool`, optional
         Print debug statements  (Default: False)
 
     Returns
@@ -660,7 +661,7 @@ def plot_optimal_focus(
         Array of the optimal focus values for each line
     med_opt_focus : :obj:`float`
         Median optimal focus value
-    debug : :obj:`bool`. optional
+    debug : :obj:`bool`, optional
         Print debug statements  (Default: False)
     """
     if debug:
@@ -820,44 +821,83 @@ def find_lines_in_spectrum(filename, thresh=100.0):
     return centers
 
 
-# Command-Line Entry Point ===================================================#
-def entry_point():
-    """Command-Line Entry Point"""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        prog="dfocus", description="DeVeny Collimator Focus Calculator"
-    )
-    parser.add_argument(
-        "--flog",
-        action="store",
-        type=str,
-        help="focus log to use (default: last)",
-        default="last",
-    )
-    parser.add_argument(
-        "--thresh",
-        action="store",
-        type=float,
-        help="threshold for line detection (default: 100)",
-        default=100.0,
-    )
-    parser.add_argument(
-        "--nodisplay",
-        action="store_false",
-        help="DO NOT launch Preview.app to display plots",
-    )
-    parser.add_argument(
-        "--leave_files",
-        action="store_true",
-        help="DO NOT move the focus frames to focus/",
-    )
-    args = parser.parse_args()
+# Command Line Script Infrastructure (borrowed from PypeIt) ==================#
+class DFocus(scriptbase.ScriptBase):
+    """Script class for scrub_deveny_pickup tool
 
-    # Giddy Up!
-    dfocus(
-        pathlib.Path(".").resolve(),
-        flog=args.flog,
-        thresh=args.thresh,
-        launch_preview=args.nodisplay,
-        leave_focus_files=args.leave_files,
-    )
+    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    """
+
+    @classmethod
+    def name(cls):
+        """
+        Provide the name of the script.  By default, this is the name of the
+        module.
+        """
+        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
+
+    @classmethod
+    def get_parser(cls, width=None):
+        """Construct the command-line argument parser.
+
+        Parameters
+        ----------
+        description : :obj:`str`, optional
+            A short description of the purpose of the script.
+        width : :obj:`int`, optional
+            Restrict the width of the formatted help output to be no longer
+            than this number of characters, if possible given the help
+            formatter.  If None, the width is the same as the terminal
+            width.
+        formatter : :obj:`~argparse.HelpFormatter`
+            Class used to format the help output.
+
+        Returns
+        -------
+        :obj:`~argparse.ArgumentParser`
+            Command-line interpreter.
+        """
+
+        parser = super().get_parser(
+            description="DeVeny Collimator Focus Calculator", width=width
+        )
+        parser.add_argument(
+            "--flog",
+            action="store",
+            type=str,
+            help="focus log to use (default: last)",
+            default="last",
+        )
+        parser.add_argument(
+            "--thresh",
+            action="store",
+            type=float,
+            help="threshold for line detection (default: 100)",
+            default=100.0,
+        )
+        parser.add_argument(
+            "--nodisplay",
+            action="store_false",
+            help="DO NOT launch Preview.app to display plots",
+        )
+        parser.add_argument(
+            "--leave_files",
+            action="store_true",
+            help="DO NOT move the focus frames to focus/",
+        )
+        return parser
+
+    @staticmethod
+    def main(args):
+        """Main Driver
+
+        Simple function that calls the primary function.
+        """
+        # Giddy Up!
+        dfocus(
+            pathlib.Path(".").resolve(),
+            flog=args.flog,
+            thresh=args.thresh,
+            launch_preview=args.nodisplay,
+            leave_focus_files=args.leave_files,
+        )

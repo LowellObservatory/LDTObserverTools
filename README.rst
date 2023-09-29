@@ -33,14 +33,15 @@ LDTObserverTools |forks| |stars| |watch|
 |github| |astropy| |License|
 
 
-**Version**: |version|
-
 The LDTObserverTools package is a collection of command-line and GUI tools
 for observers at the Lowell Discovery Telescope (LDT) in Happy Jack, AZ.
 
 Some of these tools are Python ports of existing tools written in other
 languages, and others are newly written to meet particular needs of the
-observing community.  Please use the GitHub Issues and/or Pull Request features
+observing community.  Detailed instructions on how to use each tool are
+contained in the `online documentation
+<https://LowellObservatory.github.io/LDTObserverTools/>`__.  Please use
+the GitHub Issues and/or Pull Request features
 to report bugs or suggest new tools and features.
 
 .. contents:: Table of Contents

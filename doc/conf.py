@@ -10,17 +10,12 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from configparser import ConfigParser
+from importlib import metadata
 import os
-import sys
-
-sys.path.insert(0, os.path.abspath("."))
-from pkg_resources import get_distribution
 
 # Get configuration information from setup.cfg
-from configparser import ConfigParser
-
 conf = ConfigParser()
-
 conf.read([os.path.join(os.path.dirname(__file__), "..", "setup.cfg")])
 setup_cfg = dict(conf.items("metadata"))
 
@@ -126,7 +121,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # The full version, including alpha/beta/rc tags.
-version = get_distribution(setup_cfg["name"]).version
+version = metadata.version(setup_cfg["name"])
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
@@ -136,6 +131,6 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
-    "scipy": ('https://docs.scipy.org/doc/scipy/', None),
-    "pypeit": ('https://pypeit.readthedocs.io/en/release/', None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "pypeit": ("https://pypeit.readthedocs.io/en/release/", None),
 }

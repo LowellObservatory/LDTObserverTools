@@ -22,11 +22,10 @@ package.
 """
 
 # Built-In Libraries
-import pathlib
+from importlib import resources
 import warnings
 
 # 3rd-Party Libraries
-from pkg_resources import resource_filename
 import numpy as np
 import scipy.optimize
 
@@ -35,7 +34,8 @@ import scipy.optimize
 
 # CONSTANTS
 SG_THEME = "light grey 1"
-CONFIG = pathlib.Path(resource_filename("obstools", "config"))
+CONFIG = resources.files("obstools") / "config"
+DATA = resources.files("obstools") / "data"
 
 
 def check_float(potential_float):

@@ -16,12 +16,12 @@ jobs:
           pip install sphinx sphinx_rtd_theme sphinx-automodapi .[dev]
       - name: Sphinx build
         run: |
-          sphinx-build doc _build
-      - name: Deploy
+          cd doc ; make clean ; make html
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/doctest' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/deveny_pickup' }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: _build/
+          publish_dir: doc/_build/html
           force_orphan: true

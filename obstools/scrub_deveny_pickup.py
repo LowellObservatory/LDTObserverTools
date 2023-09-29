@@ -44,10 +44,8 @@ for each row of the image.
 """
 
 # Built-In Libraries
-import argparse
 import datetime
 import pathlib
-import sys
 import warnings
 
 # 3rd Party Libraries
@@ -61,6 +59,7 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
+from pypeit.scripts import scriptbase
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -160,13 +159,13 @@ def iterative_pypeit_clean(
         objmodel_check=True,
     )
     # This will be a tunable parameter
-    if np.max(obj_fitc["a"]) >= 3:
+    if obj_fitc and np.max(obj_fitc["a"]) >= 3:
         # Add the object model back into the residual image because we need to
         #   fit out the sine from the object.
         print(
             " * Adding the object model back into the residual image for "
-            "fitting; originally extracted object contains "
-            "target sinusoidal signal."
+            "fitting; extracted object contains target sinusoidal signal, "
+            f"amplitude = {np.max(obj_fitc['a']):.2f}."
         )
         resid_img += objmodel
     else:
@@ -1327,78 +1326,80 @@ def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
     return 1.0 / (PIX_DWELL * val)
 
 
-# Command Line Interface Entry Point =========================================#
-def main(files: list | str, debug_plots: bool = False, overwrite_raw: bool = False):
-    """Main Driver
+# Command Line Script Infrastructure (borrowed from PypeIt) ==================#
+class ScrubDevenyPickup(scriptbase.ScriptBase):
+    """Script class for scrub_deveny_pickup tool
 
-    Simple function that takes the input file list and calls the cleaning
-    function for each one.
-
-    Parameters
-    ----------
-    files : :obj:`list` or :obj:`str`
-        File or files to process
-    debug_plots : :obj:`bool`, optional
-        Create a plots during the image analysis?  (Default: False)
-    overwrite_raw : :obj:`bool`, optional
-        Overwrite the raw file rather than create a new file with the '_scrub'
-        suffix  (Default: False)
+    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
     """
-    # Ensure the input is a list
-    if not isinstance(files, list):
-        files = [files]
 
-    # Giddy up!
-    for file in files:
-        iterative_pypeit_clean(
-            pathlib.Path(file).resolve(),
-            overwrite_raw=overwrite_raw,
-            debug_plots=debug_plots,
+    @classmethod
+    def name(cls):
+        """
+        Provide the name of the script.  By default, this is the name of the
+        module.
+        """
+        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
+
+    @classmethod
+    def get_parser(cls, width=None):
+        """Construct the command-line argument parser.
+
+        Parameters
+        ----------
+        description : :obj:`str`, optional
+            A short description of the purpose of the script.
+        width : :obj:`int`, optional
+            Restrict the width of the formatted help output to be no longer
+            than this number of characters, if possible given the help
+            formatter.  If None, the width is the same as the terminal
+            width.
+        formatter : :obj:`~argparse.HelpFormatter`
+            Class used to format the help output.
+
+        Returns
+        -------
+        :obj:`~argparse.ArgumentParser`
+            Command-line interpreter.
+        """
+
+        parser = super().get_parser(
+            description="Clean RF pickup noise from DeVeny raw frames", width=width
         )
+        parser.add_argument("file", nargs="+", type=str, help="File(s) to clean")
+        parser.add_argument(
+            "--debug_plots",
+            default=True,
+            action="store_true",
+            help="Create plots during the analysis for debugging purposes",
+        )
+        parser.add_argument(
+            "--overwrite_raw",
+            default=False,
+            action="store_true",
+            help="Overwrite the raw file rather than create a new file with the '_scrub' suffix",
+        )
+        return parser
 
-        # clean_pickup(
-        #     pathlib.Path(file),
-        #     use_hann=use_hann,
-        #     sine_plot=not no_plots,
-        #     fft_plot=not no_plots,
-        # )
+    @staticmethod
+    def main(args):
+        """Main Driver
 
+        Simple function that takes the input file list and calls the cleaning
+        function for each one.
+        """
+        # Giddy up!
+        for file in args.file:
+            iterative_pypeit_clean(
+                pathlib.Path(file).resolve(),
+                overwrite_raw=args.overwrite_raw,
+                debug_plots=args.debug_plots,
+            )
 
-def entry_point(args=None):
-    """Command-line Entry Point
-
-    Parameters
-    ----------
-    args : :obj:`~typing.Any`, optional
-        Command-line arguments passed in [Defualt: None]
-    """
-
-    # Use argparse for the Command-Line Script
-    parser = argparse.ArgumentParser(
-        prog="scrub_deveny_pickup",
-        description="Clean RF pickup noise from DeVeny raw frames",
-    )
-    parser.add_argument(
-        "file",
-        nargs="+",
-        type=str,
-        help="File(s) to clean",
-    )
-    parser.add_argument(
-        "--debug_plots",
-        default=True,
-        action="store_true",
-        help="Create plots during the analysis for debugging purposes",
-    )
-    parser.add_argument(
-        "--overwrite_raw",
-        default=False,
-        action="store_true",
-        help="Overwrite the raw file rather than create a new file with the '_scrub' suffix",
-    )
-    res = parser.parse_args(args)
-
-    # Giddy up!
-    sys.exit(
-        main(res.file, debug_plots=res.debug_plots, overwrite_raw=res.overwrite_raw)
-    )
+            # Deprecated original method
+            # clean_pickup(
+            #     pathlib.Path(file),
+            #     use_hann=use_hann,
+            #     sine_plot=not no_plots,
+            #     fft_plot=not no_plots,
+            # )

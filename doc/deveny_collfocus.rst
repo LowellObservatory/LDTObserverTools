@@ -49,6 +49,7 @@ The GUI may be called from the command line:
 When the application launches, a GUI window will appear:
 
 .. image:: figures/deveny_collfocus_startup.png
+    :class: with-shadow
 
 
 If the application is launched from one of the observer computers at LDT
@@ -69,6 +70,7 @@ estimated focus value from the equation above and values to enter into the
 DeVeny LOUI focus sequence tab.
 
 .. image:: figures/deveny_collfocus_values.png
+    :class: with-shadow
 
 Observers should note that the lower limit on the collimator focus motorized
 stage is 7.75 mm.  In warm weather and/or for large grating tilt angles, the

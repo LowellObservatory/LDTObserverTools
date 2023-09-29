@@ -28,25 +28,29 @@ The values for ``Star20`` are the count rates in `e-`/`sec`/`image` at airmass=0
 for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 
 .. warning::
+
     The LMI-specific pixel scale, gain, and readnoise are hard-coded into
     this module.
 
     
 .. note::
+
     A GUI wrapper for these functions is forthcoming.
-    
+
+.. todo::
+
+    Refactor this into a class to eliminate the continual passing back and
+    forth of the same arguments.
     """
 
 # Built-In Libraries
-import pathlib
 
 # 3rd-Party Libraries
 import astropy.table
 import numpy as np
-from pkg_resources import resource_filename
-
 
 # Local Libraries
+from obstools import utils
 
 # Constants
 SCALE = 0.12  # "/pix
@@ -54,8 +58,6 @@ READ_NOISE = 6.0  # e-
 GAIN = 2.89  # e-/ADU
 BIAS = 1050  # ADU (approx) for 2x2 binning
 
-# Subdirectory Paths
-LOT_DATA = pathlib.Path(resource_filename("obstools", "data"))
 
 # Define the API as the "User-Interface Computation Routines"
 # __all__ = [
@@ -429,7 +431,7 @@ def get_band_specific_values(band: str):
         dictionary.
     """
     # Read in the table, and index the filter column
-    table = astropy.table.Table.read(LOT_DATA.joinpath("etc_filter_info.ecsv"))
+    table = astropy.table.Table.read(utils.DATA / "etc_filter_info.ecsv")
     table.add_index("Filter")
 
     try:
