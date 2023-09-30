@@ -18,4 +18,7 @@ Overview
 Usage
 =====
 
-Yeah, use it!
+The script usage can be displayed by calling the script with the
+``-h`` option:
+
+.. include:: help/fix_ldt_header.rst

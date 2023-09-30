@@ -23,13 +23,13 @@ Both a CLI (direct copy of the IDL version) and GUI version are included here.
 """
 
 # Built-In Libraries
-import argparse
 import os
 import sys
 
 # 3rd-Party Libraries
 import numpy as np
 import scipy.optimize
+from pypeit.scripts import scriptbase
 import PySimpleGUI as sg
 
 # Local Libraries
@@ -373,25 +373,66 @@ def deveny_amag(grangle: float) -> float:
     return np.cos(alpha) / np.cos(beta)
 
 
-# Command Line Entry Point ===================================================#
-def entry_point():
-    """Command-Line Entry Point"""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        prog="deveny_grangle", description="DeVeny Grating Angle Calculator"
-    )
-    parser.add_argument(
-        "--cli", action="store_true", help="Use the command-line version of this tool"
-    )
-    parser.add_argument(
-        "--max",
-        action="store_true",
-        help="Use the MAX version of the GUI (compute wavelength from angle)",
-    )
-    args = parser.parse_args()
+# Command Line Script Infrastructure (borrowed from PypeIt) ==================#
+class DevenyGrangle(scriptbase.ScriptBase):
+    """Script class for ``deveny_grangle`` tool
 
-    # Giddy Up!
-    if args.cli:
-        sys.exit(deveny_grangle_cli())
-    else:
-        sys.exit(deveny_grangle_gui(max_gui=args.max))
+    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    """
+
+    @classmethod
+    def name(cls):
+        """
+        Provide the name of the script.  By default, this is the name of the
+        module.
+        """
+        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
+
+    @classmethod
+    def get_parser(cls, width=None):
+        """Construct the command-line argument parser.
+
+        Parameters
+        ----------
+        description : :obj:`str`, optional
+            A short description of the purpose of the script.
+        width : :obj:`int`, optional
+            Restrict the width of the formatted help output to be no longer
+            than this number of characters, if possible given the help
+            formatter.  If None, the width is the same as the terminal
+            width.
+        formatter : :obj:`~argparse.HelpFormatter`
+            Class used to format the help output.
+
+        Returns
+        -------
+        :obj:`~argparse.ArgumentParser`
+            Command-line interpreter.
+        """
+
+        parser = super().get_parser(
+            description="DeVeny Grating Angle Calculator", width=width
+        )
+        parser.add_argument(
+            "--cli",
+            action="store_true",
+            help="Use the command-line version of this tool",
+        )
+        parser.add_argument(
+            "--max",
+            action="store_true",
+            help="Use the MAX version of the GUI (compute wavelength from angle)",
+        )
+        return parser
+
+    @staticmethod
+    def main(args):
+        """Main Driver
+
+        Simple function that calls the appropriate driver function.
+        """
+        # Giddy up!
+        if args.cli:
+            deveny_grangle_cli()
+        else:
+            deveny_grangle_gui(max_gui=args.max)

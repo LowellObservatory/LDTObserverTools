@@ -20,4 +20,7 @@ Overview
 Usage
 =====
 
-Yeah, use it!
+The script usage can be displayed by calling the script with the
+``-h`` option:
+
+.. include:: help/deveny_grangle.rst

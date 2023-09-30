@@ -823,7 +823,7 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class DFocus(scriptbase.ScriptBase):
-    """Script class for scrub_deveny_pickup tool
+    """Script class for ``dfocus`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
     """

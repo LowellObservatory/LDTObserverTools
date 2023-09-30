@@ -8,7 +8,6 @@ This module was borrowed and updated from PyepIt
 # Built-In Libraries
 import configparser
 import pathlib
-import os
 
 # 3rd Party Libraries
 import numpy as np

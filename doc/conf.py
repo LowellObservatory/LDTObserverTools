@@ -12,11 +12,11 @@
 #
 from configparser import ConfigParser
 from importlib import metadata
-import os
+import pathlib
 
 # Get configuration information from setup.cfg
 conf = ConfigParser()
-conf.read([os.path.join(os.path.dirname(__file__), "..", "setup.cfg")])
+conf.read([pathlib.Path(__file__).parents[1] / "setup.cfg"])
 setup_cfg = dict(conf.items("metadata"))
 
 # -- Project information -----------------------------------------------------
@@ -47,7 +47,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autosectionlabel",
+    # "sphinx.ext.autosectionlabel",
 ]
 
 # automodapi
@@ -104,9 +104,7 @@ html_static_path = ["_static"]
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "logo_only": True,
-}
+html_theme_options = {"logo_only": True, "prev_next_buttons_location": None}
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.

@@ -13,7 +13,7 @@ Submodules
    obstools.deveny_grangle
    obstools.dfocus
    obstools.etc_calc
-   obstools.fits_utils
+   obstools.fix_ldt_header
    obstools.neocp_ephem
    obstools.scrub_deveny_pickup
    obstools.utils

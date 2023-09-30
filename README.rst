@@ -1,8 +1,8 @@
 .. |License| image:: https://img.shields.io/github/license/LowellObservatory/LDTObserverTools
    :target: https://github.com/LowellObservatory/LDTObserverTools/blob/main/LICENSE
 
-.. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
-    :target: http://www.astropy.org/
+.. |astropy| image:: https://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
+    :target: https://www.astropy.org/
 
 .. |forks| image:: https://img.shields.io/github/forks/LowellObservatory/LDTObserverTools?style=social
    :target: https://github.com/LowellObservatory/LDTObserverTools
@@ -40,9 +40,11 @@ Some of these tools are Python ports of existing tools written in other
 languages, and others are newly written to meet particular needs of the
 observing community.  Detailed instructions on how to use each tool are
 contained in the `online documentation
-<https://LowellObservatory.github.io/LDTObserverTools/>`__.  Please use
-the GitHub Issues and/or Pull Request features
-to report bugs or suggest new tools and features.
+<https://lowellobservatory.github.io/LDTObserverTools/>`__.  Please use
+the GitHub `Issues 
+<https://github.com/LowellObservatory/LDTObserverTools/issues>`__ and/or
+`Pull Requests <https://github.com/LowellObservatory/LDTObserverTools/pulls>`__
+features to report bugs or suggest new tools and features.
 
 .. contents:: Table of Contents
     :depth: 1
@@ -66,6 +68,8 @@ Tools Contained in this Package:
 
   - DeVeny Spectrograph collimator focus calculator (``dfocus``)
 
+  - DeVeny Spectrograph pickup noise scrubber (``scrub_deveny_pickup``)
+
   - Simple FITS header fixing tool (``fix_ldt_header``)
 
 .. _future:
@@ -73,15 +77,13 @@ Tools Contained in this Package:
 Future Tools (planned or in development):
 -----------------------------------------
 
-  - LMI Exposure Time Calculator (``lmi_etc``)
+  - LMI exposure time calculator (``lmi_etc``)
 
   - NEO Confirmation Page ephemeris generator (``neocp_ephem``)
 
   - Input List Validator (``validate_input_list``)
 
   - Observer Target List Tool (``observer_target_list``)
-
-  - DeVeny Spectrograph Pickup Noise Scrubber (``scrub_deveny_pickup``)
 
 ==================
 
@@ -95,10 +97,11 @@ Installing
 Set up a clean python environment
 ---------------------------------
 
-Because installing a python tool like LDTObserverTools also installs or upgrades
-its :ref:`dependencies`, the best course of action is to set up a clean python
-environment into which the installation will occur.  This mitigates any possible
-dependency conflicts with other packages you use.
+Because installing a python tool like LDTObserverTools also installs or
+upgrades its :ref:`Package Dependencies <dependencies>`, the best course of
+action is to setup a clean python environment into which the installation will
+occur.  This mitigates any possible dependency conflicts with other packages
+you use.
 
 The recommended method of setting up a new envrionment is with ``conda``:
 

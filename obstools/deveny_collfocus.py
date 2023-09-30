@@ -28,12 +28,12 @@ incorporated into the LDTObserverTools package.
 """
 
 # Built-In Libraries
-import argparse
 import os
 import sys
 
 # 3rd-Party Libraries
 import numpy as np
+from pypeit.scripts import scriptbase
 import PySimpleGUI as sg
 
 # Local Libraries
@@ -293,15 +293,53 @@ def extract_broker_values(status_dict: dict) -> tuple[str, str]:
     return "~ Not Found ~"
 
 
-# Command Line Entry Point ===================================================#
-def entry_point():
-    """Command-Line Entry Point"""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        prog="deveny_collfocus",
-        description="DeVeny Collimator Focus Sequence Estimator",
-    )
-    args = parser.parse_args()
+# Command Line Script Infrastructure (borrowed from PypeIt) ==================#
+class DevenyCollfocus(scriptbase.ScriptBase):
+    """Script class for ``deveny_collfocus`` tool
 
-    # Giddy Up!
-    sys.exit(deveny_collfocus())
+    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    """
+
+    @classmethod
+    def name(cls):
+        """
+        Provide the name of the script.  By default, this is the name of the
+        module.
+        """
+        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
+
+    @classmethod
+    def get_parser(cls, width=None):
+        """Construct the command-line argument parser.
+
+        Parameters
+        ----------
+        description : :obj:`str`, optional
+            A short description of the purpose of the script.
+        width : :obj:`int`, optional
+            Restrict the width of the formatted help output to be no longer
+            than this number of characters, if possible given the help
+            formatter.  If None, the width is the same as the terminal
+            width.
+        formatter : :obj:`~argparse.HelpFormatter`
+            Class used to format the help output.
+
+        Returns
+        -------
+        :obj:`~argparse.ArgumentParser`
+            Command-line interpreter.
+        """
+
+        parser = super().get_parser(
+            description="DeVeny Collimator Focus Sequence Estimator", width=width
+        )
+        return parser
+
+    @staticmethod
+    def main(args):
+        """Main Driver
+
+        Simple function that calls the main driver function.
+        """
+        # Giddy up!
+        deveny_collfocus()

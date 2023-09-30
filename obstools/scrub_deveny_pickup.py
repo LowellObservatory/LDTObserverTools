@@ -1328,7 +1328,7 @@ def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class ScrubDevenyPickup(scriptbase.ScriptBase):
-    """Script class for scrub_deveny_pickup tool
+    """Script class for ``scrub_deveny_pickup`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
     """

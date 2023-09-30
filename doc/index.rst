@@ -5,8 +5,10 @@
 
 .. include:: ../README.rst
 
+.. _dependencies:
+
 Dependencies Table
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 .. include:: include/dependencies_table.rst
 
@@ -25,8 +27,8 @@ Dependencies Table
    :hidden:
 
    Grating Angle Calculator <deveny_grangle>
-   Collimator Focus Estimator <deveny_collfocus>
-   Collimator Focus Measure <dfocus>
+   Collimator Focus Sequence Estimator <deveny_collfocus>
+   Collimator Focus Calculator <dfocus>
    Pickup Noise Scrubber <scrub_deveny_pickup>
 
 .. toctree::
@@ -34,7 +36,7 @@ Dependencies Table
    :maxdepth: 1
    :hidden:
 
-   FITS Header Fixer <fix_ldt_header>
+   Simple FITS Header Fixer <fix_ldt_header>
    NEO CP Ephemeris Generator <neocp_ephem>
    Input List Validator <input_validator>
    Observer Target List Tool <observer_target>

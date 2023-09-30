@@ -40,11 +40,10 @@ images and compute the appropriate focus position.
 Usage
 =====
 
-The GUI may be called from the command line:
+The script usage can be displayed by calling the script with the
+``-h`` option:
 
-.. code-block::
-
-    $ deveny_collfocus
+.. include:: help/deveny_collfocus.rst
 
 When the application launches, a GUI window will appear:
 
