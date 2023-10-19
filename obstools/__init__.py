@@ -17,7 +17,7 @@ import os
 import warnings
 
 # Local Imports
-from .version import version
+from obstools.version import version
 
 # Imports for building help docs
 from obstools import deveny_collfocus

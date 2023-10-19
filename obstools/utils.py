@@ -26,6 +26,7 @@ from importlib import resources
 import warnings
 
 # 3rd-Party Libraries
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 
@@ -348,12 +349,34 @@ def nearest_odd(x: float) -> int:
     return int(2 * np.floor(x / 2) + 1)
 
 
+def set_std_tickparams(axis: plt.axis, tsz: int | float):
+    """Set standard tick parameters for a plot
+
+    These are my own "standards", based on plots I used to make in IDL.
+
+    Parameters
+    ----------
+    axis : :obj:`~matplotlib.pyplot.axis`
+        PyPlot axis for whom the tick parameters must be set
+    tsz : :obj:`int` or :obj:`float`
+        TypeSiZe
+    """
+    axis.tick_params(
+        axis="both",
+        which="both",
+        direction="in",
+        top=True,
+        right=True,
+        labelsize=tsz,
+    )
+
+
 def sinusoid(
     x: np.ndarray,
     a: float,
     lam: float,
     phi: float,
-    y0: float,
+    y0: float = 0,
     lin: float = 0,
     quad: float = 0,
     cube: float = 0,
@@ -374,24 +397,25 @@ def sinusoid(
         `2π/k` (where `k` is the wavenumber).
     phi : :obj:`float`
         The phase shift of the sinusoid (in units of phase, nominally 0-1)
-    y0 : :obj:`float`
+    y0 : :obj:`float`, optional
         The vertical offset of the sinusoid from zero (in units of ordinate)
+        (Default: 0)
     lin : :obj:`float`, optional
         The linear term added to the fit (in units of ordinate/abscissa)
-        Default: 0
+        (Default: 0)
     quad : :obj:`float`, optional
         The quadratic term added to the fit (in units of ordinate/abscissa**2)
-        Default: 0
+        (Default: 0)
     cube : :obj:`float`, optional
         The cubic term added to the fit (in units of ordinate/abscissa**3)
-        Default: 0
+        (Default: 0)
     quar : :obj:`float`, optional
         The quartic term added to the fit (in units of ordinate/abscissa**4)
-        Default: 0
+        (Default: 0)
 
     Returns
     -------
-    array_like
+    :obj:`~numpy.ndarray`
         The sinusoid ordinate
     """
     return (

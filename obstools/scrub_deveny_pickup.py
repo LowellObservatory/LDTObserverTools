@@ -44,6 +44,7 @@ for each row of the image.
 """
 
 # Built-In Libraries
+import argparse
 import datetime
 import pathlib
 import warnings
@@ -80,7 +81,13 @@ warnings.simplefilter("ignore", astropy.io.fits.verify.VerifyWarning)
 
 # Narrative Functions ========================================================#
 def iterative_pypeit_clean(
-    filename: pathlib.Path, overwrite_raw: bool = False, debug_plots: bool = False
+    filename: pathlib.Path,
+    proc_dir: str | pathlib.Path = None,
+    overwrite_raw: bool = False,
+    diagnostics: bool = False,
+    no_refit: bool = False,
+    extra_graphics: bool = False,
+    rerun_fft: bool = False,
 ):
     """Iteratively use PypeIt to clean pickup noise
 
@@ -93,11 +100,21 @@ def iterative_pypeit_clean(
     ----------
     filename : :obj:`~pathlib.Path`
         The name of the file to clean
+    proc_dir : :obj:`str` or :obj:`~pathlib.Path`, optional
+        The location of the PypeIt-processed images, if not ``./ldt_deveny_?/``
+        (Default: None)
     overwrite_raw : :obj:`bool`, optional
         Overwrite the raw file rather than create a new file with the '_scrub'
         suffix  (Default: False)
-    debug_plots : :obj:`bool`, optional
-        Create a plots during the image analysis?  (Default: False)
+    diagnostics : :obj:`bool`, optional
+        Output additional information and plots during the image analysis?
+        (Default: False)
+    no_refit : :obj:`bool`, optional
+        Do not refit lines with "bad" RMS  (Default: False)
+    extra_graphics : :obj:`bool`, optional
+        Produce extra graphics formats for documentation?  (Default: False)
+    rereun_fft : :obj:`bool`, optional
+        Pass the fitted pattern through the FFT analysis?  (Default: False)
     """
     # Print a welcome statement
     print(f"\nProcessing frame {filename.name}")
@@ -106,6 +123,10 @@ def iterative_pypeit_clean(
     #   comprehension searches in each possible 'instrument setup' directory
     #   Check that the `spec2d` file actually exists and print a helpful
     #   message if it doesn't.
+    if proc_dir is not None:
+        # TODO: This is when someone uses the `-r` option to `pypeit_setup`
+        pass
+
     try:
         spec2d_file = [
             next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*"))
@@ -134,8 +155,11 @@ def iterative_pypeit_clean(
     #  * If objects were extracted, the spec2d.objmodel must not be identically
     #    zero -- the case when local sky subtraction is turned off.
     can_refit = not (
-        spec2d_file.with_name(spec2d_file.name.replace("spec2d", "spec1d")).exists()
-        and np.sum(spec2d.objmodel) == 0
+        (
+            spec2d_file.with_name(spec2d_file.name.replace("spec2d", "spec1d")).exists()
+            and np.sum(spec2d.objmodel) == 0
+        )
+        or no_refit
     )
 
     # To guide the fitting of sinusoids to individual lines, compute the
@@ -144,7 +168,12 @@ def iterative_pypeit_clean(
     #   fit out an object or anything else -- the residual image should
     #   somewhat resemble a bias frame.
     resid_pixperiod = flatten_clean_fft(
-        resid_img.copy(), "BIAS", fft_plot=debug_plots, qa_dir=qa_dir, filename=filename
+        resid_img.copy(),
+        "BIAS",
+        fft_plot=True,
+        qa_dir=qa_dir,
+        filename=filename,
+        extra_graphics=extra_graphics,
     )
     print(f"   --> FFT-predicted pixel period: {resid_pixperiod:.1f} pix")
 
@@ -157,6 +186,7 @@ def iterative_pypeit_clean(
         resid_pixperiod,
         trim_ends=False,
         objmodel_check=True,
+        show_diagnostic=diagnostics,
     )
     # This will be a tunable parameter
     if obj_fitc and np.max(obj_fitc["a"]) >= 3:
@@ -168,15 +198,19 @@ def iterative_pypeit_clean(
             f"amplitude = {np.max(obj_fitc['a']):.2f}."
         )
         resid_img += objmodel
+        with_obj = True
     else:
         print(" * Object model appears clean of target sinusoidal signal.")
+        with_obj = False
     # print(f"Max amplitude of the object model sinusoid fits: {np.max(obj_fitc['a']):.2f}")
     # make_sinusoid_fit_plots(filename, obj_fitc, resid_pixperiod, qa_dir=qa_dir)
     # return
 
     # Fit a sinusoid to each line in the image using the pixel period as a guess
     print("Fitting sinusoids to each line in the image...")
-    resid_fitc = fit_lines(resid_img.copy(), resid_pixperiod, trim_ends=False)
+    resid_fitc = fit_lines(
+        resid_img.copy(), resid_pixperiod, trim_ends=False, show_diagnostic=diagnostics
+    )
 
     # Print a happy statement of fact
     mean_fit_period = resid_fitc["lambda"].mean()
@@ -186,7 +220,11 @@ def iterative_pypeit_clean(
         # Refit lines by passing the existing fit coeffs to fit_lines()
         print("Refitting lines with poor fit in first pass...")
         resid_fitc = fit_lines(
-            resid_img.copy(), resid_pixperiod, orig_fitc=resid_fitc, trim_ends=False
+            resid_img.copy(),
+            resid_pixperiod,
+            orig_fitc=resid_fitc,
+            trim_ends=False,
+            show_diagnostic=diagnostics,
         )
         # (Re-)Print a happy statement of fact
         mean_fit_period = resid_fitc["lambda"].mean()
@@ -195,12 +233,46 @@ def iterative_pypeit_clean(
     # Construct the pattern image and apply it to the input (pattern has mean = 0)
     _, pattern_resid = create_and_apply_pattern(resid_img, resid_fitc)
 
-    if debug_plots:
-        # Make disgnostic plots
-        make_image_comparison_plots(
-            filename, spec2d, resid_img, pattern_resid, qa_dir=qa_dir
+    # Make disgnostic plots
+    print(f" Writing QA plots to {qa_dir}")
+    make_image_comparison_plots(
+        filename,
+        spec2d,
+        resid_img,
+        pattern_resid,
+        qa_dir=qa_dir,
+        with_obj=with_obj,
+        extra_graphics=extra_graphics,
+    )
+    make_sinusoid_fit_plots(
+        filename,
+        resid_fitc,
+        resid_pixperiod,
+        qa_dir=qa_dir,
+        extra_graphics=extra_graphics,
+    )
+
+    # If desired, run the pattern though the FFT for comparison
+    if rerun_fft:
+        pattern_pixperiod = flatten_clean_fft(
+            pattern_resid.copy(),
+            "BIAS",
+            fft_plot=True,
+            qa_dir=qa_dir,
+            filename=filename.with_stem(f"{filename.stem}_pattern"),
+            extra_graphics=extra_graphics,
         )
-        make_sinusoid_fit_plots(filename, resid_fitc, resid_pixperiod, qa_dir=qa_dir)
+        print(f"   --> FFT-predicted pixel period: {pattern_pixperiod:.1f} pix")
+
+        cleaned_pixperiod = flatten_clean_fft(
+            resid_img.copy() - pattern_resid.copy(),
+            "BIAS",
+            fft_plot=True,
+            qa_dir=qa_dir,
+            filename=filename.with_stem(f"{filename.stem}_cleaned"),
+            extra_graphics=extra_graphics,
+        )
+        print(f"   --> FFT-predicted pixel period: {cleaned_pixperiod:.1f} pix")
 
     # Next, use the pattern to clean the raw image and repackage
     # Load in the raw dataframe
@@ -322,6 +394,7 @@ def flatten_clean_fft(
     fft_plot: bool = False,
     qa_dir: pathlib.Path = None,
     filename: pathlib.Path = None,
+    extra_graphics: bool = False,
 ) -> float:
     """Find the peak frequency of sinusoidal noise
 
@@ -386,6 +459,8 @@ def flatten_clean_fft(
         (Default: None)
     filename : :obj:`~pathlib.Path`
         The filename of the raw data frame for the optional plot.  (Default: None)
+    extra_graphics : :obj:`bool`, optional
+        Produce extra graphics formats for documentation?  (Default: False)
 
     Returns
     -------
@@ -456,7 +531,15 @@ def flatten_clean_fft(
     peak_freq = x_fft[np.argmax(pspec[: n_pts // 2])]
 
     if fft_plot:
-        create_fft_plot(filename, flat_array, y_fft, x_fft, peak_freq, qa_dir=qa_dir)
+        create_fft_plot(
+            filename,
+            flat_array,
+            y_fft,
+            x_fft,
+            peak_freq,
+            qa_dir=qa_dir,
+            extra_graphics=extra_graphics,
+        )
 
     # Return the period (in pixels) that corresponds to this frequency
     return pixper_tofrom_hz(peak_freq)
@@ -495,8 +578,8 @@ def fit_lines(
         If refitting, the first-pass fit coefficient table.  If absent, then a
         full fitting of all lines will be performed.  (Default: None)
     refit_thresh_sig : :obj:`float`, optional
-        Threshold for RMS deviation from the mean for a line to be refit in
-        sigma-clipped standard deviations.  (Default: 3.0)
+        Threshold for RMS deviation (in sigma-clipped standard deviation units)
+        from the mean for a line to be refit.  (Default: 3.0)
     trim_ends : :obj:`bool`, optional
         Trim the 5 pixels off the ends of the line before fitting?  (Default: True)
     objmodel_check : :obj:`bool`, optional
@@ -515,8 +598,8 @@ def fit_lines(
     # If refitting is desired, determine the rows with good rms and those needing refit
     if do_refit := orig_fitc is not None:
         # =================================#
-        # Find lines with "bad" RMS, then refit those lines using tight priors
-        #   based on adjacent lines
+        # Find lines with "bad" RMS or with very small amplitude and non-zero RMS,
+        #   then refit those lines using tight priors based on adjacent lines
         avg, med, std = astropy.stats.sigma_clipped_stats(orig_fitc["rms"], sigma=3.0)
         if show_diagnostic:
             print(f"Stats: mean = {avg:.3f}  median = {med:.3f}  stddev = {std:.3f}")
@@ -528,8 +611,11 @@ def fit_lines(
         ind_goodrms = np.arange(nrow, dtype=int)[
             (orig_fitc["rms"] >= avg - refit_thresh_sig * std)
             & (orig_fitc["rms"] <= avg + refit_thresh_sig * std)
+            & (orig_fitc["a"] > 1.0)
         ]
-        refit_lines = orig_fitc["rms"] > avg + refit_thresh_sig * std
+        refit_lines = (orig_fitc["rms"] > avg + refit_thresh_sig * std) | (
+            (orig_fitc["a"] < 1.0) & (orig_fitc["rms"] > 0.0)
+        )
         if show_diagnostic:
             print(
                 f"Total elements: {nrow}  Good RMS:  {len(ind_goodrms)}  "
@@ -546,7 +632,7 @@ def fit_lines(
 
     # These are the starting guesses and bounds for the sinusoidal fit
     #  [a, lam, phi, y0, lin, quad]
-    p0 = [6, pixel_period, 0.5, img_mean, 0, 0]  # + 4 * [0]
+    p0 = [6, pixel_period, 0.5, img_mean, 0, 0]
     bounds = (
         [
             0,
@@ -579,6 +665,7 @@ def fit_lines(
         tsz = 8
         pidx = 0
 
+    xpl = np.arange(ncol)
     for img_row in range(nrow):
         # If refitting, follow this logic:
         if do_refit:
@@ -589,7 +676,9 @@ def fit_lines(
             # Estimate the parameters more specifically from the "good" rms
             #   lines in the vicinity
             closest_idx = ind_goodrms[np.argmin(np.abs(img_row - ind_goodrms))]
+            # Amplitude
             p0[0] = orig_fitc["a"][closest_idx]
+            # Period
             p0[1] = orig_fitc["lambda"][closest_idx]
             bounds[0][1] = orig_fitc["lambda"][closest_idx] - 5
             bounds[1][1] = orig_fitc["lambda"][closest_idx] + 5
@@ -611,7 +700,7 @@ def fit_lines(
         line[line > sig_clip] = sig_clip
 
         # Smooth the line with a median filter at 1/10th the pixel period
-        line = smooth_array(line, kernel_size=utils.nearest_odd(pixel_period / 20.0))
+        line = smooth_array(line, kernel_size=utils.nearest_odd(pixel_period / 10.0))
 
         # Perform the curve fit
         try:
@@ -622,7 +711,8 @@ def fit_lines(
                 pcov = np.diag(np.ones(len(popt)))
                 rms = 0
             else:
-                xpl = np.arange(line.size)
+                # The optimization method is the "Trust Region Reflective" algorithm
+                # The parameters are scaled iteratively from the Jacobian matrix
                 popt, pcov, infodict, mesg, ier = scipy.optimize.curve_fit(
                     utils.sinusoid,
                     xpl,
@@ -631,18 +721,17 @@ def fit_lines(
                     bounds=bounds,
                     full_output=True,
                     method="trf",
-                    sigma=np.full_like(line, 1.0),
+                    x_scale="jac",
                 )
                 rms = np.sqrt(np.mean(infodict["fvec"] ** 2))
         except RuntimeError:
             # Reached max function evaluations; set popt and pcov
-            print("Runtime error!")
             popt = p0
             popt[0] = 0
             pcov = np.diag(np.ones(len(popt)))
             rms = np.inf
 
-        # Diagnositc plot
+        # Diagnositc Plot showing particular rows ==========>
         if show_diagnostic and img_row in [76, 193, 285, 412]:
             axis = axes[pidx]
             # Add this to the plot
@@ -653,14 +742,7 @@ def fit_lines(
                 "r-",
                 label=make_sine_label(popt, infodict, mesg, ier),
             )
-            axis.tick_params(
-                axis="both",
-                which="both",
-                direction="in",
-                top=True,
-                right=True,
-                labelsize=tsz,
-            )
+            utils.set_std_tickparams(axis, tsz)
             axis.set_xlabel(f"Pixel Position, Row #{img_row}", fontsize=tsz)
             axis.legend(loc="upper left", fontsize=tsz)
             pidx += 1
@@ -671,16 +753,6 @@ def fit_lines(
         pstd[pstd == 0] = 1.0e-8
         inv_pstd = np.linalg.inv(np.diag(pstd))
         pcor = np.matmul(np.matmul(inv_pstd, pcov), inv_pstd)
-
-        # Make sure the phase shift is a smoothly varying function, even if
-        #  it goes outside the range 0 - 1.
-        # NOTE: This explicitely assumes the phase shift from one line to the
-        #       next is always less than 0.5 (π radians, 180º).
-        # if fit_coeffs and False:
-        #     while popt[2] - fit_coeffs[-1]["phi"] > 0.5:
-        #         popt[2] -= 1.0
-        #     while popt[2] - fit_coeffs[-1]["phi"] < -0.5:
-        #         popt[2] += 1.0
 
         # Add the fit coefficients to the list
         coeff_dict = {
@@ -707,6 +779,7 @@ def fit_lines(
 
         progress_bar.update(1)
 
+    # End of the loop
     progress_bar.close()
 
     if show_diagnostic:
@@ -714,7 +787,7 @@ def fit_lines(
         plt.show()
         plt.close()
 
-    # After the image has been fit, convert the list of dict into a Table
+    # Convert the list of dict into a Table for return
     return astropy.table.Table(fit_coeffs)
 
 
@@ -951,6 +1024,9 @@ def package_into_fits(
     out_fn = (
         filename.with_stem(f"{filename.stem}_scrub") if not overwrite_raw else filename
     )
+
+    # Print a helpful statement
+    print(f"Writing out scrubbed FITS file: {out_fn.name}")
     hdul.writeto(out_fn, overwrite=True)
 
 
@@ -962,6 +1038,7 @@ def create_fft_plot(
     x_fft: np.ndarray,
     peak_freq: float,
     qa_dir: pathlib.Path = None,
+    extra_graphics: bool = False,
 ):
     """Create the FFT analysis plot
 
@@ -993,70 +1070,130 @@ def create_fft_plot(
         The QA directory into which to place the optional plots.  If ``None``,
         the plots will be placed in the current working directory.
         (Default: None)
+    extra_graphics : :obj:`bool`, optional
+        Produce extra graphics formats for documentation?  (Default: False)
     """
+    # Ignore UserWarnings in this function
+    warnings.simplefilter("ignore", UserWarning)
+
     # Compute the power spectrum as |FFT|^2; smoothed with a 10-Hz Gaussian
     pspec = scipy.ndimage.gaussian_filter1d(np.abs(y_fft) ** 2, 10)
 
-    # Set up the plotting environment
-    _, axes = plt.subplots(nrows=4, figsize=(6.4, 6.4))
+    # Set up the plotting environment -- somewhat complicated, but pretty
+    fig = plt.figure(layout="tight", figsize=(6.4, 6.4))
+    gs0 = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1.0, 3.0])
+
+    # Lay out the gridspec and map to the usual Axis objects for plotting
+    gs00 = gs0[0].subgridspec(1, 1)
+    gs01 = gs0[1].subgridspec(3, 1, hspace=0)
+    axis0 = fig.add_subplot(gs00[0])
+    axis1 = [fig.add_subplot(gs01[i]) for i in range(3)]
     tsz = 8
 
+    # Linear Pixels -- separate thing
+    axis0.plot(flat_array, linewidth=0.1, color="k")
+    axis0.set_xlabel("Linear pixel number", fontsize=tsz)
+    axis0.set_ylabel("Pixel Value", fontsize=tsz)
+    utils.set_std_tickparams(axis0, tsz)
+
+    # Limits and Labels
+    _, med, std = astropy.stats.sigma_clipped_stats(flat_array, sigma=5.0)
+    axis0.set_ylim(med - 20.0 * std, med + 20.0 * std)
+    axis0.ticklabel_format(style="plain", axis="x", scilimits=(0, 0))
+    # When making plots for the documentation, obfuscate the source
+    fname = "" if extra_graphics else f" for {filename.name}"
+    axis0.set_title(f"FFT Analysis{fname}", fontsize=tsz + 2)
+
+    # FFT plots, on common x-axis
     # Make a series of secondary axes
-    secaxes = axes.copy()
+    secaxes = axis1.copy()
 
-    # Begin
-    axes[0].plot(flat_array, linewidth=0.1, color="k")
-    axes[0].set_xlabel("Linear pixel number", fontsize=tsz)
-    axes[0].set_ylabel("Pixel Value", fontsize=tsz)
+    axis1[0].plot(
+        x_fft, np.real(y_fft), linewidth=0.1, label="Real Component of the FFT"
+    )
+    axis1[0].set_ylabel("Re(FFT)", fontsize=tsz)
+    axis1[0].legend(loc="upper right", fontsize=tsz)
 
-    axes[1].plot(x_fft, np.real(y_fft), linewidth=0.1)
-    axes[1].set_ylabel("Re(FFT)", fontsize=tsz)
+    axis1[1].plot(
+        x_fft, np.imag(y_fft), linewidth=0.1, label="Imaginary Component of the FFT"
+    )
+    axis1[1].set_ylabel("Im(FFT)", fontsize=tsz)
+    axis1[1].legend(loc="upper right", fontsize=tsz)
 
-    axes[2].plot(x_fft, np.imag(y_fft), linewidth=0.1)
-    axes[2].set_ylabel("Im(FFT)", fontsize=tsz)
+    axis1[2].plot(
+        x_fft,
+        pspec,
+        linewidth=0.3,
+        label="Smoothed Power Spectrum (10-Hz Kernel)",
+    )
+    ylim = axis1[2].get_ylim()
+    axis1[2].plot(
+        x_fft,
+        np.abs(y_fft) ** 2,
+        zorder=0,
+        linewidth=0.1,
+        label="Raw FFT Power Spectrum",
+    )
+    axis1[2].set_ylabel("|FFT|^2", fontsize=tsz)
+    axis1[2].set_ylim(ylim)
+    axis1[2].legend(loc="upper right", fontsize=tsz)
+    axis1[2].text(
+        0.05,
+        0.95,
+        f"Peak @ {pixper_tofrom_hz(peak_freq):.1f} pix",
+        transform=axis1[2].transAxes,
+        fontsize=tsz,
+        va="top",
+        color="C0",
+    )
 
-    axes[3].plot(x_fft, pspec, linewidth=0.3)
-    ylim = axes[3].get_ylim()
-    axes[3].plot(x_fft, np.abs(y_fft) ** 2, zorder=0, linewidth=0.1)
-    axes[3].set_ylabel("|FFT|^2", fontsize=tsz)
-    axes[3].set_ylim(ylim)
-
-    for i, axis in enumerate(axes[1:], 1):
-        secaxes[i] = axis.secondary_xaxis(
-            "bottom", functions=(pixper_tofrom_hz, pixper_tofrom_hz)
-        )
-        secaxes[i].set_xlabel("Sinusoid Period (Pixels)", fontsize=tsz)
-        axis.set_xlim(pixper_tofrom_hz(np.array([500, 75])))
-        axis.set_xticks([])
-        axis.vlines(
+    for i, (ax, secax) in enumerate(zip(axis1, secaxes), 1):
+        # Do the frequency-based parts
+        ax.set_xlim(pixper_tofrom_hz(np.array([500, 75])))
+        ax.set_xticks([])
+        ax.vlines(
             peak_freq,
             0,
             1,
-            transform=axis.get_xaxis_transform(),
-            color="black",
+            transform=ax.get_xaxis_transform(),
+            color="gray",
             linestyle="--",
-            zorder=-1,
-            linewidth=0.2,
+            zorder=0.5,
+            linewidth=0.6,
         )
-
-    for axis, secax in zip(axes, secaxes):
-        axis.tick_params(
-            axis="both",
-            which="both",
-            direction="in",
-            top=True,
-            right=True,
-            labelsize=tsz,
+        utils.set_std_tickparams(ax, tsz)
+        ylim = ax.get_ylim()
+        y_tick_vals = [val for val in ax.get_yticks() if ylim[0] < val < ylim[1]]
+        ax.set_yticks(y_tick_vals, [f"{val:7.2g}" for val in y_tick_vals])
+        # ax.ticklabel_format(style="plain", axis="y", scilimits=(0, 0))
+        # Do the bottom inverse axis
+        secax = ax.secondary_xaxis(
+            "bottom", functions=(pixper_tofrom_hz, pixper_tofrom_hz)
         )
         secax.tick_params(
             axis="both",
             which="both",
             direction="in",
-            top=True,
-            right=True,
+            bottom=True,
             labelsize=tsz,
         )
-    axes[0].set_title("FFT Analysis", fontsize=tsz + 2)
+
+        if i != 3:
+            secax.set_xticklabels(" ")
+        else:
+            secax.set_xlabel("Sinusoid Period (Pixels)", fontsize=tsz)
+        # Do the top inverse axis
+        secax = ax.secondary_xaxis(
+            "top", functions=(pixper_tofrom_hz, pixper_tofrom_hz)
+        )
+        secax.set_xticklabels(" ")
+        secax.tick_params(
+            axis="both",
+            which="both",
+            direction="in",
+            top=True,
+            labelsize=tsz,
+        )
 
     # Add a note about the file creator
     plt.figtext(
@@ -1070,7 +1207,9 @@ def create_fft_plot(
     # End
     plt.tight_layout()
     save_dir = pathlib.Path(".").resolve() if qa_dir is None else qa_dir
-    plt.savefig(save_dir / f"{filename.stem}_scrubber_fft_analysis.pdf")
+    extns = ["pdf", "svg", "png"] if extra_graphics else ["pdf"]
+    for extn in extns:
+        plt.savefig(save_dir / f"{filename.stem}_scrubber_fft_analysis.{extn}")
     plt.close()
 
 
@@ -1080,6 +1219,7 @@ def make_sinusoid_fit_plots(
     pixel_period: float,
     rmslim: float = None,
     qa_dir: pathlib.Path = None,
+    extra_graphics: bool = False,
 ):
     """Create a set of diagnostic plots from the set of sinusoid fits
 
@@ -1106,18 +1246,20 @@ def make_sinusoid_fit_plots(
         The QA directory into which to place the optional plots.  If ``None``,
         the plots will be placed in the current working directory.
         (Default: None)
+    extra_graphics : :obj:`bool`, optional
+        Produce extra graphics formats for documentation?  (Default: False)
     """
     _, axes = plt.subplots(nrows=4, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0})
     tsz = 8
 
     # Panel #1: Amplitude of the fit
-    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"])
-    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"])
+    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"], color="C2", linewidth=1.0)
     axes[0].set_ylabel("Amplitude (ADU)", fontsize=tsz)
 
     # Panel #2: Period of the fit
-    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["lambda"])
-    axes[1].plot(np.arange(len(fit_coeffs)), fit_coeffs["lambda"])
+    axes[1].plot(
+        np.arange(len(fit_coeffs)), fit_coeffs["lambda"], color="C1", linewidth=1.0
+    )
     axes[1].hlines(
         pixel_period,
         0,
@@ -1130,33 +1272,32 @@ def make_sinusoid_fit_plots(
     axes[1].set_ylabel("Period (pixels)", fontsize=tsz)
 
     # Panel #3: Phase of the fit
-    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["phi"])
-    axes[2].plot(np.arange(len(fit_coeffs)), fit_coeffs["phi"])
+    axes[2].plot(
+        np.arange(len(fit_coeffs)), fit_coeffs["phi"], color="gray", linewidth=1.0
+    )
     axes[2].set_ylabel("Phase Shift (phase)", fontsize=tsz)
 
     # Panel #4: RMS of the fi=t
-    axes[3].plot(np.arange(len(fit_coeffs)), fit_coeffs["rms"])
+    axes[3].plot(
+        np.arange(len(fit_coeffs)), fit_coeffs["rms"], color="C0", linewidth=1.0
+    )
     axes[3].hlines(
         rmslim,
         0,
         1,
         transform=axes[3].get_yaxis_transform(),
-        color="green",
+        color="C2",
         linestyle="--",
     )
     axes[3].set_ylabel("RMS of the fit (ADU)", fontsize=tsz)
     axes[3].set_xlabel("Image Row Number", fontsize=tsz)
 
     for axis in axes:
-        axis.tick_params(
-            axis="both",
-            which="both",
-            direction="in",
-            top=True,
-            right=True,
-            labelsize=tsz,
-        )
-    axes[0].set_title(f"Sinusoid Pattern Fits for {filename.name}", fontsize=tsz + 2)
+        utils.set_std_tickparams(axis, tsz)
+
+    # When making plots for the documentation, obfuscate the source
+    fname = "" if extra_graphics else f" for {filename.name}"
+    axes[0].set_title(f"Sinusoid Pattern Fits{fname}", fontsize=tsz + 2)
 
     # Add a note about the file creator
     plt.figtext(
@@ -1169,7 +1310,9 @@ def make_sinusoid_fit_plots(
 
     plt.tight_layout()
     save_dir = pathlib.Path(".").resolve() if qa_dir is None else qa_dir
-    plt.savefig(save_dir / f"{filename.stem}_scrubber_sinusoid_fits.pdf")
+    extns = ["pdf", "svg", "png"] if extra_graphics else ["pdf"]
+    for extn in extns:
+        plt.savefig(save_dir / f"{filename.stem}_scrubber_sinusoid_fits.{extn}")
     plt.close()
 
 
@@ -1179,11 +1322,12 @@ def make_image_comparison_plots(
     resid: np.ndarray,
     pattern: np.ndarray,
     qa_dir: pathlib.Path = None,
+    with_obj: bool = False,
+    extra_graphics: bool = False,
 ):
     """Make a set of Image Comparison plots
 
-    This function creates a multipanel plot saved as ``scrub_thing.pdf`` in
-    the current working directory.  The panels are:
+    This function creates a multipanel plot.  The panels are:
 
     1. The PypeIt-reduced 2-dimensional spectrum (``spec2d.sciimg``)
     2. The PypeIt sky spectrum model (``spec2d.skymodel``).
@@ -1209,6 +1353,10 @@ def make_image_comparison_plots(
         The QA directory into which to place the optional plots.  If ``None``,
         the plots will be placed in the current working directory.
         (Default: None)
+    with_obj: :obj:`bool`, optional
+        Does ``resid`` contain the object model?  (Default: False)
+    extra_graphics : :obj:`bool`, optional
+        Produce extra graphics formats for documentation?  (Default: False)
     """
     _, axes = plt.subplots(nrows=6, figsize=(6.4, 10.67))
     tsz = 8
@@ -1242,9 +1390,13 @@ def make_image_comparison_plots(
     vmin, vmax = interval.get_limits(resid)
     axes[2].imshow(resid, vmin=vmin, vmax=vmax, origin="lower")
     axes[2].axis("off")
-    axes[2].set_title(
-        "PypeIt Residual Noise Image (sciimg - skymodel - objmodel)*gpm", fontsize=tsz
-    )
+    if with_obj:
+        axes[2].set_title("PypeIt Residual Image (sciimg - skymodel)*gpm", fontsize=tsz)
+    else:
+        axes[2].set_title(
+            "PypeIt Residual Noise Image (sciimg - skymodel - objmodel)*gpm",
+            fontsize=tsz,
+        )
 
     # Panel #4: Draw the model
     # vmin, vmax = interval.get_limits(pattern_resid)
@@ -1260,10 +1412,15 @@ def make_image_comparison_plots(
         origin="lower",
     )
     axes[4].axis("off")
-    axes[4].set_title("Residual Noise Image minus Pattern", fontsize=tsz)
+    if with_obj:
+        axes[4].set_title("Residual Image minus Pattern", fontsize=tsz)
+    else:
+        axes[4].set_title("Residual Noise Image minus Pattern", fontsize=tsz)
 
     # Filename as the "super title"
-    plt.suptitle(filename.name, fontsize=tsz + 2)
+    # When making plots for the documentation, obfuscate the source
+    fname = "" if extra_graphics else f" for {filename.name}"
+    plt.suptitle(f"Image Comparison Plots{fname}", fontsize=tsz + 2)
 
     # Add a note about the file creator
     plt.figtext(
@@ -1276,7 +1433,9 @@ def make_image_comparison_plots(
 
     plt.tight_layout()
     save_dir = pathlib.Path(".").resolve() if qa_dir is None else qa_dir
-    plt.savefig(save_dir / f"{filename.stem}_scrubber_image_comparisons.pdf")
+    extns = ["pdf", "svg", "png"] if extra_graphics else ["pdf"]
+    for extn in extns:
+        plt.savefig(save_dir / f"{filename.stem}_scrubber_image_comparisons.{extn}")
     plt.close()
 
 
@@ -1368,17 +1527,32 @@ class ScrubDevenyPickup(scriptbase.ScriptBase):
         )
         parser.add_argument("file", nargs="+", type=str, help="File(s) to clean")
         parser.add_argument(
-            "--debug_plots",
-            default=True,
+            "--proc_dir",
+            type=str,
+            default=None,
+            help="Path to the directory containing the .pypeit file used to process `file` (ldt_deveny_?)",
+        )
+        parser.add_argument(
+            "-d",
+            "--diagnostics",
             action="store_true",
-            help="Create plots during the analysis for debugging purposes",
+            help="Output additional information and plots during the analysis for debugging purposes",
         )
         parser.add_argument(
             "--overwrite_raw",
-            default=False,
             action="store_true",
             help="Overwrite the raw file rather than create a new file with the '_scrub' suffix",
         )
+        parser.add_argument(
+            "-n",
+            "--no_refit",
+            action="store_true",
+            help="Force no refit of 'bad' RMS values",
+        )
+        # Produce multiple graphics outputs for the documentation -- HIDDEN
+        parser.add_argument("-g", action="store_true", help=argparse.SUPPRESS)
+        # Feed the pattern image back into the FFT algorithm -- HIDDEN
+        parser.add_argument("-f", action="store_true", help=argparse.SUPPRESS)
         return parser
 
     @staticmethod
@@ -1392,8 +1566,12 @@ class ScrubDevenyPickup(scriptbase.ScriptBase):
         for file in args.file:
             iterative_pypeit_clean(
                 pathlib.Path(file).resolve(),
+                proc_dir=args.proc_dir,
                 overwrite_raw=args.overwrite_raw,
-                debug_plots=args.debug_plots,
+                diagnostics=args.diagnostics,
+                no_refit=args.no_refit,
+                extra_graphics=args.g,
+                rerun_fft=args.f,
             )
 
             # Deprecated original method

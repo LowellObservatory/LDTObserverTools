@@ -1,5 +1,5 @@
 =======================  =====================================================================================================================================================================================
 Python Version           ``>=3.10``                                                                                                                                                                           
 Required for users       ``astropy>=5.1``, ``ccdproc``, ``matplotlib``, ``numpy>=1.22``, ``pypeit[specutils]>=1.13.0``, ``pysimplegui``, ``requests``, ``scipy``, ``setuptools``, ``setuptools_scm``, ``tqdm``
-Required for developers  ``black``, ``pylint``, ``pyyaml``, ``sphinx``, ``sphinx-automodapi``, ``sphinx_rtd_theme``, ``stomp.py``, ``xmltodict``                                                              
+Required for developers  ``black``, ``pylint``, ``pyyaml``, ``sphinx``, ``sphinx-automodapi``, ``sphinx_rtd_theme==1.2.2``, ``stomp.py``, ``xmltodict``                                                       
 =======================  =====================================================================================================================================================================================
