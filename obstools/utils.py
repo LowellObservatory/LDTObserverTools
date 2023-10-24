@@ -39,7 +39,7 @@ CONFIG = resources.files("obstools") / "config"
 DATA = resources.files("obstools") / "data"
 
 
-def check_float(potential_float):
+def check_float(potential_float) -> bool:
     """Simple funtion to check whether something is a float
 
     Parameters
@@ -129,8 +129,8 @@ def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = F
     if estimates is None:
         # Subtract a linear term if nterm == 5 or 6 or constant for nterm == 4
         if nterms > 3:
-            p = np.polyfit(x, y, 0 if nterms == 4 else 1)
-            y_modified = y - np.polyval(p, x)
+            poly = np.polynomial.Polynomial.fit(x, y, 0 if nterms == 4 else 1)
+            y_modified = y - poly(x)
         # Do nothing if nterm == 3
         else:
             y_modified = y
@@ -156,7 +156,7 @@ def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = F
                 estimates[i] = est
 
         if nterms > 3:
-            estimates = estimates + list(np.flip(p))
+            estimates = estimates + list(poly.coef)
         if nterms == 6:
             estimates.append(0.0)
 

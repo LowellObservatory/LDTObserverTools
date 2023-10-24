@@ -61,6 +61,7 @@ import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
 from pypeit.scripts import scriptbase
+from pypeit import msgs
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -126,14 +127,15 @@ def iterative_pypeit_clean(
     if proc_dir is not None:
         # TODO: This is when someone uses the `-r` option to `pypeit_setup`
         pass
-
     try:
+        # Look for the spec2d file
         spec2d_file = [
             next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*"))
             for d in sorted(filename.parent.glob("ldt_deveny_?"))
         ][0]
-    except StopIteration:
-        print(
+    except (StopIteration, IndexError):
+        # And... fail.
+        msgs.warn(
             f"File {filename.name} does not have a corresponding PypeIt-processed 2D spectrum. "
             "Check the image type and whether you have `run_pypeit`."
         )
@@ -151,25 +153,14 @@ def iterative_pypeit_clean(
         k=-1,  # Rotate CCW
     )
 
-    # Determine whether we can perform the refit step:
-    #  * If objects were extracted, the spec2d.objmodel must not be identically
-    #    zero -- the case when local sky subtraction is turned off.
-    can_refit = not (
-        (
-            spec2d_file.with_name(spec2d_file.name.replace("spec2d", "spec1d")).exists()
-            and np.sum(spec2d.objmodel) == 0
-        )
-        or no_refit
-    )
+    # Bright objects can mess with the FFT cleaning as well as other parts
+    #   of this process.
+    objmodel = np.rot90(spec2d.objmodel.copy(), k=-1)
 
     # To guide the fitting of sinusoids to individual lines, compute the
-    #   expected (average) pixel period from the FFT of the flattened array
-    #   The "BIAS" option means we don't need `flatten_clean_fft()` to try to
-    #   fit out an object or anything else -- the residual image should
-    #   somewhat resemble a bias frame.
+    #   expected (average) pixel period from the FFT of the flattened array.
     resid_pixperiod = flatten_clean_fft(
         resid_img.copy(),
-        "BIAS",
         fft_plot=True,
         qa_dir=qa_dir,
         filename=filename,
@@ -177,47 +168,52 @@ def iterative_pypeit_clean(
     )
     print(f"   --> FFT-predicted pixel period: {resid_pixperiod:.1f} pix")
 
+    # First, if the brightest part of the object model is > 600, then the
+    #   sinusoidal signal only imparts a 1% effect.  Skip objmodel checking
+    #   for these cases
+    if np.max(objmodel) > 600:
+        print(" * Object model > 100x sinusoidal signal.")
+        with_obj = False
     # Before fitting the image, inspect the objmodel for sinusoidal signal of the
     #  type we're looking for
-    print("Checking the object model for bulk sinusoidal signal...")
-    objmodel = np.rot90(spec2d.objmodel.copy(), k=-1)
-    obj_fitc = fit_lines(
-        objmodel,
-        resid_pixperiod,
-        trim_ends=False,
-        objmodel_check=True,
-        show_diagnostic=diagnostics,
-    )
-    # This will be a tunable parameter
-    if obj_fitc and np.max(obj_fitc["a"]) >= 3:
-        # Add the object model back into the residual image because we need to
-        #   fit out the sine from the object.
-        print(
-            " * Adding the object model back into the residual image for "
-            "fitting; extracted object contains target sinusoidal signal, "
-            f"amplitude = {np.max(obj_fitc['a']):.2f}."
-        )
-        resid_img += objmodel
-        with_obj = True
     else:
-        print(" * Object model appears clean of target sinusoidal signal.")
-        with_obj = False
-    # print(f"Max amplitude of the object model sinusoid fits: {np.max(obj_fitc['a']):.2f}")
-    # make_sinusoid_fit_plots(filename, obj_fitc, resid_pixperiod, qa_dir=qa_dir)
-    # return
+        print("Checking the object model for bulk sinusoidal signal...")
+        obj_fitc = fit_lines(
+            objmodel,
+            resid_pixperiod,
+            trim_ends=False,
+            objmodel_check=True,
+            show_diagnostic=diagnostics,
+        )
+        # TODO: Tweak this and add protections against bright objects
+
+        # This will be a tunable parameter
+        if obj_fitc and np.max(obj_fitc["a"]) >= 3:
+            # Add the object model back into the residual image because we need to
+            #   fit out the sine from the object.
+            print(
+                " * Adding the object model back into the residual image for "
+                "fitting; extracted object contains target sinusoidal signal, "
+                f"amplitude = {np.max(obj_fitc['a']):.2f}."
+            )
+            resid_img += objmodel
+            with_obj = True
+        else:
+            print(" * Object model appears clean of target sinusoidal signal.")
+            with_obj = False
 
     # Fit a sinusoid to each line in the image using the pixel period as a guess
+    #  ==> This is the main point of the function
     print("Fitting sinusoids to each line in the image...")
     resid_fitc = fit_lines(
         resid_img.copy(), resid_pixperiod, trim_ends=False, show_diagnostic=diagnostics
     )
-
     # Print a happy statement of fact
     mean_fit_period = resid_fitc["lambda"].mean()
     print(f"   --> Mean fit pixel period: {mean_fit_period:.1f} pix")
 
-    if can_refit:
-        # Refit lines by passing the existing fit coeffs to fit_lines()
+    # Refit lines by passing the existing fit coeffs to fit_lines()
+    if not no_refit:
         print("Refitting lines with poor fit in first pass...")
         resid_fitc = fit_lines(
             resid_img.copy(),
@@ -230,8 +226,37 @@ def iterative_pypeit_clean(
         mean_fit_period = resid_fitc["lambda"].mean()
         print(f"   --> Mean fit pixel period: {mean_fit_period:.1f} pix")
 
+        # This last step refits the residual image using the knowledge that the
+        #   AC pickup noise is of nearly constant amplitude and period.  The
+        #   `fixed_sinusoid` argument to fit_lines() fits an order=2 polynomial
+        #   to each of the amplitude and period as a function of row number,
+        #   and then fixes those values in the sinusoid fit of each row to the
+        #   smoothed value.  This has the effect of the sinusoid fitting only
+        #   considering the sinusoid phase and underlying order=2 polynomial of
+        #   the row.  This is designed to REDUCE noise by eliminating the
+        #   random oscillations in these parameters due to fitting a sinusoid
+        #   to noisy data.
+        print(
+            "Refitting all lines within the slit assuming nearly constant sinusoid..."
+        )
+        fixed_fitc, smoothing = fit_lines(
+            resid_img.copy(),
+            resid_pixperiod,
+            orig_fitc=resid_fitc,
+            trim_ends=False,
+            show_diagnostic=diagnostics,
+            fixed_sinusoid=True,
+        )
+        # (Re-re-)Print a happy statement of fact
+        mean_fit_period = fixed_fitc["lambda"].mean()
+        print(f"   --> Mean fit pixel period: {mean_fit_period:.1f} pix")
+    else:
+        fixed_fitc, smoothing = None, None
+
     # Construct the pattern image and apply it to the input (pattern has mean = 0)
-    _, pattern_resid = create_and_apply_pattern(resid_img, resid_fitc)
+    _, pattern_resid = create_and_apply_pattern(
+        resid_img, resid_fitc if no_refit else fixed_fitc
+    )
 
     # Make disgnostic plots
     print(f" Writing QA plots to {qa_dir}")
@@ -250,13 +275,14 @@ def iterative_pypeit_clean(
         resid_pixperiod,
         qa_dir=qa_dir,
         extra_graphics=extra_graphics,
+        fixed_fitc=fixed_fitc,
+        smoothing=smoothing,
     )
 
-    # If desired, run the pattern though the FFT for comparison
+    # If desired, run the pattern back though the FFT function for comparison
     if rerun_fft:
         pattern_pixperiod = flatten_clean_fft(
             pattern_resid.copy(),
-            "BIAS",
             fft_plot=True,
             qa_dir=qa_dir,
             filename=filename.with_stem(f"{filename.stem}_pattern"),
@@ -266,7 +292,6 @@ def iterative_pypeit_clean(
 
         cleaned_pixperiod = flatten_clean_fft(
             resid_img.copy() - pattern_resid.copy(),
-            "BIAS",
             fft_plot=True,
             qa_dir=qa_dir,
             filename=filename.with_stem(f"{filename.stem}_cleaned"),
@@ -300,7 +325,7 @@ def iterative_pypeit_clean(
         ccd,
         cleaned_array,
         pattern_array,
-        resid_fitc,
+        resid_fitc if no_refit else fixed_fitc,
         resid_pixperiod,
         overwrite_raw=overwrite_raw,
     )
@@ -356,7 +381,7 @@ def clean_pickup(
 
     # Get the expected pixel period from the FFT of the flattened array
     pixel_period = flatten_clean_fft(
-        ccd.data.copy(), imgtyp, use_hann=use_hann, fft_plot=fft_plot
+        ccd.data.copy(), use_hann=use_hann, fft_plot=fft_plot
     )
     print(f"This is the FFT-predicted pixel period: {pixel_period:.1f} pix")
 
@@ -389,7 +414,6 @@ def clean_pickup(
 # Task-Oriented Helper Functions =============================================#
 def flatten_clean_fft(
     data_array: np.ndarray,
-    imgtyp: str,
     use_hann: bool = False,
     fft_plot: bool = False,
     qa_dir: pathlib.Path = None,
@@ -446,8 +470,6 @@ def flatten_clean_fft(
     ----------
     data_array : :obj:`~numpy.ndarray`
         _description_
-    imgtyp : :obj:`str`
-        The frame image type from the FITS header
     use_hann : :obj:`bool`
         Use a Hann window on each row in addition to subtracting the row mean
         (Default: False)
@@ -471,29 +493,6 @@ def flatten_clean_fft(
     # Compute the shape of the input array
     nrow, ncol = data_array.shape
 
-    # Before flattening, mask out the main object, as fit from vertical profile
-    if imgtyp == "OBJECT":
-        vert_profile = np.median(data_array, axis=1)
-        medval = np.median(vert_profile)
-        # Fit a gaussian
-        popt, _, _, _, _ = scipy.optimize.curve_fit(
-            utils.gaussian_function,
-            np.arange(nrow),
-            vert_profile,
-            p0=[
-                np.max(vert_profile) - medval,  # a
-                np.argmax(vert_profile),  # mu
-                5.0,  # sig
-                medval,  # y0
-            ],
-            bounds=[0, [2**16 - medval, vert_profile.size, 15, np.max(vert_profile)]],
-            full_output=True,
-        )
-        # Build the mask at ±5σ, if the object is bright enough to matter
-        if popt[0] > 20:
-            mask = (popt[1] + 5.0 * np.array([-popt[2], popt[2]])).astype(int)
-            data_array[mask[0] : mask[1], :] = medval
-
     # If so desired, apply a Hann window to each row
     if use_hann:
         hann = 0.5 * (1.0 - np.cos(2.0 * np.pi * np.arange(ncol) / ncol))
@@ -513,6 +512,11 @@ def flatten_clean_fft(
         # Pull the chunk and replace it with something smooth
         chunk = flat_array[idx]
         flat_array[idx] = np.linspace(chunk[0], chunk[-1], num=len(chunk))
+
+    # Use sigma-clipped stats to remove wild swings that may affect the FFT
+    _, med, std = astropy.stats.sigma_clipped_stats(flat_array, sigma=3.0)
+    clip_ind = (flat_array > med + 5.0 * std) | (flat_array < med - 5.0 * std)
+    flat_array[clip_ind] = 0
 
     # Onward to the FFT!
     # Subtract the mean to remove power from 0 frequency
@@ -548,11 +552,12 @@ def flatten_clean_fft(
 def fit_lines(
     data_array: np.ndarray,
     pixel_period: float,
-    show_diagnostic: bool = False,
     orig_fitc: astropy.table.Table = None,
     refit_thresh_sig: float = 3.0,
     trim_ends: bool = True,
     objmodel_check: bool = False,
+    show_diagnostic: bool = False,
+    fixed_sinusoid: bool = False,
 ) -> astropy.table.Table:
     """Fit a sinusoid to each line in the image
 
@@ -572,8 +577,6 @@ def fit_lines(
     pixel_period : :obj:`float`
         The predicted pixel period for this image array, as computed by
         :func:`flatten_clean_fft`.
-    show_diagnostic : :obj:`bool`, optional
-        Display a diagnotic plot of several lines w/ fit?  (Default: False)
     orig_fitc : :obj:`~astropy.table.Table`, optional
         If refitting, the first-pass fit coefficient table.  If absent, then a
         full fitting of all lines will be performed.  (Default: None)
@@ -581,9 +584,15 @@ def fit_lines(
         Threshold for RMS deviation (in sigma-clipped standard deviation units)
         from the mean for a line to be refit.  (Default: 3.0)
     trim_ends : :obj:`bool`, optional
-        Trim the 5 pixels off the ends of the line before fitting?  (Default: True)
+        Trim the 5 pixels off the ends of the line before fitting?
+        (Default: True)
     objmodel_check : :obj:`bool`, optional
         Is this image the spec2d objmodel?  (Default: False)
+    show_diagnostic : :obj:`bool`, optional
+        Display a diagnotic plot of several lines w/ fit?  (Default: False)
+    fixed_sinusoid : :obj:`bool`, optional
+        Determine the (roughly) constant sinusoid amplitude and period and fit
+        the lines for phase and secular drift only?  (Default: False)
 
     Returns
     -------
@@ -595,8 +604,10 @@ def fit_lines(
     nrow, ncol = data_array.shape
     img_mean = np.nanmean(data_array)
 
-    # If refitting is desired, determine the rows with good rms and those needing refit
-    if do_refit := orig_fitc is not None:
+    # If refitting, determine the rows with good rms and those needing refit
+    #  Refitting is done if `orig_fitc` is passed in, but not if
+    #  `fixed_sinusoid` or `objmodel_check` is checked.
+    if do_refit := (orig_fitc is not None and not (fixed_sinusoid or objmodel_check)):
         # =================================#
         # Find lines with "bad" RMS or with very small amplitude and non-zero RMS,
         #   then refit those lines using tight priors based on adjacent lines
@@ -622,14 +633,38 @@ def fit_lines(
                 f"Refit lines: {np.sum(refit_lines)}"
             )
 
-        # Back-convert the Table into a list of dicts for reinserting corrected lines
-        orig_fitc_list = [dict(zip(orig_fitc.colnames, row)) for row in orig_fitc]
-
+    # Checking the object model for sinusoidal pattern noise
     if objmodel_check:
         ind_obj = [
             i for i in range(nrow) if not np.allclose(data_array[i], np.zeros(ncol))
         ]
 
+    # If fitting a (roughly) constant sinusoid to all lines, determine the
+    #  (slowly varying) values of amplitude and period as a function of row
+    #  number by fitting a line to the orig_fitc using a linear least-squares
+    #  algorithm.
+    if fixed_sinusoid:
+        # Valid range is the whole slit -- fill in any odd gaps
+        valid_idx = orig_fitc["a"] > 1.0
+        start, end = (
+            np.arange(len(valid_idx))[
+                np.append([valid_idx[0]], np.diff(valid_idx) != 0)
+            ]
+        )[[0, -1]]
+        valid_idx[start:end] = True
+
+        # Fit Chebyshev polynomials to these two coefficients as a f(row)
+        row_num = np.arange(nrow)
+        p_a = np.polynomial.Chebyshev.fit(
+            row_num[valid_idx], orig_fitc["a"][valid_idx], 2
+        )
+        p_lambda = np.polynomial.Chebyshev.fit(
+            row_num[valid_idx], orig_fitc["lambda"][valid_idx], 2
+        )
+        fixed_a = p_a(row_num)
+        fixed_lambda = p_lambda(row_num)
+
+    # ======== Begin Actual Fitting ============#
     # These are the starting guesses and bounds for the sinusoidal fit
     #  [a, lam, phi, y0, lin, quad]
     p0 = [6, pixel_period, 0.5, img_mean, 0, 0]
@@ -645,26 +680,43 @@ def fit_lines(
         [10, pixel_period * 1.05, 1, img_mean + 100, np.inf, np.inf],
     )
 
-    # Loop over the rows in the image to fit the pattern
-    fit_coeffs = [] if not do_refit else orig_fitc_list
+    # Set up the fit_coeffs list based on fitting mode
+    fit_coeffs = (
+        # Back-convert the Table to a list of dictionaries
+        [dict(zip(orig_fitc.colnames, row)) for row in orig_fitc]
+        if do_refit or fixed_sinusoid
+        # Start with an empty list
+        else []
+    )
+
+    # Create a progress bar for every occasion!
     progress_bar = tqdm(
         total=np.sum(refit_lines)
         if do_refit
         else len(ind_obj)
         if objmodel_check
+        else np.sum(valid_idx)
+        if fixed_sinusoid
         else nrow,
+        colour="#87EBCF"
+        if do_refit
+        else "#EBC687"
+        if objmodel_check
+        else "#EB89EB"
+        if fixed_sinusoid
+        else "#87CEEB",
         unit="row",
         unit_scale=False,
-        colour="#87EBCF" if do_refit else "#EBC687" if objmodel_check else "#87CEEB",
     )
 
-    # Line diagnostic plot
+    # Prepare the line diagnostic plot
     if show_diagnostic:
         # Make a diagnostic plot
         _, axes = plt.subplots(nrows=4, figsize=(9, 9))
         tsz = 8
         pidx = 0
 
+    # Loop over the rows in the image to fit the pattern
     xpl = np.arange(ncol)
     for img_row in range(nrow):
         # If refitting, follow this logic:
@@ -682,6 +734,22 @@ def fit_lines(
             p0[1] = orig_fitc["lambda"][closest_idx]
             bounds[0][1] = orig_fitc["lambda"][closest_idx] - 5
             bounds[1][1] = orig_fitc["lambda"][closest_idx] + 5
+
+        if fixed_sinusoid:
+            # If not setting a fixed value, move along
+            if not valid_idx[img_row]:
+                continue
+
+            # Set the parameters for the fixed parameters
+            epsilon = 1.0e-4
+            # Amplitude
+            p0[0] = fixed_a[img_row]
+            bounds[0][0] = fixed_a[img_row] - epsilon
+            bounds[1][0] = fixed_a[img_row] + epsilon
+            # Period
+            p0[1] = fixed_lambda[img_row]
+            bounds[0][1] = fixed_lambda[img_row] - epsilon
+            bounds[1][1] = fixed_lambda[img_row] + epsilon
 
         if objmodel_check:
             # If looking for object model, skip lines without the object model
@@ -772,23 +840,28 @@ def fit_lines(
             "corr_phi_y0": pcor[2][3],
             "rms": rms,
         }
-        if not do_refit:
-            fit_coeffs.append(coeff_dict)
-        else:
+        if do_refit or fixed_sinusoid:
+            # Replace the existing row in the table with the new dictionary
             fit_coeffs[img_row] = coeff_dict
+        else:
+            # Append the dictionary to the list
+            fit_coeffs.append(coeff_dict)
 
         progress_bar.update(1)
 
-    # End of the loop
+    # End of the loop; close out the diagnostic plot
     progress_bar.close()
-
     if show_diagnostic:
         plt.tight_layout()
         plt.show()
         plt.close()
 
-    # Convert the list of dict into a Table for return
-    return astropy.table.Table(fit_coeffs)
+    # Convert the list of dict into a Table for return (optionally return smoothing coef)
+    return (
+        (astropy.table.Table(fit_coeffs), {"p_a": p_a.coef, "p_lambda": p_lambda.coef})
+        if fixed_sinusoid
+        else astropy.table.Table(fit_coeffs)
+    )
 
 
 def smooth_array(
@@ -1093,7 +1166,7 @@ def create_fft_plot(
     # Linear Pixels -- separate thing
     axis0.plot(flat_array, linewidth=0.1, color="k")
     axis0.set_xlabel("Linear pixel number", fontsize=tsz)
-    axis0.set_ylabel("Pixel Value", fontsize=tsz)
+    axis0.set_ylabel("Pixel Value (electron)", fontsize=tsz)
     utils.set_std_tickparams(axis0, tsz)
 
     # Limits and Labels
@@ -1217,9 +1290,10 @@ def make_sinusoid_fit_plots(
     filename: pathlib.Path,
     fit_coeffs: astropy.table.Table,
     pixel_period: float,
-    rmslim: float = None,
     qa_dir: pathlib.Path = None,
     extra_graphics: bool = False,
+    fixed_fitc: astropy.table.Table = None,
+    smoothing: dict = None,
 ):
     """Create a set of diagnostic plots from the set of sinusoid fits
 
@@ -1240,60 +1314,90 @@ def make_sinusoid_fit_plots(
         The fit coefficients table
     pixel_period : :obj:`float`
         The estimated pixel period of the sinusoidal noise from the FFT
-    rmslim : :obj:`float`, optional
-        The upper RMS limit, over which lines should be refit
     qa_dir : :obj:`~pathlib.Path`, optional
         The QA directory into which to place the optional plots.  If ``None``,
         the plots will be placed in the current working directory.
         (Default: None)
     extra_graphics : :obj:`bool`, optional
         Produce extra graphics formats for documentation?  (Default: False)
+    fixed_fitc : :obj:`~astropy.table.Table`, optional
+        The fit coefficients table with fixed sinusoid  (Default: None)
+    smoothing : :obj:`dict`, optional
+        Polynomial fit coefficients for amplitude and period  (Default: None)
     """
+    # Set up the plotting environment
     _, axes = plt.subplots(nrows=4, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0})
     tsz = 8
+    xpl = np.arange(len(fit_coeffs))
 
-    # Panel #1: Amplitude of the fit
-    axes[0].plot(np.arange(len(fit_coeffs)), fit_coeffs["a"], color="C2", linewidth=1.0)
-    axes[0].set_ylabel("Amplitude (ADU)", fontsize=tsz)
+    # Set up iterable lists for making plotting cleaner
+    fit_ords = [
+        fit_coeffs["a"],
+        fit_coeffs["lambda"],
+        fit_coeffs["phi"],
+        fit_coeffs["rms"],
+    ]
+    fix_ords = [
+        fixed_fitc["a"],
+        fixed_fitc["lambda"],
+        fixed_fitc["phi"],
+        fixed_fitc["rms"],
+    ]
+    polycoefs = [smoothing["p_a"], smoothing["p_lambda"], None, None]
+    ylabels = [
+        "Amplitude (electron)",
+        "Period (pixels)",
+        "Phase Shift (phase)",
+        "RMS of the fit (electron)",
+    ]
 
-    # Panel #2: Period of the fit
-    axes[1].plot(
-        np.arange(len(fit_coeffs)), fit_coeffs["lambda"], color="C1", linewidth=1.0
-    )
-    axes[1].hlines(
-        pixel_period,
-        0,
-        1,
-        transform=axes[1].get_yaxis_transform(),
-        linestyle="--",
-        zorder=0,
-        color="C2",
-    )
-    axes[1].set_ylabel("Period (pixels)", fontsize=tsz)
+    # Loop over the axes!
+    for axis, fit_ord, fix_ord, polycoef, ylabel in zip(
+        axes, fit_ords, fix_ords, polycoefs, ylabels
+    ):
+        axis.plot(
+            xpl, fit_ord, color="C1", linewidth=1.5, label="Best-Fit per Row", alpha=0.5
+        )
+        axis.plot(
+            xpl, fix_ord, color="black", linewidth=1.0, label="Nearly Constant Sinusoid"
+        )
+        if polycoef is not None:
+            coef_txt = axis.text(
+                0.98,
+                0.95,
+                "Chebyshev Coeffs: " + "   ".join([f"{c:.4g}" for c in polycoef]),
+                transform=axis.transAxes,
+                ha="right",
+                va="top",
+                fontsize=tsz - 1,
+            )
+            coef_txt.set_bbox({"facecolor": "0.75", "alpha": 0.2})
+        axis.set_ylabel(ylabel, fontsize=tsz)
 
-    # Panel #3: Phase of the fit
-    axes[2].plot(
-        np.arange(len(fit_coeffs)), fit_coeffs["phi"], color="gray", linewidth=1.0
-    )
-    axes[2].set_ylabel("Phase Shift (phase)", fontsize=tsz)
+        # Add the horizontal line for the FFT-predicted period
+        if axis == axes[1]:
+            axis.hlines(
+                pixel_period,
+                0,
+                1,
+                transform=axes[1].get_yaxis_transform(),
+                linestyle="--",
+                zorder=0,
+                color="C2",
+                label="FFT-Predicted Period",
+            )
 
-    # Panel #4: RMS of the fi=t
-    axes[3].plot(
-        np.arange(len(fit_coeffs)), fit_coeffs["rms"], color="C0", linewidth=1.0
-    )
-    axes[3].hlines(
-        rmslim,
-        0,
-        1,
-        transform=axes[3].get_yaxis_transform(),
-        color="C2",
-        linestyle="--",
-    )
-    axes[3].set_ylabel("RMS of the fit (ADU)", fontsize=tsz)
-    axes[3].set_xlabel("Image Row Number", fontsize=tsz)
+        # Rescale y axis
+        if axis in [axes[1], axes[2]]:
+            grow = 1.5
+            ylim = axis.get_ylim()
+            med, span = np.mean(ylim), np.diff(ylim)
+            axis.set_ylim(med - grow / 2 * span, med + grow / 2 * span)
 
-    for axis in axes:
+        axes[3].set_xlabel("Image Row Number", fontsize=tsz)
+
         utils.set_std_tickparams(axis, tsz)
+        axis.legend(loc="lower left" if axis != axes[3] else "upper left", fontsize=tsz)
 
     # When making plots for the documentation, obfuscate the source
     fname = "" if extra_graphics else f" for {filename.name}"
@@ -1360,21 +1464,34 @@ def make_image_comparison_plots(
     """
     _, axes = plt.subplots(nrows=6, figsize=(6.4, 10.67))
     tsz = 8
-    interval = astropy.visualization.ZScaleInterval(n_samples=10000)
+    interval1 = astropy.visualization.ZScaleInterval(n_samples=10000, contrast=0.5)
+    interval2 = astropy.visualization.ZScaleInterval(n_samples=10000, contrast=1.0)
 
     # Panel #1: Draw the original science image
-    vmin, vmax = interval.get_limits(spec2d.sciimg)
-    axes[0].imshow(np.rot90(spec2d.sciimg, k=-1), vmin=vmin, vmax=vmax, origin="lower")
+    vmin, vmax = interval1.get_limits(spec2d.sciimg)
+    print(f"Inferno image limits: {vmin}, {vmax}")
+    axes[0].imshow(
+        np.rot90(spec2d.sciimg, k=-1),
+        vmin=vmin,
+        vmax=vmax,
+        origin="lower",
+        cmap="inferno",
+    )
     axes[0].axis("off")
     axes[0].set_title("Processed Science Image", fontsize=tsz)
 
     # Panel #2: Draw the sky model
-    vmin, vmax = interval.get_limits(spec2d.skymodel)
     axes[1].imshow(
-        np.rot90(spec2d.skymodel, k=-1), vmin=vmin, vmax=vmax, origin="lower"
+        np.rot90(spec2d.skymodel + spec2d.objmodel, k=-1),
+        vmin=vmin,
+        vmax=vmax,
+        origin="lower",
+        cmap="inferno",
     )
     axes[1].axis("off")
-    axes[1].set_title("Sky Model", fontsize=tsz)
+    axes[1].set_title(
+        "Sky Model" if with_obj else "Sky Model + Object Model", fontsize=tsz
+    )
 
     # Panel #6: Draw the cleaned science image
     axes[5].imshow(
@@ -1382,12 +1499,19 @@ def make_image_comparison_plots(
         vmin=vmin,
         vmax=vmax,
         origin="lower",
+        cmap="inferno",
     )
     axes[5].axis("off")
     axes[5].set_title("Cleaned Science Image (sciimg - pattern)", fontsize=tsz)
 
+    # Panel #4: Draw the pattern model
+    vmin, vmax = interval2.get_limits(pattern + np.mean(resid))
+    print(f"Viridis image limits: {vmin}, {vmax}")
+    axes[3].imshow(pattern + np.mean(resid), vmin=vmin, vmax=vmax, origin="lower")
+    axes[3].axis("off")
+    axes[3].set_title("Modeled Sinusoid Pickup Pattern", fontsize=tsz)
+
     # Panel #3: Draw the resid image
-    vmin, vmax = interval.get_limits(resid)
     axes[2].imshow(resid, vmin=vmin, vmax=vmax, origin="lower")
     axes[2].axis("off")
     if with_obj:
@@ -1397,12 +1521,6 @@ def make_image_comparison_plots(
             "PypeIt Residual Noise Image (sciimg - skymodel - objmodel)*gpm",
             fontsize=tsz,
         )
-
-    # Panel #4: Draw the model
-    # vmin, vmax = interval.get_limits(pattern_resid)
-    axes[3].imshow(pattern + np.mean(resid), vmin=vmin, vmax=vmax, origin="lower")
-    axes[3].axis("off")
-    axes[3].set_title("Modeled Sinusoid Pickup Pattern", fontsize=tsz)
 
     # Panel #5: Draw the cleaned image
     axes[4].imshow(

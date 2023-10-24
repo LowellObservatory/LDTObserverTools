@@ -8,51 +8,64 @@ Overview
 ========
 
 The spectral channel CCD of the DeVeny Optical Spectrograph has been subject
-to ground-loop EMI pickup during most of its tenure on the Lowell Discovery
-Telescope (LDT).  This manifests in the science images as sinusoidal pattern
-noise added in the readout electronics.  In January 2018, a significant ground
-loop was broken, eliminating the formerly prominent "corduroy" noise pattern.
-There still exists, however, a low-level (:math:`\pm 5`) DN pickup signal
-caused by a still-unidentified ground loop on the instrument cube.  While the
-Instrument Group works diligently to identify and remove this remaining ground
-loop, the present tool is available for observers whose low-SNR extractions are
-affected by this residual signal.
+to ground-loop EMI pickup in the readout electronics during most of its tenure
+at the Lowell Discovery Telescope (LDT).  This pickup manifests in the science
+images as sinusoidal pattern noise sitting atop the raw 2D spectral image.
+
+In January 2018, the Instrument Group broke a significant ground loop,
+eliminating a prominent "corduroy" noise pattern with amplitude (:math:`\pm 5`)
+DN that had been affecting observers' low-SNR extractions.  At that point,
+there still remained a low-level (:math:`\pm 2`) scalloping noise that shifted
+from frame to frame, indicating another source of EMI.  After this brief
+reprieve, however, changes on the LDT instrument cube led to the reappearance
+of the larger "corduroy" pattern with amplitude (:math:`\pm 4`) DN that
+continues into 2023.  While the Instrument Group works diligently to identify
+and remove this remaining ground loop, the present tool is available for
+observers whose low-SNR extractions are affected by this pickup signal.
 
 .. _raw_frame:
 .. figure:: figures/scrubber_raw_frame.*
    :class: with-shadow
    :alt: Raw DeVeny frame with sinusoidal pickup noise
 
-   -- Raw frame from DeVeny.  This is the frame for which we will
-   show the scrubber processing steps in the sections below.  The object is
-   the thin horizontal line in the center of the frame, and there are several
-   prominent (vertical) night sky lines in addition to the wavy pattern caused
-   by AC EMI pickup in the readout electronics of the CCD.
+   -- Raw frame from DeVeny taken in late 2022.  This is the frame for which
+   we will show the scrubber processing steps in the sections below.  The
+   object is the thin horizontal line in the center of the frame, and there are
+   several prominent (vertical) night sky lines in addition to the wavy pattern
+   caused by AC EMI pickup in the readout electronics of the CCD.
 
-This tool relies on an iterative data reduction approach.  The raw frame is
-first processed by a conventional data reduction pipeline (`PypeIt
-<https://pypeit.readthedocs.io/en/release/index.html>`_) to extract sky lines
-and object spectra, the sinusoidal pickup noise is fit to the residual image
-(raw frame minus sky and objects), the resulting pattern is subtracted from the
-raw frame, and finally the scrubbed image is reprocessed with PypeIt to extract
-the final 1D spectra for analysis.  Because the pickup noise is only a few DN
-in amplitude, it is essential to remove bright features (cosmic rays, sky
-lines, etc.) before attempting to fit this pattern noise.
+Fitting and removing the sinusoidal signal seen in :numref:`raw_frame` is
+complicated by the presence of bright features in the raw frame such as the
+observed object(s), night sky lines, and cosmic rays.  We use the spectroscopic
+data reduction pipeline (`PypeIt
+<https://pypeit.readthedocs.io/en/release/index.html>`_) with a particular set
+of parameters to mask cosmic rays and extract night sky lines and object
+spectra.  With these bright signals removed, we can then to fit sinusoids to
+the residual noise image to produce a pattern image representing the EMI
+signal.  This patten is then subtracted from the original image and saved to
+a FITS file for usual data reduction processing (preferably with PypeIt) to
+yield an extracted 1D spectrum for analysis.
 
-Jumping to the punch line, :numref:`spec1d_comps` shows a comparison of the
-extracted 1D spectra from both the raw scrubbed images for the raw frame shown
-in :numref:`raw_frame` to illustrate the utility of this tool and the extent to
-which it can make useful extant DeVeny data that is subject to this ground-loop
-EMI pickup.
+To illustrate the need for and utility of this tool, :numref:`spec1d_comps`
+shows a comparison of the extracted 1D spectra for the (horizontal) object in
+the middle of :numref:`raw_frame` from both the original (top) and scrubbed
+(bottom) versions of the frame.  Not only does this tool remove the sinusoidal
+oscillation in the continuum, but astrophysical measurements are more
+accurately measured from the spectrum.
+
 
 .. _spec1d_comps:
 .. figure:: figures/spec1d_scrub_compare.*
    :class: with-shadow
    :alt: Comparison of raw and scrubbed extracted 1D spectra
 
-   -- Comparison of the PypeIt-extracted 1D spectra from the raw and scrubbed
-   frames to illustrate the utility of this tool.
+   -- Comparison of the PypeIt-extracted 1D spectra from the raw (top) and
+   scrubbed frames to illustrate the utility of this tool.
 
+
+This document begins with a description of how to use this tool to clean the
+EMI pickup noise from your data, and moves on to lay out the details of what
+the tool does to your data and other points to consider.
 
 
 .. _scrub_process:
@@ -64,35 +77,46 @@ Data Processing Steps
    spectroscopic reduction using the PypeIt pipeline.  The outline of how to
    perform this reduction is given in the `DeVeny User Manual
    <https://confluence.lowell.edu/display/LDTOI/DeVeny+Optical+Spectrograph>`_.
-   In particular, for this first pass, it is important to not modify any of the
-   object finding or extraction parameters in your PypeIt Reduction File, as
-   the scrubber expects certain qualities of the processed images.  The user
-   should, however, include the following in the Parameter Block to avoid
-   artifacts being introduced into the resulting pattern file from the effects
-   of local sky subtraction:[1]_
-
+   What is needed for this tool, however, is not a completely normal reduction
+   procedure, and it is important to not modify any of the object finding, sky
+   subtraction, or extraction parameters (except as enumerated below) in your
+   PypeIt Reduction File for this step.  The scrubber tool expects certain
+   qualities of the processed images in order to successfully fit the EMI
+   noise.
+   
+   In particular, to perform a sky subtraction in a way to limit the number and
+   severity of artifacts introduced into the residual noise image and to not
+   spend time computing spectral flexure, the user should include the following
+   in the Parameter Block of the ``.pypeit`` file:
 
     .. code-block:: ini
 
+      [flexure]
+         spec_method = skip
       [reduce]
          [[skysub]]
+            bspline_spacing = 100
             local_maskwidth = 200.
             no_poly = True
 
    .. warning::
 
-      If you are using a version of PypeIt ``< 1.14.1``, then you will
-      instead need to add the following to the Parameter Block to ensure the
-      traced slit edges do not shrink unreasonably.  Regions outside the marked
-      slits will have 0 value in the residual image, and therefore any
-      sinusoidal signal there will not be fit out.  (The additional parameters
-      included here were added to the DeVeny default set in PypeIt version
-      ``1.14.1``.)
+      If you are using a version of PypeIt ``< 1.14.1``, then you will instead
+      need to add the entirety of the following to the Parameter Block to
+      ensure the traced slit edges do not shrink unreasonably and that pattern
+      noise in the CCD overscan does not introduce artifacts in the fitting.
+      Regions outside the marked slits will have 0 value in the residual image,
+      and therefore any sinusoidal signal there will not be fit out.  (The
+      additional parameters included here were added to the DeVeny default set
+      in PypeIt version ``1.14.1``.)
 
       .. code-block:: ini
 
+         [flexure]
+            spec_method = skip
          [reduce]
             [[skysub]]
+               bspline_spacing = 100
                local_maskwidth = 200.
                no_poly = True
             [[findobj]]
@@ -104,8 +128,10 @@ Data Processing Steps
                det_buffer = 0
             [[flatfield]]
                tweak_slits = False
-
-
+         [scienceframe]
+            [[process]]
+               overscan_method = polynomial
+               overscan_par = 1
 
    .. important::
 
@@ -118,22 +144,28 @@ Data Processing Steps
 2. Once the PypeIt reduction is complete, you are ready to run the scrubber.
    In the directory containing the raw files, run the scrubber (see
    :ref:`usage`) on the files in the directory.  If an input file is **NOT**
-   an object science frame (*e.g.*, a bias or dome flat), it will be skipped
-   without being processed.  The scrubber will use both the raw frame and the
-   processed 2D spectrum (in the ``ldt_deveny_?/Science`` directory) to fit
-   the sinusoidal pickup noise and produce a cleaned image.
+   an object science frame (*e.g.*, it is a bias or dome flat), it will be
+   skipped without being processed.  The scrubber will use both the raw frame
+   and the processed 2D spectrum (in the ``ldt_deveny_?/Science`` directory)
+   to fit the sinusoidal pickup noise and produce a cleaned image, saved to
+   a FITS file in the raw directory.
 
-3. After the scrubber has completed its work, you will need to re-run the
-   ``pypeit_setup`` script to include the scrubbed files in a new PypeIt
-   Reduction File.  At this point, you may remove the lines in the ``.pypeit``
-   file corresponding to the raw images and add any parameter modifications
-   you desire, including those affecting object finding and extraction.
+3. After the scrubber has completed its work, you will need to perform a normal
+   PypeIt data reduction workflow, starting with the ``pypeit_setup`` script to
+   include the scrubbed files in a new PypeIt Reduction File.  At this point,
+   you may remove the lines in the ``.pypeit`` file corresponding to the
+   original images and add any parameter modifications you desire, including
+   those affecting object finding and extraction.  In particular, **DO NOT**
+   include the three ``[[skysub]]`` parameters used in Step #1 above, as they
+   may cause unpleasant artifacts in the actual reduction of your data.
 
+.. note::
 
-.. [1] We prefer this method over simply turning off local sky subtraction
-       because in that case no object model is written to the ``spec2d``
-       file by PypeIt, and it is oftentimes important to remove the object
-       from the frame before attempting to fit the sinusoidal pickup noise. 
+   In a future version of this tool, it may be possible to combine steps #1 and
+   #2, so that the user need not concern themselves with the particular PypeIt
+   parameter modifications here, and would only need run this tool on the raw
+   data (which will include an integral PypeIt reduction) before running the
+   usual PypeIt reduction steps.
 
 
 .. _usage:
@@ -152,10 +184,20 @@ The tool usage can be displayed by calling the script with the
 The ``--proc_dir`` option may be used to specify the location of the
 PypeIt-processed files, if other than as a subdirectory of the raw data
 directory.  This works in the same sense but opposite direction as the ``-r
-<RAWDIR>`` option to ``pypeit_setup``.
+<RAWDIR>`` option to ``pypeit_setup``.  In particular, if you did not specify
+``-r <RAWDIR>`` to ``pypeit_setup``, do not use this option.
 
 To simply overwrite the raw data file with the output of this tool, the
-``--overwrite_raw`` option may be specified.
+``--overwrite_raw`` option may be specified.  Since the output FITS file
+created here includes the entirety of the raw frame (all header cards plus the
+raw image), this may be acceptable if processing large number of files.
+
+Other options shown are debugging tools that will be removed in the future.
+
+As indicated, you may specify either a single ``file`` for the scrubber to
+process, or include a list of files (by way of wildcards or shell filename
+expansions) over which the tool should iterate.
+
 
 
 
@@ -172,17 +214,19 @@ in this documentation is shown below.
    $ scrub_deveny_pickup 20290101.0001.fits
 
    Processing frame 20290101.0001.fits
-      --> FFT-predicted pixel period: 169.1 pix
+   --> FFT-predicted pixel period: 169.7 pix
    Checking the object model for bulk sinusoidal signal...
-   100%|██████████████████████████████████████████| 54/54 [00:01<00:00, 31.39row/s]
-   * Adding the object model back into the residual image for fitting; extracted
-     object contains target sinusoidal signal, amplitude = 5.20.
+   100%|██████████████████████████████████████████| 46/46 [00:01<00:00, 23.84row/s]
+   * Object model appears clean of target sinusoidal signal.
    Fitting sinusoids to each line in the image...
-   100%|████████████████████████████████████████| 508/508 [00:10<00:00, 50.65row/s]
-      --> Mean fit pixel period: 172.7 pix
+   100%|████████████████████████████████████████| 508/508 [00:10<00:00, 50.45row/s]
+      --> Mean fit pixel period: 172.9 pix
    Refitting lines with poor fit in first pass...
-   100%|██████████████████████████████████████████| 74/74 [00:01<00:00, 66.74row/s]
-      --> Mean fit pixel period: 173.6 pix
+   100%|██████████████████████████████████████████| 63/63 [00:01<00:00, 50.86row/s]
+      --> Mean fit pixel period: 173.7 pix
+   Refitting all lines within the slit assuming nearly constant sinusoid...
+   100%|████████████████████████████████████████| 478/478 [00:07<00:00, 62.00row/s]
+      --> Mean fit pixel period: 173.7 pix
     Writing QA plots to ./ldt_deveny_A/QA/PDFs
    Writing out scrubbed FITS file: 20290101.0001_scrub.fits
 
@@ -193,17 +237,17 @@ Important pieces to note in the terminal output:
 
 * If the PypeIt-reduced ``spec2d`` file contains a non-zero object model, the
   code will analyze it for the sinusoidal signal at the predicted period.  If
-  the object model contains this signal, then the residual image (``sciimg`` - 
-  ``skymodel`` - ``objmodel``) will be missing power from the pickup noise
-  (*i.e.*, that power was extracted into the object model).  In this case, the
-  tool will print a statement indicating the object model will be included in
-  the residual image, and the amplitude of the sinusoidal fit (for QA
-  purposes).  If the object(s) remains extracted (*i.e.* does not contain bulk
-  sinusoidal signal), the tool will print the message: ``Object model appears
-  clean of target sinusoidal signal``.
+  the object model contains this signal, then the residual noise image
+  (``sciimg`` - ``skymodel`` - ``objmodel``) will be missing power from the
+  pickup noise (*i.e.*, that power was extracted into the object model).  In
+  this case, the tool will print a statement indicating that the object model
+  will be included in the residual image and the amplitude of the sinusoidal
+  fit (for QA purposes).  If the object(s) remains extracted (*i.e.* does not
+  contain bulk sinusoidal signal), the tool will print the message: ``Object
+  model appears clean of target sinusoidal signal``.
 
 * The first pass at fitting sinusoids to the image should include all rows in
-  the (trimmed) image (FITS keyword ``TRIMSEC``).  In this case, the CCD was
+  the (trimmed) image (FITS keyword ``TRIMSEC``).  In this example, the CCD was
   binned ``1x1``, so there were 516 rows in the original image, trimmed down to
   508.
 
@@ -212,6 +256,17 @@ Important pieces to note in the terminal output:
   parameters from nearby well-fit rows.  The number of rows indicated in this
   progress bar is less than the total image, and can vary based on the
   particular pattern noise in the image.
+
+* The EMI signal should be roughly constant in amplitude and period over the
+  approximately 8 seconds the CCD takes to read out.  Therefore, as a final
+  step, the tool fits the amplitude and period fit coefficients with a
+  low-order polynomial as a function of row number to account for the
+  secular drift in the sinusoid period that causes the mean period to change
+  from frame to frame.  With the polynomial fit in hand, one last pass at
+  fitting sinusoids to the rows is completed, fixing the period and amplitude
+  while allowing the phase and underlying secular drift of the row to be fit.
+  This pass only fits rows identified within the slit, so may have fewer rows
+  to process than the full frame.
 
 * Finally, the location of QA plots and filename of the scrubbed FITS file are
   shown for reference.
@@ -231,7 +286,7 @@ includes the following HDUs:
   * Pattern about Raw Mean Image HDU: (``pattern`` + ``mean(raw)``)
   * Fit Coefficients BinTable HDU: (``fit_coeffs``)
 
-The AstroPy utility ``fitsinfo`` yields the following:
+Running the AstroPy utility ``fitsinfo`` yields the following:
 
 .. code-block:: console
 
@@ -247,14 +302,15 @@ The AstroPy utility ``fitsinfo`` yields the following:
 
 The ``ORIGINAL`` raw data frame is included in the scrubbed output for reference
 and posterity.  The fitted sinusoidal pattern is included in two different
-formats, both with a zero mean (``PATTERN0``) and the raw image mean
-(``PATTERN1``) for use as desired (*e.g.* it is easier to compare ``PATTERN1``
-to the raw image in ``ds9``, but the actual signal removed from the raw image
-is ``PATTERN0``).  Finally, the sinusoidal fit coefficients are included for
-perusal.
+formats, one with a zero mean (``PATTERN0``) and the other with the raw image
+mean (``PATTERN1``) for use as desired (*e.g.* it is easier to compare
+``PATTERN1`` to the raw image in ``ds9``, but the actual signal removed from
+the raw image is ``PATTERN0``).  Finally, the sinusoidal fit coefficients are
+included for perusal.
 
-Of note, PypeIt will recognize the scrubbed image and use the ``CLEANED`` HDU
-for processing without user intervention.
+When processing the scrubbed frames with PypeIt, the data reduction pipeline
+will recognize the scrubbed image and use the ``CLEANED`` HDU for processing
+without user intervention.
 
 
 .. _scrub_details:
@@ -264,17 +320,26 @@ Algorithmic Details of the Scrubbing
 
 Here we describe the processing details for the scrubber and illustrate example
 QA plots generated by the tool.  All QA plots are placed into the PypeIt
-``QA/`` directory for convenience.[2]_
+``QA/`` directory for convenience. [#f1]_
 
 The fitting of the sinusoidal pickup noise is done on the residual
 PypeIt-processed image, in which cosmic rays, the sky model, and (frequently)
 the object have been removed, leaving behind the underlying noise in the image.
 This is done because bright features in the raw science frame such as night sky
-lines and objects obfuscate and cover the AC signal we wish to remove.  We take
-advantage of the sophisticated modeling algorithms in PypeIt to do this heavy
-lifting for us, leaving us to concentrate on the DeVeny-specific issues at
-hand.  See :numref:`image_comparisons` below for an illustration of the various
-processing steps and frames used.
+lines and objects obfuscate and cover the few-DN amplitude AC signal we wish to
+remove.  We take advantage of the sophisticated modeling algorithms in PypeIt
+to do this heavy lifting for us, leaving us to concentrate on the
+DeVeny-specific issues at hand.  See :numref:`image_comparisons` below for an
+illustration of the various processing steps and frames used.
+
+.. important::
+
+   PypeIt converts all raw images from ADU into electrons using the gain value
+   recorded in the FITS header.  For DeVeny, this is 1.52 e-/ADU.  The QA plots
+   shown here are constructed from the PypeIt-processed images, and so are in
+   electrons.  The :math:`\pm 6` electron amplitude illustrated here translates
+   to a :math:`\pm 4` DN signal in the raw images.
+
 
 .. note::
 
@@ -306,21 +371,21 @@ temporally appropriate gap between rows (which would introduce artifacts in the
 resulting FFT), we simply stitch the rows together as-is and rely upon the FFT
 to pick out the prominent frequencies in the flattened array.
 
-The QA plot for the FFT analysis is shown in :numref:`fft_analysis`.
+A ecample QA plot for the FFT analysis is shown in :numref:`fft_analysis`.
 
 .. _fft_analysis:
 .. figure:: figures/scrubber_fft_analysis.*
    :class: with-shadow
    :alt: FFT analysis of the flattened frame
 
-   -- FFT QA plot, showing the flattened image array, the real
-   (amplitude as a function of frequency) and imaginary (phase as a function
-   of frequency) components of the FFT, along with the power spectrum
-   (absolute value squared).  The power spectrum is further smoothed with a
-   gaussian kernel to help isolate real signal (with variable frequency, as
-   discussed above) from artifacts and ringing in the FFT.  The peak at 169.1
-   pixels, indicating the frequency with the most power in the flattened array:
-   most likely the period of the AC EMI pickup noise.
+   -- FFT QA plot.  The top panel shows the flattened image array, while the 
+   ramaining rows show the real (amplitude as a function of frequency),
+   imaginary (phase as a function of frequency), and absolute square (power
+   spectrum) components of the FFT.  The power spectrum is further smoothed
+   with a gaussian kernel to help isolate desired signal (with variable
+   frequency, as discussed above) from artifacts and ringing in the FFT.
+   The peak at 169.7 pixels indicates the frequency with the most power in the
+   flattened array: most likely the period of the AC EMI pickup noise.
 
 The power spectrum of the FFT (absolute value squared) is smoothed with a 10-Hz
 wide gaussian kernel since there is variation in the frequency of the sinusoid
@@ -332,27 +397,45 @@ residual image.
 
 Row-by-Row Sinusoid Fits
 ^^^^^^^^^^^^^^^^^^^^^^^^
+With an initial guess at the sinusoid period in hand, the tool moves on to fit
+a sinusoid to each row in the image.  This is an iterative process, where the
+results of one pass inform the initial guess and bounds on the fit parameters
+for subsequent passes.  In addition to a basic sinusoid (amplitude, period, and
+phase), a quadratic polynomial is included to account for secular drift in the
+background.  The :func:`~scipy.optimize.curve_fit` function from
+:mod:`scipy.optimize` is used to perform a non-linear least-squares fit to each
+row, with bounds placed on the sinusoid terms to keep the final fit reasonably
+close to initial guess values.
 
-:numref:`sinusoid_fits` shows the result of iteratively fitting a sinusoid to
-each row of the PypeIt residual image for this example frame.  In addition to a
-basic sinusoid (amplitude, period, and phase) we include a quadratic polynomial
-to account for secular drift in the background.  The
-:func:`~scipy.optimize.curve_fit` function from :mod:`scipy.optimize` is used
-to perform a non-linear least-squares fit to each row, with bounds placed on
-the sinusoid terms to keep the final fit reasonably close to initial guess
-values.
+:numref:`sinusoid_fits` shows the result of this iterative fitting for this
+example frame.  During each pass, the rms of the fit is computed for each row
+as an estimate of how well any particular row's model matches the data.  The
+mean and standard deviation of the row-by-row rms values (bottom panel in
+:numref:`sinusoid_fits`) are used to identify outliers that likely have a poor
+fit after the first pass.
 
-The rms of the fit is computed for each row as an estimate of how well any
-particular row's model matches the data.  The mean and standard deviation of
-the row-by-row rms values (bottom panel in :numref:`sinusoid_fits`) are used to
-identify outliers that likely have a poor fit.  These lines are refit using a
-the fit values from nearby "good" rows as the initial guesses and tighter
-bounds on the fit values.  As a result of this iterative process, the set of
-sinusoidal fits tends to have a narrow range of values from line to line and
-produces a pattern image (see :numref:`image_comparisons`) that closely
-resembles the unwanted pattern in the raw frame.  Note, however, that the final
-pixel periods tend to be slightly larger than that predicted from the FFT
-(green dashed line).
+In the second pass, these outlier lines are refit with tighter bounds and using
+the fit values from nearby "good" rows as the initial guesses.  The collection
+of fit values as a function of row number after the second pass are shown in
+orange in :numref:`sinusoid_fits`.  As a result of this iterative process, the
+set of sinusoidal fits tends to have a narrow range of values for amplitude
+and period.
+
+For the final pass, the tool assumes that the underlying EMI noise is nearly
+constant in period and amplitude.  A low-order (quadratic) polynomial is fit to
+the top two plots in :numref:`sinusoid_fits` to estimate the true sinusoidal
+signal imprinted on the frame.  The sinusoidal fits for this pass fix the
+values of the period and amplitude to those smooth values (black lines in
+:numref:`sinusoid_fits`), allowing the phase and secular drift of the row to be
+fit.  As a result, the sinusoid phase from row to row is a smoother function,
+and the rms of the fit is generally a little smaller than the orange fit.
+
+The pattern image produced from these final fit coefficients (see
+:numref:`image_comparisons`) closely resembles the unwanted pattern in the raw
+frame.  Note, however, that the final pixel periods tend to be slightly larger
+than that predicted from the FFT (green dashed line in the second panel of
+:numref:`sinusoid_fits`).  The origin of this discrepancy is not clear (see
+:ref:`fourier_analysis` for further discussion).
 
 .. _sinusoid_fits:
 .. figure:: figures/scrubber_sinusoid_fits.*
@@ -381,8 +464,10 @@ additional QA plots to show how totally awesome this is!!!
    :alt: Image comparison plot showing initial, intermediate, and final images
 
    -- This QA plot illustrates the image-space effects of the sinusoidal fits.
-   Panels are all shown with the IRAF ZScale mapping (maybe include link?).
-   The panels are described below.
+   Panels are all shown with the `IRAF ZScale mapping
+   <https://docs.astropy.org/en/stable/api/astropy.visualization.ZScaleInterval.html>`_;
+   panels sharing a color map also share visualization scale limits. The panels
+   are described below.
 
 Panel Description:
 
@@ -413,19 +498,20 @@ Panel Description:
    the sinusoidal noise.  Even in frames where the phase difference of the
    pickup noise from row to row is such that large-scale wavy patterns are not
    visible in the base science image (#1), this scrubbed frame should be less
-   noisy since a :math:`\sim 5` DN sinusoid has been removed from each line.
+   noisy since a :math:`\sim 4` DN sinusoid has been removed from each line.
 
-Panels #1, #2, and #6 are shown with common scale limits based on the processed
-science image, and panels #3 - #5 are shown with common scale limits based on
-the residual image.
+Panels #1, #2, and #6 are shown in a purple-red-yellow color map with common
+scale limits based on the processed science image (range -15 e- to +51 e-), and panels #3 - #5 are
+shown in a blue-green-yellow color map with common scale limits based on the
+pattern image (range -6.1 e- to +6.1 e-) to illustrate the completeness of the EMI signal removal.
 
+.. rubric:: Footnotes
 
-
-.. [2] Within the PypeIt ``QA/`` directory, that pipeline places its QA plots
+.. [#f1] Within the PypeIt ``QA/`` directory, that pipeline places its QA plots
        into a ``PNG/`` subdirectory (because the plots are PNG format).  To
        keep QA files from this tool separate (yet also in an easy-to-find
-       location), QA plots generated here are in the ``PDF\`` subdirectory
-       (because, you guessed it, they are in PDF format).
+       location), QA plots generated here are in the ``PDF/`` subdirectory
+       (because, wait for it, they are in PDF format).
 
 
 --------
@@ -499,53 +585,3 @@ panel in :numref:`image_comparisons`).  The result is shown in
    pixels, indicating the frequency with the most power in the flattened array:
    most likely the period of the AC EMI pickup noise.
 
-.. _sky_wobbles:
-
-Introduced Structure in the Sky Model Caused by EMI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Sometimes, the apparent phase of the sinusoidal EMI lines up such that PypeIt
-includes some of that signal in its sky model.  For instance,
-:numref:`skysub_1stpass` shows the Image Comparison Plots for a different raw
-Deveny frame.  Visual inspection indicates that some of the sinusoidal signal
-is attributed to the sky, yielding a not completely uniform EMI pattern in the
-residual image.
-
-.. note::
-
-   This is ``20221130.0114.fits``.  Just in case I need to redo the images as
-   I improve the underlying routine.
-
-.. _skysub_1stpass:
-.. figure:: figures/skysub_1stpass_image_comparisons.*
-   :class: with-shadow
-   :alt: First-pass scrubbing image comparisons
-
-   -- Image comparison plots (like those in :numref:`image_comparisons`) for a
-   different raw DeVeny frame.  Notice the oscillating sky model (2nd panel)
-   that is more pronounced that that in :numref:`image_comparisons`.
-
-The cleaned science image (bottom panel in :numref:`skysub_1stpass`) shows the
-effect of this oscillating sky pattern because it was removed from the raw
-frame before the sinusoidal fitting was done.
-
-To assess how much of a problem this is, we can run the scrubbed file back
-through this tool to produce a ``_scrub_scrub.fits`` frame.  The Image
-Comparison plots for the 2nd pass through the scrubber are shown in
-:numref:`skysub_2ndpass`.
-
-.. _skysub_2ndpass:
-.. figure:: figures/skysub_2ndpass_image_comparisons.*
-   :class: with-shadow
-   :alt: Second-pass scrubbing image comparisons
-
-   -- Image comparison plots for the second pass through this tool of the frame
-   shown in :numref:`skysub_1stpass`.  Note that the sky model appears to be
-   nearly identical to that from the first pass, and no hint of the oscillating
-   sky remains in the residual image (3rd panel).
-
-Since the introduced oscillation is once again pulled out in the sky model, the
-residual image only shows the remaining horizontal streaking seen in the bottom
-panel of :numref:`skysub_1stpass`, which is also an artifact of the sky model
-oscillations.  *Mumble, mumble,* something about flux calibration, but shape of
-the spectrum is unaffected.
