@@ -10,10 +10,12 @@
 #
 #  @author: tbowers
 
-"""LDTObserverTools contains python ports of the various DeVeny IDL routines
+"""Celestial Time Utilities Module
+
+LDTObserverTools contains python ports of the various DeVeny IDL routines
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
-http://www.lowell.edu
+https://lowell.edu
 
 This file contains various celestial time utilities for LDT.
 """

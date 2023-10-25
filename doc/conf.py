@@ -10,18 +10,13 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath("."))
-from pkg_resources import get_distribution
+from configparser import ConfigParser
+from importlib import metadata
+import pathlib
 
 # Get configuration information from setup.cfg
-from configparser import ConfigParser
-
 conf = ConfigParser()
-
-conf.read([os.path.join(os.path.dirname(__file__), "..", "setup.cfg")])
+conf.read([pathlib.Path(__file__).parents[1] / "setup.cfg"])
 setup_cfg = dict(conf.items("metadata"))
 
 # -- Project information -----------------------------------------------------
@@ -52,7 +47,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autosectionlabel",
+    # "sphinx.ext.autosectionlabel",
 ]
 
 # automodapi
@@ -70,9 +65,10 @@ napoleon_use_param = True
 napoleon_use_rtype = False
 
 # Autosection
-
 autosectionlabel_prefix_document = True
 
+# Figures
+numfig = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -109,9 +105,7 @@ html_static_path = ["_static"]
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "logo_only": True,
-}
+html_theme_options = {"logo_only": True, "prev_next_buttons_location": None}
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -126,7 +120,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # The full version, including alpha/beta/rc tags.
-version = get_distribution(setup_cfg["name"]).version
+version = metadata.version(setup_cfg["name"])
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
@@ -136,5 +130,6 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
-    "scipy": ('https://docs.scipy.org/doc/scipy/', None)
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "pypeit": ("https://pypeit.readthedocs.io/en/release/", None),
 }

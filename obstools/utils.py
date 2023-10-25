@@ -10,21 +10,23 @@
 #
 #  @author: tbowers
 
-"""LDTObserverTools contains python ports of the various DeVeny IDL routines
+"""Utility Module
+
+LDTObserverTools contains python ports of the various DeVeny IDL routines
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
-http://www.lowell.edu
+https://lowell.edu
 
 This file contains various utility functions needed by other routines in this
 package.
 """
 
 # Built-In Libraries
-import pathlib
+from importlib import resources
 import warnings
 
 # 3rd-Party Libraries
-from pkg_resources import resource_filename
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 
@@ -33,10 +35,11 @@ import scipy.optimize
 
 # CONSTANTS
 SG_THEME = "light grey 1"
-CONFIG = pathlib.Path(resource_filename("obstools", "config"))
+CONFIG = resources.files("obstools") / "config"
+DATA = resources.files("obstools") / "data"
 
 
-def check_float(potential_float):
+def check_float(potential_float) -> bool:
     """Simple funtion to check whether something is a float
 
     Parameters
@@ -54,6 +57,29 @@ def check_float(potential_float):
         return True
     except ValueError:
         return False
+
+
+def first_moment_1d(line):
+    """Returns the 1st moment of line
+
+    Parameters
+    ----------
+    line : :obj:`~numpy.ndarray`
+        1-dimensional array to find the 1st moment of
+
+    Returns
+    -------
+    :obj:`float`
+        The first moment of the input array relative to element #
+    """
+    # Only use positive values -- set negative values to zero
+    line[line < 0] = 0
+
+    # Make the counting array
+    yy = np.arange(len(line))
+
+    # Return the first moment
+    return np.sum(yy * line) / np.sum(line)
 
 
 def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = False):
@@ -103,8 +129,8 @@ def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = F
     if estimates is None:
         # Subtract a linear term if nterm == 5 or 6 or constant for nterm == 4
         if nterms > 3:
-            p = np.polyfit(x, y, 0 if nterms == 4 else 1)
-            y_modified = y - np.polyval(p, x)
+            poly = np.polynomial.Polynomial.fit(x, y, 0 if nterms == 4 else 1)
+            y_modified = y - poly(x)
         # Do nothing if nterm == 3
         else:
             y_modified = y
@@ -130,7 +156,7 @@ def gaussfit(x, y, nterms: int = 3, estimates=None, bounds=None, debug: bool = F
                 estimates[i] = est
 
         if nterms > 3:
-            estimates = estimates + list(np.flip(p))
+            estimates = estimates + list(poly.coef)
         if nterms == 6:
             estimates.append(0.0)
 
@@ -196,29 +222,6 @@ def gaussian_function(
     z = (x - a1) / a2
 
     return a0 * np.exp(-(z**2) / 2.0) + a3 + a4 * x + a5 * x**2
-
-
-def first_moment_1d(line):
-    """Returns the 1st moment of line
-
-    Parameters
-    ----------
-    line : :obj:`~numpy.ndarray`
-        1-dimensional array to find the 1st moment of
-
-    Returns
-    -------
-    :obj:`float`
-        The first moment of the input array relative to element #
-    """
-    # Only use positive values -- set negative values to zero
-    line[line < 0] = 0
-
-    # Make the counting array
-    yy = np.arange(len(line))
-
-    # Return the first moment
-    return np.sum(yy * line) / np.sum(line)
 
 
 def good_poly(x, y, order, thresh, return_full=False):
@@ -326,6 +329,103 @@ def good_poly(x, y, order, thresh, return_full=False):
     if return_full:
         return coeff, yfit, xx, yy
     return coeff
+
+
+def nearest_odd(x: float) -> int:
+    """Find the nearest odd integer
+
+    https://www.mathworks.com/matlabcentral/answers/45932-round-to-nearest-odd-integer#accepted_answer_56149
+
+    Parameters
+    ----------
+    x : :obj:`float`
+        Input number
+
+    Returns
+    -------
+    :obj:`int`
+        The nearest odd integer
+    """
+    return int(2 * np.floor(x / 2) + 1)
+
+
+def set_std_tickparams(axis: plt.axis, tsz: int | float):
+    """Set standard tick parameters for a plot
+
+    These are my own "standards", based on plots I used to make in IDL.
+
+    Parameters
+    ----------
+    axis : :obj:`~matplotlib.pyplot.axis`
+        PyPlot axis for whom the tick parameters must be set
+    tsz : :obj:`int` or :obj:`float`
+        TypeSiZe
+    """
+    axis.tick_params(
+        axis="both",
+        which="both",
+        direction="in",
+        top=True,
+        right=True,
+        labelsize=tsz,
+    )
+
+
+def sinusoid(
+    x: np.ndarray,
+    a: float,
+    lam: float,
+    phi: float,
+    y0: float = 0,
+    lin: float = 0,
+    quad: float = 0,
+    cube: float = 0,
+    quar: float = 0,
+) -> np.ndarray:
+    """Return a basic sinusoid (for use with :func:`scipy.optimize.curve_fit`)
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    x : :obj:`~numpy.ndarray`
+        The abscissa values for which to return the ordinate
+    a : :obj:`float`
+        The amplitude of the sinusoid (in units of ordinate)
+    lam : :obj:`float`
+        The wavelength of the sinusoid (in units of abscissa), equivalent to
+        `2π/k` (where `k` is the wavenumber).
+    phi : :obj:`float`
+        The phase shift of the sinusoid (in units of phase, nominally 0-1)
+    y0 : :obj:`float`, optional
+        The vertical offset of the sinusoid from zero (in units of ordinate)
+        (Default: 0)
+    lin : :obj:`float`, optional
+        The linear term added to the fit (in units of ordinate/abscissa)
+        (Default: 0)
+    quad : :obj:`float`, optional
+        The quadratic term added to the fit (in units of ordinate/abscissa**2)
+        (Default: 0)
+    cube : :obj:`float`, optional
+        The cubic term added to the fit (in units of ordinate/abscissa**3)
+        (Default: 0)
+    quar : :obj:`float`, optional
+        The quartic term added to the fit (in units of ordinate/abscissa**4)
+        (Default: 0)
+
+    Returns
+    -------
+    :obj:`~numpy.ndarray`
+        The sinusoid ordinate
+    """
+    return (
+        a * np.sin(2.0 * np.pi * x / lam + 2.0 * np.pi * phi)
+        + y0
+        + lin * x
+        + quad * x**2
+        + cube * x**3
+        + quar * x**4
+    )
 
 
 def warn_and_return_zeros(return_full: bool, x, xx, yy, order, raise_warn=False):
