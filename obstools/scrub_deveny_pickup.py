@@ -38,8 +38,8 @@ ensure the final subtracted pattern is a smooth function, matching the
 underlying pickup noise.
 
 The output of the module is a multi-extension FITS file containing [1] the
-cleaned image, [2] the original image, [3] the pattern subtracted from the
-original image, and [4] a FITS BinTable containing the sinusoid fit parameters
+cleaned image, [2] the original image, [3,4] the pattern subtracted from the
+original image, and [5] a FITS BinTable containing the sinusoid fit parameters
 for each row of the image.
 """
 
@@ -60,8 +60,8 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit.scripts import scriptbase
 from pypeit import msgs
+from pypeit.scripts import scriptbase
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -124,14 +124,16 @@ def iterative_pypeit_clean(
     #   comprehension searches in each possible 'instrument setup' directory
     #   Check that the `spec2d` file actually exists and print a helpful
     #   message if it doesn't.
-    if proc_dir is not None:
-        # TODO: This is when someone uses the `-r` option to `pypeit_setup`
-        pass
+    pyp_dir = (
+        [proc_dir]
+        if proc_dir is not None
+        else sorted(filename.parent.glob("ldt_deveny_?"))
+    )
     try:
         # Look for the spec2d file
         spec2d_file = [
             next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*"))
-            for d in sorted(filename.parent.glob("ldt_deveny_?"))
+            for d in pyp_dir
         ][0]
     except (StopIteration, IndexError):
         # And... fail.
@@ -172,7 +174,10 @@ def iterative_pypeit_clean(
     #   sinusoidal signal only imparts a 1% effect.  Skip objmodel checking
     #   for these cases
     if np.max(objmodel) > 600:
-        print(" * Object model > 100x sinusoidal signal.")
+        print(" * Object model > 100x sinusoidal signal.  Moving along...")
+        with_obj = False
+    elif np.allclose(objmodel, 0):
+        print(" * No object model extracted.  Moving along...")
         with_obj = False
     # Before fitting the image, inspect the objmodel for sinusoidal signal of the
     #  type we're looking for
@@ -1469,7 +1474,7 @@ def make_image_comparison_plots(
 
     # Panel #1: Draw the original science image
     vmin, vmax = interval1.get_limits(spec2d.sciimg)
-    print(f"Inferno image limits: {vmin}, {vmax}")
+    # print(f"Inferno image limits: {vmin}, {vmax}")
     axes[0].imshow(
         np.rot90(spec2d.sciimg, k=-1),
         vmin=vmin,
@@ -1506,7 +1511,7 @@ def make_image_comparison_plots(
 
     # Panel #4: Draw the pattern model
     vmin, vmax = interval2.get_limits(pattern + np.mean(resid))
-    print(f"Viridis image limits: {vmin}, {vmax}")
+    # print(f"Viridis image limits: {vmin}, {vmax}")
     axes[3].imshow(pattern + np.mean(resid), vmin=vmin, vmax=vmax, origin="lower")
     axes[3].axis("off")
     axes[3].set_title("Modeled Sinusoid Pickup Pattern", fontsize=tsz)
@@ -1607,7 +1612,7 @@ def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
 class ScrubDevenyPickup(scriptbase.ScriptBase):
     """Script class for ``scrub_deveny_pickup`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod
@@ -1648,13 +1653,8 @@ class ScrubDevenyPickup(scriptbase.ScriptBase):
             "--proc_dir",
             type=str,
             default=None,
-            help="Path to the directory containing the .pypeit file used to process `file` (ldt_deveny_?)",
-        )
-        parser.add_argument(
-            "-d",
-            "--diagnostics",
-            action="store_true",
-            help="Output additional information and plots during the analysis for debugging purposes",
+            help="Path to the directory containing the .pypeit file used to "
+            "process `file` (ldt_deveny_?)",
         )
         parser.add_argument(
             "--overwrite_raw",
@@ -1662,10 +1662,17 @@ class ScrubDevenyPickup(scriptbase.ScriptBase):
             help="Overwrite the raw file rather than create a new file with the '_scrub' suffix",
         )
         parser.add_argument(
+            "-d",
+            "--diagnostics",
+            action="store_true",
+            help="Output additional information and plots during the analysis for "
+            "debugging purposes",#argparse.SUPPRESS
+        )
+        parser.add_argument(
             "-n",
             "--no_refit",
             action="store_true",
-            help="Force no refit of 'bad' RMS values",
+            help="Force no refit of 'bad' RMS values"#argparse.SUPPRESS
         )
         # Produce multiple graphics outputs for the documentation -- HIDDEN
         parser.add_argument("-g", action="store_true", help=argparse.SUPPRESS)

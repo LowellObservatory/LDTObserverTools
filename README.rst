@@ -122,7 +122,7 @@ Installing LDTObserverTools via ``pip``
 .. note::
   The commands here assume ``pip`` is associated with Python3.  To check, run
   ``pip --version`` from the command line and check that the associated python
-  version is ``>= 3.9``.
+  version is ``>= 3.10``.
 
   Also, you will need ``git`` installed on your system / in your environment.
 
@@ -150,14 +150,16 @@ simply be a matter of executing:
 Optional Dependencies
 ^^^^^^^^^^^^^^^^^^^^^
 
-Some of the instrument-specific routines in this package require additional dependencies
-that are not otherwise needed by the majority of the routines herein.
+There are no optional dependencies at this time.
 
-   - If you are using the ``deveny_pickup_cleaner`` routine, you will need the
-     spectroscopic data reduction pipeline PypeIt for the iterative cleaning of
-     the pickup noise.  It can be installed by including it in the optional
-     dependencies, `e.g.`:
+.. Some of the instrument-specific routines in this package require additional dependencies
+.. that are not otherwise needed by the majority of the routines herein.
 
-      .. code-block:: console
+..    - If you are using the ``deveny_pickup_cleaner`` routine, you will need the
+..      spectroscopic data reduction pipeline PypeIt for the iterative cleaning of
+..      the pickup noise.  It can be installed by including it in the optional
+..      dependencies, `e.g.`:
 
-        pip install "obstools[pypeit] @ git+https://github.com/LowellObservatory/LDTObserverTools"
+..       .. code-block:: console
+
+..         pip install "obstools[pypeit] @ git+https://github.com/LowellObservatory/LDTObserverTools"

@@ -2,7 +2,11 @@
 DeVeny Pickup Noise Scrubber
 ============================
 
-Status: *In development*
+Status: *Beta Testing*
+
+To report problems or suggest improvements, please submit a GitHub `Issue 
+<https://github.com/LowellObservatory/LDTObserverTools/issues>`__ and/or
+`Pull Request <https://github.com/LowellObservatory/LDTObserverTools/pulls>`__.
 
 Overview
 ========
@@ -10,18 +14,19 @@ Overview
 The spectral channel CCD of the DeVeny Optical Spectrograph has been subject
 to ground-loop EMI pickup in the readout electronics during most of its tenure
 at the Lowell Discovery Telescope (LDT).  This pickup manifests in the science
-images as sinusoidal pattern noise sitting atop the raw 2D spectral image.
+images as a low-amplitude sinusoidal pattern sitting atop the raw 2D spectral
+image.
 
 In January 2018, the Instrument Group broke a significant ground loop,
-eliminating a prominent "corduroy" noise pattern with amplitude (:math:`\pm 5`)
+eliminating a prominent "corduroy" noise pattern with amplitude :math:`\pm 4`
 DN that had been affecting observers' low-SNR extractions.  At that point,
-there still remained a low-level (:math:`\pm 2`) scalloping noise that shifted
+there still remained a low-level (:math:`\pm 2` DN) scalloping noise that shifted
 from frame to frame, indicating another source of EMI.  After this brief
 reprieve, however, changes on the LDT instrument cube led to the reappearance
-of the larger "corduroy" pattern with amplitude (:math:`\pm 4`) DN that
-continues into 2023.  While the Instrument Group works diligently to identify
-and remove this remaining ground loop, the present tool is available for
-observers whose low-SNR extractions are affected by this pickup signal.
+of the larger :math:`\pm 4` DN "corduroy" pattern with that continues into 2023.
+While the Instrument Group works diligently to identify and remove this
+ground loop, the present tool is available for observers whose low-SNR
+extractions are affected by this pickup signal.
 
 .. _raw_frame:
 .. figure:: figures/scrubber_raw_frame.*
@@ -47,21 +52,25 @@ a FITS file for usual data reduction processing (preferably with PypeIt) to
 yield an extracted 1D spectrum for analysis.
 
 To illustrate the need for and utility of this tool, :numref:`spec1d_comps`
-shows a comparison of the extracted 1D spectra for the (horizontal) object in
-the middle of :numref:`raw_frame` from both the original (top) and scrubbed
-(bottom) versions of the frame.  Not only does this tool remove the sinusoidal
-oscillation in the continuum, but astrophysical measurements are more
-accurately measured from the spectrum.
+shows a comparison of the extracted 1D spectra for two different object types
+from two different programs (and nights) from both the original and scrubbed
+version of the frame.  The galaxy is the (horizontal) object in the middle of
+:numref:`raw_frame`.  Not only does this tool remove the sinusoidal oscillation
+in the continuum, but astrophysical measurements are more accurately measured
+from the spectra.
 
 
 .. _spec1d_comps:
-.. figure:: figures/spec1d_scrub_compare.*
+.. figure:: figures/spec1d_scrub_double_compare.*
    :class: with-shadow
    :alt: Comparison of raw and scrubbed extracted 1D spectra
 
-   -- Comparison of the PypeIt-extracted 1D spectra from the raw (top) and
-   scrubbed frames to illustrate the utility of this tool.
-
+   -- Comparison of the PypeIt-extracted 1D spectra for two different object
+   types (from different programs).  For each object, the raw and scrubbed
+   frames are shown to illustrate the utility of this tool. The red dashed
+   line represents the :math:`1\sigma` uncertainty in the spectrum.  PypeIt
+   estimates a mean :math:`SNR = 4.8` for the scrubbed galaxy spectrum and
+   a mean :math:`SNR = 7.2` for the scrubbed white dwarf spectrum.
 
 This document begins with a description of how to use this tool to clean the
 EMI pickup noise from your data, and moves on to lay out the details of what
@@ -133,14 +142,6 @@ Data Processing Steps
                overscan_method = polynomial
                overscan_par = 1
 
-   .. important::
-
-      The scrubber expects the reduced files to be in a particular location
-      with respect to the raw files, namely ``<RAW_DIR>/ldt_deveny_?/Science/``.
-      It is the author's intent to introduce an option to this tool that allows
-      the specification of arbitrary reduced file directories, but that has not
-      yet been implemented.
-
 2. Once the PypeIt reduction is complete, you are ready to run the scrubber.
    In the directory containing the raw files, run the scrubber (see
    :ref:`usage`) on the files in the directory.  If an input file is **NOT**
@@ -156,8 +157,9 @@ Data Processing Steps
    you may remove the lines in the ``.pypeit`` file corresponding to the
    original images and add any parameter modifications you desire, including
    those affecting object finding and extraction.  In particular, **DO NOT**
-   include the three ``[[skysub]]`` parameters used in Step #1 above, as they
-   may cause unpleasant artifacts in the actual reduction of your data.
+   include the ``[flexure]`` and three ``[[skysub]]`` parameters used in Step
+   #1 above, as they may cause unpleasant artifacts in the actual reduction of
+   your data.
 
 .. note::
 
@@ -181,8 +183,13 @@ The tool usage can be displayed by calling the script with the
 
 .. include:: help/scrub_deveny_pickup.rst
 
+You may specify either a single ``file`` for the scrubber to process, or
+include a list of files (by way of wildcards or shell filename expansions)
+over which the tool should iterate.
+
 The ``--proc_dir`` option may be used to specify the location of the
-PypeIt-processed files, if other than as a subdirectory of the raw data
+PypeIt-processed files (*i.e.*, the ``ldt_deveny_?`` directory you created
+with ``pypeit_setup``), if other than as a subdirectory of the raw data
 directory.  This works in the same sense but opposite direction as the ``-r
 <RAWDIR>`` option to ``pypeit_setup``.  In particular, if you did not specify
 ``-r <RAWDIR>`` to ``pypeit_setup``, do not use this option.
@@ -192,12 +199,7 @@ To simply overwrite the raw data file with the output of this tool, the
 created here includes the entirety of the raw frame (all header cards plus the
 raw image), this may be acceptable if processing large number of files.
 
-Other options shown are debugging tools that will be removed in the future.
-
-As indicated, you may specify either a single ``file`` for the scrubber to
-process, or include a list of files (by way of wildcards or shell filename
-expansions) over which the tool should iterate.
-
+Other options shown are debugging tools that may be removed in the future.
 
 
 
@@ -371,7 +373,7 @@ temporally appropriate gap between rows (which would introduce artifacts in the
 resulting FFT), we simply stitch the rows together as-is and rely upon the FFT
 to pick out the prominent frequencies in the flattened array.
 
-A ecample QA plot for the FFT analysis is shown in :numref:`fft_analysis`.
+An example QA plot for the FFT analysis is shown in :numref:`fft_analysis`.
 
 .. _fft_analysis:
 .. figure:: figures/scrubber_fft_analysis.*
@@ -379,7 +381,7 @@ A ecample QA plot for the FFT analysis is shown in :numref:`fft_analysis`.
    :alt: FFT analysis of the flattened frame
 
    -- FFT QA plot.  The top panel shows the flattened image array, while the 
-   ramaining rows show the real (amplitude as a function of frequency),
+   remaining rows show the real (amplitude as a function of frequency),
    imaginary (phase as a function of frequency), and absolute square (power
    spectrum) components of the FFT.  The power spectrum is further smoothed
    with a gaussian kernel to help isolate desired signal (with variable
@@ -474,21 +476,28 @@ Panel Description:
 1. The science image after the initial PypeIt processing.  Without scrubbing,
    this would be the 2D image from which the object(s) are extracted.
 
-2. The PypeIt sky model, where the local sky modeling has included the entire
-   slit thanks to the ``local_maskwidth = 200.`` specified in the PypeIt
-   Reduction File.
+2. The PypeIt sky + object model, where the local sky modeling has included the
+   entire slit thanks to the ``local_maskwidth = 200.`` specified in the PypeIt
+   Reduction File.  If the object is not included here, it is because the 
+   extracted object model includes power from the sinusoidal EMI signal and
+   must therefore be included in the residual image for fitting.  The sky is
+   purposefully broad-brush and blurred so as to not induce artifacts in the
+   fitted pattern by including, *e.g.*, contiguous rows of sinusoids with
+   similar phase in the sky model (rather in the noise pattern where it
+   belongs).
 
-3. The PypeIt residual image, where the sky model (and sometimes the object
+3. The PypeIt residual image, where the sky model (and frequently the object
    model) has been subtracted and cosmic rays (and other bad pixels) have been
    masked.  What *should* remain in this image is flat residual noise with rms
    based on the sky model photon statistics.  In the case of DeVeny images
    subject to the EMI pickup noise, that noise should be the dominant feature
-   in this frame.
+   in this frame, with some residual sky lines because of the broad-brush sky
+   subtraction above.
 
 4. The modeled sinusoidal pickup noise.  While the sinusoidal fit to each row
    of the residual image (#3) includes a quadratic polynomial to account for
-   secular variation in the background, only the sinusoid is included in this
-   pattern image due to the AC nature of the pickup.
+   secular variation in the background, only the base sinusoid is included in
+   this pattern image to match the AC nature of the pickup.
 
 5. The scrubbed residual image, where the pattern image (#4) has been
    subtracted off.  This frame should be largely featureless (except if the
@@ -501,9 +510,10 @@ Panel Description:
    noisy since a :math:`\sim 4` DN sinusoid has been removed from each line.
 
 Panels #1, #2, and #6 are shown in a purple-red-yellow color map with common
-scale limits based on the processed science image (range -15 e- to +51 e-), and panels #3 - #5 are
-shown in a blue-green-yellow color map with common scale limits based on the
-pattern image (range -6.1 e- to +6.1 e-) to illustrate the completeness of the EMI signal removal.
+scale limits based on the processed science image (range -15 e- to +51 e-), and
+panels #3 - #5 are shown in a blue-green-yellow color map with common scale
+limits based on the pattern image (range -6.1 e- to +6.1 e-) to illustrate
+the completeness of the EMI signal removal.
 
 .. rubric:: Footnotes
 
@@ -528,6 +538,10 @@ development of the scrubber and various points of interest.
 
 Line-by-Line Fits vs Fourier-Space Filtering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. todo::
+
+   This section needs updated images and text.
 
 Given the nearly constant frequency (manifested as a periodic sinusoid in
 pixel space) of the AC EMI, one is tempted to attempt filtering the signal in
