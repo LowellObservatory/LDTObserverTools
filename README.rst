@@ -68,7 +68,7 @@ Tools Contained in this Package:
 
   - DeVeny Spectrograph collimator focus calculator (``dfocus``)
 
-  - DeVeny Spectrograph pickup noise scrubber (``scrub_deveny_pickup``)
+  - DeVeny Spectrograph pickup noise scrubber (``scrub_deveny_pickup`` -- *beta testing*)
 
   - Simple FITS header fixing tool (``fix_ldt_header``)
 
