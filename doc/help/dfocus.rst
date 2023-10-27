@@ -1,7 +1,7 @@
 .. code-block:: console
 
     $ dfocus -h
-    usage: dfocus [-h] [--flog FLOG] [--thresh THRESH] [--nodisplay] [--leave_files]
+    usage: dfocus [-h] [--flog FLOG] [--thresh THRESH] [--nodisplay]
     
     DeVeny Collimator Focus Calculator
     
@@ -10,5 +10,4 @@
       --flog FLOG      focus log to use (default: last) (default: last)
       --thresh THRESH  threshold for line detection (default: 100) (default: 100.0)
       --nodisplay      DO NOT launch Preview.app to display plots (default: True)
-      --leave_files    DO NOT move the focus frames to focus/ (default: False)
     

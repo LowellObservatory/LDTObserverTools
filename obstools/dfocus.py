@@ -27,7 +27,6 @@ DeVeny LOUI.
 # Built-In Libraries
 import os
 import pathlib
-import shutil
 import sys
 import warnings
 
@@ -52,7 +51,6 @@ def dfocus(
     thresh: float = 100.0,
     debug: bool = False,
     launch_preview: bool = True,
-    leave_focus_files: bool = False,
 ):
     """Find the optimal DeVeny collimator focus value
 
@@ -75,8 +73,6 @@ def dfocus(
         Print debug statements  (Default: False)
     launch_preview : :obj:`bool`, optional
         Display the plots by launching Preview  (Default: True)
-    leave_focus_files : :obj:`bool`, optional
-        Do NOT move the focus frames to the ``focus/`` directory  (Default: False)
     """
     # Make a pretty title for the output of the routine
     n_cols = (os.get_terminal_size()).columns
@@ -180,11 +176,8 @@ def dfocus(
             pdf=pdf,
         )
 
-    # Print the location of the plots, and move focus frames (if desired)
+    # Print the location of the plots
     print(f"\n  Plots have been saved to: {pdf_fn.name}\n")
-    if not leave_focus_files:
-        for foc_file in focus["files"]:
-            shutil.move(foc_file, path)
 
     # Try to open with Apple's Preview App... if can't, oh well.
     if launch_preview:
@@ -879,11 +872,6 @@ class DFocus(scriptbase.ScriptBase):
             action="store_false",
             help="DO NOT launch Preview.app to display plots",
         )
-        parser.add_argument(
-            "--leave_files",
-            action="store_true",
-            help="DO NOT move the focus frames to focus/",
-        )
         return parser
 
     @staticmethod
@@ -898,5 +886,4 @@ class DFocus(scriptbase.ScriptBase):
             flog=args.flog,
             thresh=args.thresh,
             launch_preview=args.nodisplay,
-            leave_focus_files=args.leave_files,
         )
