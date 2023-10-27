@@ -2,7 +2,7 @@
 Input List Validator
 ====================
 
-Status: *In development*
+Status: *Planned*
 
 Overview
 ========

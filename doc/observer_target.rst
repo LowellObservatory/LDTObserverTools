@@ -2,7 +2,7 @@
 Observer Target List Tool
 =========================
 
-Status: *In development*
+Status: *Planned*
 
 Overview
 ========
