@@ -286,8 +286,8 @@ def extract_broker_values(status_dict: dict) -> tuple[str, str]:
         return f"{status_dict['GratingTilt']:.2f}"
 
     # Mount Temperature
-    if "MountTemp" in status_dict:
-        return f"{status_dict['MountTemp']:.1f}"
+    if "MountTemperature" in status_dict:
+        return f"{status_dict['MountTemperature']:.1f}"
 
     # Else, nothing found
     return "~ Not Found ~"
