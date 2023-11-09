@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _neocp_ephem:
+
 =========================================
 NEO Confirmation Page Ephemeris Generator
 =========================================
@@ -16,4 +23,7 @@ Overview
 Usage
 =====
 
-Yeah, use it!
+The script usage can be displayed by calling the script with the
+``-h`` option:
+
+.. include:: help/neocp_ephem.rst

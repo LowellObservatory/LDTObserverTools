@@ -869,7 +869,7 @@ class DFocus(scriptbase.ScriptBase):
         )
         parser.add_argument(
             "--nodisplay",
-            action="store_false",
+            action="store_true",
             help="DO NOT launch Preview.app to display plots",
         )
         return parser
@@ -885,5 +885,5 @@ class DFocus(scriptbase.ScriptBase):
             pathlib.Path(".").resolve(),
             flog=args.flog,
             thresh=args.thresh,
-            launch_preview=args.nodisplay,
+            launch_preview=not args.nodisplay,
         )

@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _fix_ldt_header:
+
 ==============================
 Simple FITS Header Fixing Tool
 ==============================

@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _deveny_collfocus:
+
 =================================
 DeVeny Collimator Focus Estimator
 =================================
@@ -26,7 +33,8 @@ yield the approximate relationship:
     \end{aligned}
 
 where :math:`T_{\rm m}` is the mount temperature and tilt is the grating tilt
-angle.  This equation is coded into the GUI tool.
+angle.  The RMS of the fit is :math:`\sim 0.6` |nbsp| mm.  This equation is coded into
+the GUI tool.
 
 Unlike other focus procedures at LDT, the DeVeny LOUI focus sequence script
 does not take the *expected* focus value, but rather one end of the range,

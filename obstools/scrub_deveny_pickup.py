@@ -1666,13 +1666,13 @@ class ScrubDevenyPickup(scriptbase.ScriptBase):
             "--diagnostics",
             action="store_true",
             help="Output additional information and plots during the analysis for "
-            "debugging purposes",#argparse.SUPPRESS
+            "debugging purposes",  # argparse.SUPPRESS
         )
         parser.add_argument(
             "-n",
             "--no_refit",
             action="store_true",
-            help="Force no refit of 'bad' RMS values"#argparse.SUPPRESS
+            help="Force no refit of 'bad' RMS values",  # argparse.SUPPRESS
         )
         # Produce multiple graphics outputs for the documentation -- HIDDEN
         parser.add_argument("-g", action="store_true", help=argparse.SUPPRESS)

@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _scrub_deveny_pickup:
+
 ============================
 DeVeny Pickup Noise Scrubber
 ============================
@@ -112,7 +119,7 @@ Data Processing Steps
 
    .. warning::
 
-      If you are using a version of PypeIt ``< 1.14.1`` (see the top line of
+      If you are using a version of PypeIt ``< 1.15.0`` (see the top line of
       the PypeIt Reduction File for the version number), then you will instead
       need to add the entirety of the following to the Parameter Block to
       ensure the traced slit edges do not shrink unreasonably and that pattern
@@ -120,7 +127,7 @@ Data Processing Steps
       Regions outside the marked slits will have 0 value in the residual image,
       and therefore any sinusoidal signal there will not be fit out.  (The
       additional parameters included here were added to the DeVeny default set
-      in PypeIt version ``1.14.1``.)
+      in PypeIt version ``1.15.0``.)
 
       .. code-block:: ini
 

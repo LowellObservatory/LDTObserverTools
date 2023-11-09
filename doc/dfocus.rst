@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _dfocus:
+
 ==================================
 DeVeny Collimator Focus Calculator
 ==================================
@@ -29,3 +36,4 @@ The script usage can be displayed by calling the script with the
 ``-h`` option:
 
 .. include:: help/dfocus.rst
+  

@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _lmi_etc:
+
 ============================
 LMI Exposure Time Calculator
 ============================
@@ -14,4 +21,7 @@ Overview
 Usage
 =====
 
-Yeah, use it!
+The script usage can be displayed by calling the script with the
+``-h`` option:
+
+.. include:: help/lmi_etc.rst
