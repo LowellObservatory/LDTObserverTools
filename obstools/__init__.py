@@ -23,7 +23,9 @@ from obstools.version import version
 from obstools import deveny_collfocus
 from obstools import deveny_grangle
 from obstools import dfocus
+from obstools import lmi_etc
 from obstools import fix_ldt_header
+from obstools import neocp_ephem
 from obstools import scrub_deveny_pickup
 
 
@@ -63,6 +65,8 @@ def script_classes() -> dict:
             if "pypeit" not in cls.name()
         ]
     )
+    print(scr_class)
+
     scr_name = np.array([c.name() for c in scr_class])
     # Construct a dictionary with the script name and class
     srt = np.argsort(scr_name)
