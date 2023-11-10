@@ -72,14 +72,6 @@ class FixLdtHeader(utils.ScriptBase):
     """
 
     @classmethod
-    def name(cls):
-        """
-        Provide the name of the script.  By default, this is the name of the
-        module.
-        """
-        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
-
-    @classmethod
     def get_parser(cls, width=None):
         """Construct the command-line argument parser.
 

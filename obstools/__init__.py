@@ -29,7 +29,8 @@ try:
     from obstools import neocp_ephem
     from obstools import scrub_deveny_pickup
 except ImportError as err:
-    print(f"Had an import error!  {err}")
+    pass
+
 
 def short_warning(message, category, filename, lineno, file=None, line=None):
     """
@@ -58,17 +59,10 @@ def script_classes() -> dict:
     from obstools import utils
 
     # Recursively collect all subclasses
-    # Since we use PypeIt's ScriptBase, remove all classes from that package
-    scr_class = np.array(
-        [
-            cls
-            for cls in list(utils.all_subclasses(utils.ScriptBase))
-            if "pypeit" not in cls.name()
-        ]
-    )
+    scr_class = np.array(list(utils.all_subclasses(utils.ScriptBase)))
     print(scr_class)
 
-    scr_name = np.array([c.name() for c in scr_class])
+    scr_name = np.array([c.name for c in scr_class])
     # Construct a dictionary with the script name and class
     srt = np.argsort(scr_name)
     return dict(zip(scr_name[srt], scr_class[srt]))

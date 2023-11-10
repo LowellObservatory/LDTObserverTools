@@ -505,7 +505,6 @@ Implements base classes for use with ``PypeIt`` scripts.
 """
 
 
-
 class SmartFormatter(argparse.HelpFormatter):
     r"""
     Enable a combination of both fixed-format and wrappable lines to be
@@ -617,9 +616,9 @@ class ScriptBase:
     def name(cls):
         """
         Provide the name of the script.  By default, this is the name of the
-        module with "pypeit" prepended.
+        module.
         """
-        return f"pypeit_{cls.__module__.split('.')[-1]}"
+        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
     def parse_args(cls, options=None):
@@ -629,7 +628,9 @@ class ScriptBase:
         parser = cls.get_parser()
         ScriptBase._fill_parser_cwd(parser)
         # Add "--version" to bottom of all scripts
-        parser.add_argument("--version", action="store_true", help="Print version and exit")
+        parser.add_argument(
+            "--version", action="store_true", help="Print version and exit"
+        )
         return parser.parse_args() if options is None else parser.parse_args(options)
 
     @staticmethod

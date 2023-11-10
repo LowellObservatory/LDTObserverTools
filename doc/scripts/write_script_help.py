@@ -35,7 +35,7 @@ def write_help(script_cls: utils.ScriptBase, opath: pathlib.Path, width: int = 8
     width : :obj:`int`, optional
         The width of the help text before wrapping  (Default: 80)
     """
-    exe = script_cls.name()
+    exe = script_cls.name
     ofile = os.path.join(opath, f"{exe}.rst")
     lines = [".. code-block:: console", ""]
     lines += [f"    $ {exe} -h"]

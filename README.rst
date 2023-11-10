@@ -157,16 +157,16 @@ simply be a matter of executing:
 Optional Dependencies
 ^^^^^^^^^^^^^^^^^^^^^
 
-There are no optional dependencies at this time.
+.. There are no optional dependencies at this time.
 
-.. Some of the instrument-specific routines in this package require additional dependencies
-.. that are not otherwise needed by the majority of the routines herein.
+Some of the instrument-specific routines in this package require additional dependencies
+that are not otherwise needed by the majority of the routines herein.
 
-..    - If you are using the ``deveny_pickup_cleaner`` routine, you will need the
-..      spectroscopic data reduction pipeline PypeIt for the iterative cleaning of
-..      the pickup noise.  It can be installed by including it in the optional
-..      dependencies, `e.g.`:
+   - If you are using the ``scrub_deveny_pickup`` tool, you will need the
+     spectroscopic data reduction pipeline `PypeIt <https://pypeit.readthedocs.io/en/release/>`_
+     for the iterative cleaning of the pickup noise.  It can be installed by
+     including it in the optional dependencies, *e.g.*:
 
-..       .. code-block:: console
+      .. code-block:: console
 
-..         pip install "obstools[pypeit] @ git+https://github.com/LowellObservatory/LDTObserverTools"
+        pip install "obstools[pypeit] @ git+https://github.com/LowellObservatory/LDTObserverTools"
