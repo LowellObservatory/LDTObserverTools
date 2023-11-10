@@ -25,6 +25,7 @@ DeVeny LOUI.
 """
 
 # Built-In Libraries
+import argparse
 import os
 import pathlib
 import sys
@@ -51,6 +52,7 @@ def dfocus(
     thresh: float = 100.0,
     debug: bool = False,
     launch_preview: bool = True,
+    docfig: bool = False,
 ):
     """Find the optimal DeVeny collimator focus value
 
@@ -73,6 +75,8 @@ def dfocus(
         Print debug statements  (Default: False)
     launch_preview : :obj:`bool`, optional
         Display the plots by launching Preview  (Default: True)
+    docfig : :obj:`bool`, optional
+        Make example figures for online documentation?  (Default: False)
     """
     # Make a pretty title for the output of the routine
     n_cols = (os.get_terminal_size()).columns
@@ -157,10 +161,20 @@ def dfocus(
             focus_dict=focus,
             pdf=pdf,
             verbose=False,
+            path=path,
+            docfig=docfig,
         )
 
         # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
-        plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus, pdf=pdf)
+        plot_optimal_focus(
+            focus,
+            centers,
+            optimal_focus_values,
+            med_opt_focus,
+            pdf=pdf,
+            path=path,
+            docfig=docfig,
+        )
 
         # The plot shown in the IDL1 window: Focus curves for each identified line
         plot_focus_curves(
@@ -174,6 +188,8 @@ def dfocus(
             focus["start"],
             fnom=focus["nominal"],
             pdf=pdf,
+            path=path,
+            docfig=docfig,
         )
 
     # Print the location of the plots
@@ -452,10 +468,12 @@ def find_lines(
     image,
     thresh=20.0,
     minsep=11,
-    verbose=True,
-    do_plot=False,
+    verbose: bool = True,
+    do_plot: bool = False,
     focus_dict=None,
     pdf=None,
+    docfig: bool = False,
+    path: pathlib.Path = None,
 ):
     """Automatically find and centroid lines in a 1-row image
 
@@ -535,6 +553,9 @@ def find_lines(
             plt.show()
         else:
             pdf.savefig()
+            if docfig:
+                for ext in ["png", "pdf", "svg"]:
+                    plt.savefig(path / f"pyfocus.page1_example.{ext}")
         plt.close()
 
     return len(centers), centers, fwhm
@@ -637,7 +658,14 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
 # Plotting Routines ==========================================================#
 def plot_optimal_focus(
-    focus, centers, optimal_focus_values, med_opt_focus, debug=False, pdf=None
+    focus,
+    centers,
+    optimal_focus_values,
+    med_opt_focus,
+    debug: bool = False,
+    pdf=None,
+    docfig: bool = False,
+    path: pathlib.Path = None,
 ):
     """Make the Optimal Focus Plot (IDL2 Window)
 
@@ -688,6 +716,9 @@ def plot_optimal_focus(
         plt.show()
     else:
         pdf.savefig()
+        if docfig:
+            for ext in ["png", "pdf", "svg"]:
+                plt.savefig(path / f"pyfocus.page2_example.{ext}")
     plt.close()
 
 
@@ -702,6 +733,8 @@ def plot_focus_curves(
     focus_0,
     fnom=2.7,
     pdf=None,
+    docfig: bool = False,
+    path: pathlib.Path = None,
 ):
     """Make the big plot of all the focus curves (IDL1 Window)
 
@@ -774,6 +807,10 @@ def plot_focus_curves(
         plt.show()
     else:
         pdf.savefig()
+        if docfig:
+            for ext in ["png", "pdf", "svg"]:
+                plt.savefig(path / f"pyfocus.page3_example.{ext}")
+
     plt.close()
 
 
@@ -817,7 +854,7 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 class DFocus(scriptbase.ScriptBase):
     """Script class for ``dfocus`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod
@@ -857,14 +894,14 @@ class DFocus(scriptbase.ScriptBase):
             "--flog",
             action="store",
             type=str,
-            help="focus log to use (default: last)",
+            help="focus log to use",
             default="last",
         )
         parser.add_argument(
             "--thresh",
             action="store",
             type=float,
-            help="threshold for line detection (default: 100)",
+            help="threshold for line detection",
             default=100.0,
         )
         parser.add_argument(
@@ -872,6 +909,8 @@ class DFocus(scriptbase.ScriptBase):
             action="store_true",
             help="DO NOT launch Preview.app to display plots",
         )
+        # Produce multiple graphics outputs for the documentation -- HIDDEN
+        parser.add_argument("-g", action="store_true", help=argparse.SUPPRESS)
         return parser
 
     @staticmethod
@@ -886,4 +925,5 @@ class DFocus(scriptbase.ScriptBase):
             flog=args.flog,
             thresh=args.thresh,
             launch_preview=not args.nodisplay,
+            docfig=args.g,
         )

@@ -59,19 +59,30 @@ The script usage can be displayed by calling the script with the
 
 .. include:: help/deveny_grangle.rst
 
-In its default mode, the tool launches a GUI window:
+In its default mode, the tool launches a GUI window as in
+:numref:`grangle_startup`.
 
-.. image:: figures/deveny_grangle_startup.png
+.. _grangle_startup:
+.. figure:: figures/deveny_grangle_startup.png
     :class: with-shadow
+    :alt: GUI at startup
+
+    -- The ``deveny_collfocus`` GUI at startup.
 
 Select your grating from the dropdown menu (this selects the groove density),
 and enter your desired central wavelength (in angstroms).  When you click
 "Compute", the bottom half of the GUI is populated with the needed grating tilt
 value from the equation above and the computed slit demagnification value (see
-the DeVeny user manual for a brief discussion of grating physics):
+the DeVeny user manual for a brief discussion of grating physics).  See
+:numref:`grangle_values`.
 
-.. image:: figures/deveny_grangle_values.png
+.. _grangle_values:
+.. figure:: figures/deveny_grangle_values.png
     :class: with-shadow
+    :alt: GUI after clicking "Compute"
+
+    -- The ``deveny_grangle`` GUI after clicking "Compute".  The needed grating
+    tilt angle and computed slit demagnification values have been populated.
 
 There are two optional modes for running this tool:
 

@@ -528,11 +528,12 @@ def sky_count_per_sec_per_ap(
     sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale * rscale
     return number_pixels(seeing, binning) * sky_count_per_pixel_per_sec
 
+
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class LmiEtc(scriptbase.ScriptBase):
     """Script class for ``lmi_etc`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod
@@ -577,4 +578,3 @@ class LmiEtc(scriptbase.ScriptBase):
         Simple function that calls the main driver function.
         """
         # Giddy up!
-        pass

@@ -629,4 +629,3 @@ panel in :numref:`image_comparisons`).  The result is shown in
    discussed above) from artifacts and ringing in the FFT.  The peak at 169.1
    pixels, indicating the frequency with the most power in the flattened array:
    most likely the period of the AC EMI pickup noise.
-

@@ -7,7 +7,7 @@
     
     options:
       -h, --help       show this help message and exit
-      --flog FLOG      focus log to use (default: last) (default: last)
-      --thresh THRESH  threshold for line detection (default: 100) (default: 100.0)
+      --flog FLOG      focus log to use (default: last)
+      --thresh THRESH  threshold for line detection (default: 100.0)
       --nodisplay      DO NOT launch Preview.app to display plots (default: False)
     

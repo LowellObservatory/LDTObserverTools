@@ -308,7 +308,7 @@ def extract_broker_values(status_dict: dict) -> tuple[str, str]:
 class DevenyCollfocus(scriptbase.ScriptBase):
     """Script class for ``deveny_collfocus`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod

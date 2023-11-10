@@ -377,7 +377,7 @@ def deveny_amag(grangle: float) -> float:
 class DevenyGrangle(scriptbase.ScriptBase):
     """Script class for ``deveny_grangle`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod

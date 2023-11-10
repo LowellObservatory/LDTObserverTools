@@ -68,7 +68,7 @@ def fix_ldt_header(files: str | pathlib.Path | list, keyword: str, new_value):
 class FixLdtHeader(scriptbase.ScriptBase):
     """Script class for ``fix_ldt_header`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod

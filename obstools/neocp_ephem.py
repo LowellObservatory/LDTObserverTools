@@ -85,6 +85,7 @@ The output format for LDT TCS is::
     yyyy mm dd hh mm ss αh αm αs.sss ±δd δm δs.ss
 
 .. warning::
+
     This module is not yet functional!
     
 """
@@ -186,7 +187,7 @@ def neocp_ephem(neocp_id):
 class NeocpEphem(scriptbase.ScriptBase):
     """Script class for ``neocp_ephem`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
 
     @classmethod

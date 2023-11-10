@@ -1,22 +1,28 @@
 .. |License| image:: https://img.shields.io/github/license/LowellObservatory/LDTObserverTools
    :target: https://github.com/LowellObservatory/LDTObserverTools/blob/main/LICENSE
 
-.. |astropy| image:: https://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
+.. |astropy| image:: https://img.shields.io/badge/powered%20by-AstroPy-blue.svg?style=flat
     :target: https://www.astropy.org/
 
 .. |forks| image:: https://img.shields.io/github/forks/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+   :target: https://github.com/LowellObservatory/LDTObserverTools/forks
 
-.. |issues| image:: https://img.shields.io/github/issues/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+.. |issues| image:: https://img.shields.io/github/issues/LowellObservatory/LDTObserverTools?style=badge
+   :target: https://github.com/LowellObservatory/LDTObserverTools/issues
+
+.. |pulls| image:: https://img.shields.io/github/issues-pr/LowellObservatory/LDTObserverTools?style=badge
+   :target: https://github.com/LowellObservatory/LDTObserverTools/pulls
 
 .. |stars| image:: https://img.shields.io/github/stars/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+   :target: https://github.com/LowellObservatory/LDTObserverTools/stargazers
 
 .. |watch| image:: https://img.shields.io/github/watchers/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+   :target: https://github.com/LowellObservatory/LDTObserverTools/watchers
 
 .. |github| image:: https://img.shields.io/badge/GitHub-LDTObserverTools-brightgreen
+   :target: https://github.com/LowellObservatory/LDTObserverTools
+
+.. |language| image:: https://img.shields.io/github/languages/top/LowellObservatory/LDTObserverTools
    :target: https://github.com/LowellObservatory/LDTObserverTools
 
 .. image:: https://raw.githubusercontent.com/LowellObservatory/LDTObserverTools/main/doc/_static/obstools_logo.png
@@ -32,6 +38,7 @@ LDTObserverTools |forks| |stars| |watch|
 
 |github| |astropy| |License|
 
+|language| |issues| |pulls|
 
 The LDTObserverTools package is a collection of command-line and GUI tools
 for observers at the Lowell Discovery Telescope (LDT) in Happy Jack, AZ.

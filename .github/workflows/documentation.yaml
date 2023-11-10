@@ -10,7 +10,9 @@ jobs:
         with:
           # we want to find git tags to pass version to sphinx
           fetch-depth: 0
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
       - name: Install dependencies
         run: |
           pip install sphinx sphinx_rtd_theme sphinx-automodapi .[dev]
