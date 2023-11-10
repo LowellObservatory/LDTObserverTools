@@ -46,9 +46,9 @@ def write_dependency_table(setup_file: pathlib.Path, path: pathlib.Path):
     ]
     data_table[2, :] = [
         "Optional ``pypeit`` requirements",
-        ", ".join([f"``{u}" for u in pypeit_requires]),
+        ", ".join([f"``{u}``" for u in pypeit_requires]),
     ]
-    data_table[2, :] = [
+    data_table[3, :] = [
         "Required for developers",
         ", ".join([f"``{d}``" for d in dev_requires]),
     ]

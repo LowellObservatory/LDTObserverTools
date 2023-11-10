@@ -11,10 +11,10 @@ import pathlib
 import time
 
 # 3rd Party Libraries
-from pypeit.scripts import scriptbase
 
 # Internal Imports
 from obstools import script_classes
+from obstools import utils
 
 # The repository root is up two levels from here
 # NOTE: This is a hack needed for this script to run on GH pages.
@@ -23,7 +23,7 @@ OBSTOOLS_ROOT = pathlib.Path(__file__).parents[2]
 # -----------------------------------------------------------------------------
 
 
-def write_help(script_cls: scriptbase.ScriptBase, opath: pathlib.Path, width: int = 80):
+def write_help(script_cls: utils.ScriptBase, opath: pathlib.Path, width: int = 80):
     """Write the ``.rst`` help files for all scripts
 
     Parameters

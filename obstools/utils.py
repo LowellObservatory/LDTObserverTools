@@ -27,6 +27,7 @@ from functools import reduce
 from importlib import resources
 import os
 import textwrap
+import sys
 import warnings
 
 # 3rd-Party Libraries
@@ -36,7 +37,7 @@ import numpy as np
 import scipy.optimize
 
 # Local Libraries
-
+from obstools.version import version as __version__
 
 # CONSTANTS
 CONFIG = resources.files("obstools") / "config"
@@ -509,7 +510,7 @@ class SmartFormatter(argparse.HelpFormatter):
     r"""
     Enable a combination of both fixed-format and wrappable lines to be
     formatted for the help statements for command-line arguments used with
-    `argparse.ArgumentParser`_.
+    :class:`~argparse.ArgumentParser`.
 
     Borrows from
     https://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
@@ -518,8 +519,8 @@ class SmartFormatter(argparse.HelpFormatter):
     help string is parsed by the base class.
 
     When parsed by this formatter, the leading "R|" characters are stripped and
-    the lines to be printed are parsed using `str.splitlines`_.  Each resulting
-    line is wrapped using `textwrap.wrap`_, unless it begins with the characters
+    the lines to be printed are parsed using :func:`~str.splitlines`.  Each resulting
+    line is wrapped using :func:`~textwrap.wrap`, unless it begins with the characters
     "F|", which forces the line to remain unaltered (except for stripping the
     leading characters).
 
@@ -605,18 +606,14 @@ class ScriptBase:
         """
         Defines the main script entry point.
         """
-        cls.main(cls.parse_args())
+        args = cls.parse_args()
+        if args.version:
+            print(f"  LDT Observer Tools (obstools) version {__version__}")
+        else:
+            sys.exit(cls.main(args))
 
-    # TODO: Combining classmethod and property works in python 3.9 and later
-    # only: https://docs.python.org/3.9/library/functions.html#classmethod
-    # Order matters.  In python 3.9, it would be:
-    #
-    # @classmethod
-    # @property
-    #
-    # Because we're not requiring python 3.9 yet, we have to leave this as a
-    # classmethod only:
     @classmethod
+    @property
     def name(cls):
         """
         Provide the name of the script.  By default, this is the name of the
@@ -631,6 +628,8 @@ class ScriptBase:
         """
         parser = cls.get_parser()
         ScriptBase._fill_parser_cwd(parser)
+        # Add "--version" to bottom of all scripts
+        parser.add_argument("--version", action="store_true", help="Print version and exit")
         return parser.parse_args() if options is None else parser.parse_args(options)
 
     @staticmethod
@@ -642,7 +641,7 @@ class ScriptBase:
         The ``parser`` is edited *in place*.
 
         Args:
-            parser (argparse.ArgumentParser):
+            parser (:obj:`~argparse.ArgumentParser`):
                 The argument parsing object to edit.
         """
         for action in parser._actions:
@@ -691,11 +690,11 @@ class ScriptBase:
                 than this number of characters, if possible given the help
                 formatter.  If None, the width is the same as the terminal
                 width.
-            formatter (`argparse.HelpFormatter`_):
+            formatter (:obj:`~argparse.HelpFormatter`):
                 Class used to format the help output.
 
         Returns:
-            `argparse.ArgumentParser`_: Command-line interpreter.
+            :obj:`~argparse.ArgumentParser`: Command-line interpreter.
         """
         return argparse.ArgumentParser(
             description=description,

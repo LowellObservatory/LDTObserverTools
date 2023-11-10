@@ -28,8 +28,8 @@ try:
     from obstools import fix_ldt_header
     from obstools import neocp_ephem
     from obstools import scrub_deveny_pickup
-except ImportError:
-    pass
+except ImportError as err:
+    print(f"Had an import error!  {err}")
 
 def short_warning(message, category, filename, lineno, file=None, line=None):
     """
