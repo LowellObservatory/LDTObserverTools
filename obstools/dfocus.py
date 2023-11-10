@@ -36,7 +36,6 @@ import astropy.io.fits
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit.scripts import scriptbase
 import scipy.signal
 from tqdm import tqdm
 
@@ -851,7 +850,7 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class DFocus(scriptbase.ScriptBase):
+class DFocus(utils.ScriptBase):
     """Script class for ``dfocus`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.

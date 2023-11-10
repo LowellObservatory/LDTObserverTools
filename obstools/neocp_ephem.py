@@ -98,10 +98,10 @@ import sys
 # 3rd-Party Libraries
 import astropy.coordinates
 import astropy.units as u
-from pypeit.scripts import scriptbase
 import requests
 
 # Local Libraries
+from obstools import utils
 
 
 def neocp_ephem(neocp_id):
@@ -184,7 +184,7 @@ def neocp_ephem(neocp_id):
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class NeocpEphem(scriptbase.ScriptBase):
+class NeocpEphem(utils.ScriptBase):
     """Script class for ``neocp_ephem`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.

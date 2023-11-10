@@ -48,7 +48,6 @@ for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 # 3rd-Party Libraries
 import astropy.table
 import numpy as np
-from pypeit.scripts import scriptbase
 
 # Local Libraries
 from obstools import utils
@@ -530,7 +529,7 @@ def sky_count_per_sec_per_ap(
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class LmiEtc(scriptbase.ScriptBase):
+class LmiEtc(utils.ScriptBase):
     """Script class for ``lmi_etc`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.

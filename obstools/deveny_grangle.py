@@ -29,7 +29,6 @@ import sys
 # 3rd-Party Libraries
 import numpy as np
 import scipy.optimize
-from pypeit.scripts import scriptbase
 import PySimpleGUI as sg
 
 # Local Libraries
@@ -374,7 +373,7 @@ def deveny_amag(grangle: float) -> float:
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class DevenyGrangle(scriptbase.ScriptBase):
+class DevenyGrangle(utils.ScriptBase):
     """Script class for ``deveny_grangle`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.

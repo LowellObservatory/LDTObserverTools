@@ -34,7 +34,6 @@ import sys
 
 # 3rd-Party Libraries
 import numpy as np
-from pypeit.scripts import scriptbase
 import PySimpleGUI as sg
 
 # Local Libraries
@@ -305,7 +304,7 @@ def extract_broker_values(status_dict: dict) -> tuple[str, str]:
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class DevenyCollfocus(scriptbase.ScriptBase):
+class DevenyCollfocus(utils.ScriptBase):
     """Script class for ``deveny_collfocus`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.

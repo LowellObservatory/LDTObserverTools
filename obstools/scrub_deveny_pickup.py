@@ -61,7 +61,6 @@ import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
 from pypeit import msgs
-from pypeit.scripts import scriptbase
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -1609,7 +1608,7 @@ def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class ScrubDevenyPickup(scriptbase.ScriptBase):
+class ScrubDevenyPickup(utils.ScriptBase):
     """Script class for ``scrub_deveny_pickup`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.

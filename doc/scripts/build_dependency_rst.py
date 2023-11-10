@@ -35,13 +35,18 @@ def write_dependency_table(setup_file: pathlib.Path, path: pathlib.Path):
 
     user_requires = np.sort(setup["options"]["install_requires"].split("\n")[1:])
     dev_requires = np.sort(setup["options.extras_require"]["dev"].split("\n")[1:])
+    pypeit_requires = np.sort(setup["options.extras_require"]["pypeit"].split("\n")[1:])
     required_python = setup["options"]["python_requires"]
 
-    data_table = np.empty((3, 2), dtype=object)
+    data_table = np.empty((4, 2), dtype=object)
     data_table[0, :] = ["Python Version", f"``{required_python}``"]
     data_table[1, :] = [
         "Required for users",
         ", ".join([f"``{u}``" for u in user_requires]),
+    ]
+    data_table[2, :] = [
+        "Optional ``pypeit`` requirements",
+        ", ".join([f"``{u}" for u in pypeit_requires]),
     ]
     data_table[2, :] = [
         "Required for developers",
