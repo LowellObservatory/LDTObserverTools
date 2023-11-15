@@ -110,7 +110,7 @@ action is to setup a clean python environment into which the installation will
 occur.  This mitigates any possible dependency conflicts with other packages
 you use.
 
-The recommended method of setting up a new envrionment is with ``conda``:
+The recommended method of setting up a new environment is with ``conda``:
 
 .. code-block:: console
 

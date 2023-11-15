@@ -131,7 +131,7 @@ def iterative_pypeit_clean(
     try:
         # Look for the spec2d file
         spec2d_file = [
-            next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*"))
+            next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*.fits"))
             for d in pyp_dir
         ][0]
     except (StopIteration, IndexError):
