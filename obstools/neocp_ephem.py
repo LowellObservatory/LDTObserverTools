@@ -85,6 +85,7 @@ The output format for LDT TCS is::
     yyyy mm dd hh mm ss αh αm αs.sss ±δd δm δs.ss
 
 .. warning::
+
     This module is not yet functional!
     
 """
@@ -100,6 +101,7 @@ import astropy.units as u
 import requests
 
 # Local Libraries
+from obstools import utils
 
 
 def neocp_ephem(neocp_id):
@@ -181,19 +183,51 @@ def neocp_ephem(neocp_id):
         f_obj.write("FK5 J2000.0 2000.0\n")
 
 
-def entry_point():
-    """Command-Line Entry Point"""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        prog="neocp_ephem", description="Generate LDT Ephemeris Files for NEOCP objects"
-    )
-    parser.add_argument(
-        "obj_id",
-        action="store",
-        type=str,
-        help="The NEOCP temporary designation ID (e.g., 'P10vY9r')",
-    )
-    args = parser.parse_args()
+# Command Line Script Infrastructure (borrowed from PypeIt) ==================#
+class NeocpEphem(utils.ScriptBase):
+    """Script class for ``neocp_ephem`` tool
 
-    # Giddy Up!
-    sys.exit(neocp_ephem(args.obj_id))
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
+    """
+
+    @classmethod
+    def get_parser(cls, width=None):
+        """Construct the command-line argument parser.
+
+        Parameters
+        ----------
+        description : :obj:`str`, optional
+            A short description of the purpose of the script.
+        width : :obj:`int`, optional
+            Restrict the width of the formatted help output to be no longer
+            than this number of characters, if possible given the help
+            formatter.  If None, the width is the same as the terminal
+            width.
+        formatter : :obj:`~argparse.HelpFormatter`
+            Class used to format the help output.
+
+        Returns
+        -------
+        :obj:`~argparse.ArgumentParser`
+            Command-line interpreter.
+        """
+
+        parser = super().get_parser(
+            description="Generate LDT Ephemeris Files for NEOCP objects", width=width
+        )
+        parser.add_argument(
+            "obj_id",
+            action="store",
+            type=str,
+            help="The NEOCP temporary designation ID (e.g., 'P10vY9r')",
+        )
+        return parser
+
+    @staticmethod
+    def main(args):
+        """Main Driver
+
+        Simple function that calls the main driver function.
+        """
+        # Giddy up!
+        neocp_ephem(args.obj_id)

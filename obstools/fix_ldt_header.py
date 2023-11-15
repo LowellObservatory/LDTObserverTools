@@ -25,9 +25,9 @@ import pathlib
 
 # 3rd-Party Libraries
 import ccdproc
-from pypeit.scripts import scriptbase
 
 # Local Libraries
+from obstools import utils
 
 # CONSTANTS
 
@@ -65,19 +65,11 @@ def fix_ldt_header(files: str | pathlib.Path | list, keyword: str, new_value):
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class FixLdtHeader(scriptbase.ScriptBase):
+class FixLdtHeader(utils.ScriptBase):
     """Script class for ``fix_ldt_header`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
-
-    @classmethod
-    def name(cls):
-        """
-        Provide the name of the script.  By default, this is the name of the
-        module.
-        """
-        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
     def get_parser(cls, width=None):

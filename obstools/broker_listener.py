@@ -115,7 +115,8 @@ class ActiveMQ_Listener:
             topic = message.headers["destination"]
 
             if self.parent.config["mounttemp_incoming_topic"] in topic:
-                self.parent.mounttemp_from_broker = {"MountTemp": float(message.body)}
+                status = xmltodict.parse(message.body)["TCSTelemetry"]
+                self.parent.mounttemp_from_broker = self.parent.parse_deveny(status)
 
             if self.parent.config["grangle_incoming_topic"] in topic:
                 status = xmltodict.parse(message.body)["DevenyTelemetry"]

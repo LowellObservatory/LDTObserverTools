@@ -1,22 +1,28 @@
 .. |License| image:: https://img.shields.io/github/license/LowellObservatory/LDTObserverTools
    :target: https://github.com/LowellObservatory/LDTObserverTools/blob/main/LICENSE
 
-.. |astropy| image:: https://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
+.. |astropy| image:: https://img.shields.io/badge/powered%20by-AstroPy-blue.svg?style=flat
     :target: https://www.astropy.org/
 
 .. |forks| image:: https://img.shields.io/github/forks/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+   :target: https://github.com/LowellObservatory/LDTObserverTools/forks
 
-.. |issues| image:: https://img.shields.io/github/issues/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+.. |issues| image:: https://img.shields.io/github/issues/LowellObservatory/LDTObserverTools?style=badge
+   :target: https://github.com/LowellObservatory/LDTObserverTools/issues
+
+.. |pulls| image:: https://img.shields.io/github/issues-pr/LowellObservatory/LDTObserverTools?style=badge
+   :target: https://github.com/LowellObservatory/LDTObserverTools/pulls
 
 .. |stars| image:: https://img.shields.io/github/stars/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+   :target: https://github.com/LowellObservatory/LDTObserverTools/stargazers
 
 .. |watch| image:: https://img.shields.io/github/watchers/LowellObservatory/LDTObserverTools?style=social
-   :target: https://github.com/LowellObservatory/LDTObserverTools
+   :target: https://github.com/LowellObservatory/LDTObserverTools/watchers
 
 .. |github| image:: https://img.shields.io/badge/GitHub-LDTObserverTools-brightgreen
+   :target: https://github.com/LowellObservatory/LDTObserverTools
+
+.. |language| image:: https://img.shields.io/github/languages/top/LowellObservatory/LDTObserverTools
    :target: https://github.com/LowellObservatory/LDTObserverTools
 
 .. image:: https://raw.githubusercontent.com/LowellObservatory/LDTObserverTools/main/doc/_static/obstools_logo.png
@@ -32,6 +38,7 @@ LDTObserverTools |forks| |stars| |watch|
 
 |github| |astropy| |License|
 
+|language| |issues| |pulls|
 
 The LDTObserverTools package is a collection of command-line and GUI tools
 for observers at the Lowell Discovery Telescope (LDT) in Happy Jack, AZ.
@@ -103,7 +110,7 @@ action is to setup a clean python environment into which the installation will
 occur.  This mitigates any possible dependency conflicts with other packages
 you use.
 
-The recommended method of setting up a new envrionment is with ``conda``:
+The recommended method of setting up a new environment is with ``conda``:
 
 .. code-block:: console
 
@@ -150,16 +157,16 @@ simply be a matter of executing:
 Optional Dependencies
 ^^^^^^^^^^^^^^^^^^^^^
 
-There are no optional dependencies at this time.
+.. There are no optional dependencies at this time.
 
-.. Some of the instrument-specific routines in this package require additional dependencies
-.. that are not otherwise needed by the majority of the routines herein.
+Some of the instrument-specific routines in this package require additional dependencies
+that are not otherwise needed by the majority of the routines herein.
 
-..    - If you are using the ``deveny_pickup_cleaner`` routine, you will need the
-..      spectroscopic data reduction pipeline PypeIt for the iterative cleaning of
-..      the pickup noise.  It can be installed by including it in the optional
-..      dependencies, `e.g.`:
+   - If you are using the ``scrub_deveny_pickup`` tool, you will need the
+     spectroscopic data reduction pipeline `PypeIt <https://pypeit.readthedocs.io/en/release/>`_
+     for the iterative cleaning of the pickup noise.  It can be installed by
+     including it in the optional dependencies, *e.g.*:
 
-..       .. code-block:: console
+      .. code-block:: console
 
-..         pip install "obstools[pypeit] @ git+https://github.com/LowellObservatory/LDTObserverTools"
+        pip install "obstools[pypeit] @ git+https://github.com/LowellObservatory/LDTObserverTools"

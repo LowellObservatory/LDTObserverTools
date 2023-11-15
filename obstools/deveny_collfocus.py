@@ -28,12 +28,12 @@ incorporated into the LDTObserverTools package.
 """
 
 # Built-In Libraries
+import argparse
 import os
 import sys
 
 # 3rd-Party Libraries
 import numpy as np
-from pypeit.scripts import scriptbase
 import PySimpleGUI as sg
 
 # Local Libraries
@@ -50,19 +50,29 @@ MIN_COLLFOC = 7.5  # Smallest collimator focus value (in mm)
 STEPSIZE = 0.5  # Default step size (in mm)
 
 
-def deveny_collfocus():
+def deveny_collfocus(debug: bool = False):
     """Main Driver for the DeVeny Collimator Focus Sequence Estimator GUI
 
     Compute the estimated focus and LOUI Focus Sequence range given the mount
     temperature, grating tilt angle, and presence of an order-blocking filter.
     Optionally, read in the current mount temperature and grating tilt angle
     from the ActiveMQ broker, if running at the site.
+
+    Parameters
+    ----------
+    debug : :obj:`bool`, optional
+        Print debug statements?  (Default: False)
     """
     # Check that stomp was imported (in broker_listener) and that the config file exists
     use_stomp = "stomp" in sys.modules and (utils.CONFIG / "activemq_joe.yaml").exists()
     # Fire up the broker Listener
     if use_stomp:
         am_radio = broker_listener.ActiveMQ_Listener(utils.CONFIG / "activemq_joe.yaml")
+    if debug:
+        print(
+            f"The parts of use_stomp = {use_stomp}:  sys.modules = {'stomp' in sys.modules}  "
+            f"config exists = {(utils.CONFIG / 'activemq_joe.yaml').exists()}"
+        )
 
     # Define the color scheme for the GUI
     sg.theme(utils.SG_THEME)
@@ -172,7 +182,7 @@ def deveny_collfocus():
             focseq_range = calculate_focus_sequence(est_focus)
 
             # Update the window with the calculated values
-            window["-FOCUSOUT-"].update(f"{np.round(est_focus,1)} mm")
+            window["-FOCUSOUT-"].update(f"{np.round(est_focus,1)} ± 0.6 mm")
             window["-STARTPOS-"].update(f"{np.round(focseq_range[0],1)}")
             window["-STEPSIZE-"].update(f"{np.round(focseq_range[1],1)}")
             window["-NSTEPS-"].update(f"{focseq_range[2]}")
@@ -286,27 +296,19 @@ def extract_broker_values(status_dict: dict) -> tuple[str, str]:
         return f"{status_dict['GratingTilt']:.2f}"
 
     # Mount Temperature
-    if "MountTemp" in status_dict:
-        return f"{status_dict['MountTemp']:.1f}"
+    if "MountTemperature" in status_dict:
+        return f"{status_dict['MountTemperature']:.1f}"
 
     # Else, nothing found
     return "~ Not Found ~"
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class DevenyCollfocus(scriptbase.ScriptBase):
+class DevenyCollfocus(utils.ScriptBase):
     """Script class for ``deveny_collfocus`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
-
-    @classmethod
-    def name(cls):
-        """
-        Provide the name of the script.  By default, this is the name of the
-        module.
-        """
-        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
     def get_parser(cls, width=None):
@@ -333,6 +335,9 @@ class DevenyCollfocus(scriptbase.ScriptBase):
         parser = super().get_parser(
             description="DeVeny Collimator Focus Sequence Estimator", width=width
         )
+        parser.add_argument(
+            "-d", "--debug", action="store_true", default=False, help=argparse.SUPPRESS
+        )
         return parser
 
     @staticmethod
@@ -342,4 +347,4 @@ class DevenyCollfocus(scriptbase.ScriptBase):
         Simple function that calls the main driver function.
         """
         # Giddy up!
-        deveny_collfocus()
+        deveny_collfocus(debug=args.debug)

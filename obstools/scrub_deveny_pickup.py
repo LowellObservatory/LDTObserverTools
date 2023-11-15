@@ -61,7 +61,6 @@ import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
 from pypeit import msgs
-from pypeit.scripts import scriptbase
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -132,7 +131,7 @@ def iterative_pypeit_clean(
     try:
         # Look for the spec2d file
         spec2d_file = [
-            next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*"))
+            next(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*.fits"))
             for d in pyp_dir
         ][0]
     except (StopIteration, IndexError):
@@ -1609,19 +1608,11 @@ def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class ScrubDevenyPickup(scriptbase.ScriptBase):
+class ScrubDevenyPickup(utils.ScriptBase):
     """Script class for ``scrub_deveny_pickup`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
-
-    @classmethod
-    def name(cls):
-        """
-        Provide the name of the script.  By default, this is the name of the
-        module.
-        """
-        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
     def get_parser(cls, width=None):
@@ -1666,13 +1657,13 @@ class ScrubDevenyPickup(scriptbase.ScriptBase):
             "--diagnostics",
             action="store_true",
             help="Output additional information and plots during the analysis for "
-            "debugging purposes",#argparse.SUPPRESS
+            "debugging purposes",  # argparse.SUPPRESS
         )
         parser.add_argument(
             "-n",
             "--no_refit",
             action="store_true",
-            help="Force no refit of 'bad' RMS values"#argparse.SUPPRESS
+            help="Force no refit of 'bad' RMS values",  # argparse.SUPPRESS
         )
         # Produce multiple graphics outputs for the documentation -- HIDDEN
         parser.add_argument("-g", action="store_true", help=argparse.SUPPRESS)

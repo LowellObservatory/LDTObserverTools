@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _deveny_collfocus:
+
 =================================
 DeVeny Collimator Focus Estimator
 =================================
@@ -26,7 +33,8 @@ yield the approximate relationship:
     \end{aligned}
 
 where :math:`T_{\rm m}` is the mount temperature and tilt is the grating tilt
-angle.  This equation is coded into the GUI tool.
+angle.  The RMS of the fit is :math:`\sim 0.6` |nbsp| mm.  This equation is coded into
+the GUI tool.
 
 Unlike other focus procedures at LDT, the DeVeny LOUI focus sequence script
 does not take the *expected* focus value, but rather one end of the range,
@@ -45,10 +53,15 @@ The script usage can be displayed by calling the script with the
 
 .. include:: help/deveny_collfocus.rst
 
-When the application launches, a GUI window will appear:
+When the application launches, a GUI window will appear as in
+:numref:`collfocus_startup`.
 
-.. image:: figures/deveny_collfocus_startup.png
+.. _collfocus_startup:
+.. figure:: figures/deveny_collfocus_startup.png
     :class: with-shadow
+    :alt: GUI at startup
+
+    -- The ``deveny_collfocus`` GUI at startup.
 
 
 If the application is launched from one of the observer computers at LDT
@@ -66,10 +79,16 @@ windows.  You will always need to select the rear filter setting you are using.
 
 When you click "Compute", the bottom half of the GUI is populated with the
 estimated focus value from the equation above and values to enter into the
-DeVeny LOUI focus sequence tab.
+DeVeny LOUI focus sequence tab.  See :numref:`collfocus_values`.
 
-.. image:: figures/deveny_collfocus_values.png
+.. _collfocus_values:
+.. figure:: figures/deveny_collfocus_values.png
     :class: with-shadow
+    :alt: GUI after clicking "Compute"
+
+    -- The ``deveny_collfocus`` GUI after clicking "Compute".  The estimated
+    focus value (with uncertainty) is printed, along with suggested values for
+    use with the LOUI Focus Sequence tab.
 
 Observers should note that the lower limit on the collimator focus motorized
 stage is 7.75 mm.  In warm weather and/or for large grating tilt angles, the

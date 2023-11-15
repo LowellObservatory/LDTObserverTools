@@ -1,3 +1,10 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _scrub_deveny_pickup:
+
 ============================
 DeVeny Pickup Noise Scrubber
 ============================
@@ -53,6 +60,9 @@ signal.  This patten is then subtracted from the original image and saved to
 a FITS file for usual data reduction processing (preferably with PypeIt) to
 yield an extracted 1D spectrum for analysis.
 
+Example Pre- and Post-Scrubbed Data Products
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 To illustrate the need for and utility of this tool, :numref:`spec1d_comps`
 shows a comparison of the extracted 1D spectra for two different object types
 from two different programs (and nights) from both the original and scrubbed
@@ -73,6 +83,36 @@ from the spectra.
    line represents the :math:`1\sigma` uncertainty in the spectrum.  PypeIt
    estimates a mean :math:`SNR = 4.8` for the scrubbed galaxy spectrum and
    a mean :math:`SNR = 7.2` for the scrubbed white dwarf spectrum.
+
+Of equivalent interest to the quality of the extracted spectra is the noise
+remaining after extraction of sky and objects.  Shown in :numref:`prepost_noise`
+are the noise analysis plots from PyepIt for the pre- and post-scrubbed
+versions of the 2D spectral image shown in :numref:`raw_frame`.  The images and
+pixel histograms are of the residual noise image, which is the science image
+minus the object and sky models, and then divided by the uncertainty image.
+The ideal pixel histogram would be a gaussian with width :math:`\sigma=1`.
+
+.. _prepost_noise:
+.. subfigure:: A|B
+   :gap: 2px
+   :class-grid: outline
+
+   .. image:: figures/pypeit_spec2d_noise_prescrub.png
+      :alt: Pre-scrubbed noise analysis plot
+
+   .. image:: figures/pypeit_spec2d_noise_postscrub.png
+      :alt: Post-scrubbed noise analysis plot
+
+   -- Noise analysis of the pre- (top) and post-scrubbed (bottom) versions of
+   the frame shown in :numref:`raw_frame`.  Image values are residual image
+   divided by uncertainty, so the ideal pixel histogram would be a gaussian
+   with width :math:`\sigma=1`.  Note the improvement in both the visual
+   quality of the scrubbed frame and the width and shape of the pixel histogram
+   compared to the pre-scrubbed frame.
+
+
+Outline
+^^^^^^^
 
 This document begins with a description of how to use this tool to clean the
 EMI pickup noise from your data, and moves on to lay out the details of what
@@ -112,7 +152,7 @@ Data Processing Steps
 
    .. warning::
 
-      If you are using a version of PypeIt ``< 1.14.1`` (see the top line of
+      If you are using a version of PypeIt ``< 1.15.0`` (see the top line of
       the PypeIt Reduction File for the version number), then you will instead
       need to add the entirety of the following to the Parameter Block to
       ensure the traced slit edges do not shrink unreasonably and that pattern
@@ -120,7 +160,7 @@ Data Processing Steps
       Regions outside the marked slits will have 0 value in the residual image,
       and therefore any sinusoidal signal there will not be fit out.  (The
       additional parameters included here were added to the DeVeny default set
-      in PypeIt version ``1.14.1``.)
+      in PypeIt version ``1.15.0``.)
 
       .. code-block:: ini
 
@@ -486,11 +526,11 @@ than that predicted from the FFT (green dashed line in the second panel of
 Pickup Noise Pattern Construction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Finally, we use the sinusoid fits to produce a pattern image.  This is the
+The final result of sinusoid fits is a constructed pattern image.  This is the
 zero-mean sinusoid (sans quadratic polynomial) that *should* represent only the
-EMI pickup noise (as an additive AC-only signal).  Subtract that and make
-additional QA plots to show how totally awesome this is!!!
-
+EMI pickup noise (as an additive AC-only signal).  :numref:`image_comparisons`
+shows the process of pattern construction and its effect on the processed
+science image.
 
 .. _image_comparisons:
 .. figure:: figures/scrubber_image_comparisons.*
@@ -623,3 +663,13 @@ panel in :numref:`image_comparisons`).  The result is shown in
    pixels, indicating the frequency with the most power in the flattened array:
    most likely the period of the AC EMI pickup noise.
 
+Also, say something about the actual line-by-line fits in terms of how good a
+sinusoid fits each one.  Show a figure like :numref:`line_by_line`.
+
+.. _line_by_line:
+.. figure:: figures/scrubber_line_fitting.png
+   :class: with-shadow
+   :alt: Line-by-line fitting examples
+
+   -- Examples of individual line fits for 4 randomly selected lines from the
+   image shown in :numref:`raw_frame`.

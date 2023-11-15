@@ -47,6 +47,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
+    "sphinx_subfigure",
     # "sphinx.ext.autosectionlabel",
 ]
 
@@ -125,11 +126,13 @@ version = metadata.version(setup_cfg["name"])
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "astropy": ("https://docs.astropy.org/en/stable/", None),
     "attrs": ("https://www.attrs.org/en/stable/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "ccdproc": ("https://ccdproc.readthedocs.io/en/stable/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "pypeit": ("https://pypeit.readthedocs.io/en/release/", None),
+    "stomp": ("https://jasonrbriggs.github.io/stomp.py/", None),
 }

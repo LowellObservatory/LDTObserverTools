@@ -1,0 +1,10 @@
+If wanting to use the ActiveMQ broker with deveny_collfocus, this directory
+needs to have a file called activemq_joe.yaml that contains the following
+information:
+
+---
+broker_hosts:
+  - <HOST>
+  - <PORT>
+mounttemp_incoming_topic: <TOPIC_NAME>
+grangle_incoming_topic: <TOPIC_NAME>

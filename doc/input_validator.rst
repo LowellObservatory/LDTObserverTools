@@ -1,8 +1,15 @@
+.. include:: include/links.rst
+
+.. |nbsp| unicode:: 0xA0 
+   :trim:
+
+.. _input_validator:
+
 ====================
 Input List Validator
 ====================
 
-Status: *In development*
+Status: *Planned*
 
 Overview
 ========
@@ -17,4 +24,4 @@ Overview
 Usage
 =====
 
-Yeah, use it!
+Usage information will be added here once this tool enters development.

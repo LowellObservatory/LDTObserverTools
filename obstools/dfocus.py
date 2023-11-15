@@ -25,9 +25,9 @@ DeVeny LOUI.
 """
 
 # Built-In Libraries
+import argparse
 import os
 import pathlib
-import shutil
 import sys
 import warnings
 
@@ -36,7 +36,6 @@ import astropy.io.fits
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit.scripts import scriptbase
 import scipy.signal
 from tqdm import tqdm
 
@@ -52,7 +51,7 @@ def dfocus(
     thresh: float = 100.0,
     debug: bool = False,
     launch_preview: bool = True,
-    leave_focus_files: bool = False,
+    docfig: bool = False,
 ):
     """Find the optimal DeVeny collimator focus value
 
@@ -75,8 +74,8 @@ def dfocus(
         Print debug statements  (Default: False)
     launch_preview : :obj:`bool`, optional
         Display the plots by launching Preview  (Default: True)
-    leave_focus_files : :obj:`bool`, optional
-        Do NOT move the focus frames to the ``focus/`` directory  (Default: False)
+    docfig : :obj:`bool`, optional
+        Make example figures for online documentation?  (Default: False)
     """
     # Make a pretty title for the output of the routine
     n_cols = (os.get_terminal_size()).columns
@@ -161,10 +160,20 @@ def dfocus(
             focus_dict=focus,
             pdf=pdf,
             verbose=False,
+            path=path,
+            docfig=docfig,
         )
 
         # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
-        plot_optimal_focus(focus, centers, optimal_focus_values, med_opt_focus, pdf=pdf)
+        plot_optimal_focus(
+            focus,
+            centers,
+            optimal_focus_values,
+            med_opt_focus,
+            pdf=pdf,
+            path=path,
+            docfig=docfig,
+        )
 
         # The plot shown in the IDL1 window: Focus curves for each identified line
         plot_focus_curves(
@@ -178,13 +187,12 @@ def dfocus(
             focus["start"],
             fnom=focus["nominal"],
             pdf=pdf,
+            path=path,
+            docfig=docfig,
         )
 
-    # Print the location of the plots, and move focus frames (if desired)
+    # Print the location of the plots
     print(f"\n  Plots have been saved to: {pdf_fn.name}\n")
-    if not leave_focus_files:
-        for foc_file in focus["files"]:
-            shutil.move(foc_file, path)
 
     # Try to open with Apple's Preview App... if can't, oh well.
     if launch_preview:
@@ -459,10 +467,12 @@ def find_lines(
     image,
     thresh=20.0,
     minsep=11,
-    verbose=True,
-    do_plot=False,
+    verbose: bool = True,
+    do_plot: bool = False,
     focus_dict=None,
     pdf=None,
+    docfig: bool = False,
+    path: pathlib.Path = None,
 ):
     """Automatically find and centroid lines in a 1-row image
 
@@ -542,6 +552,9 @@ def find_lines(
             plt.show()
         else:
             pdf.savefig()
+            if docfig:
+                for ext in ["png", "pdf", "svg"]:
+                    plt.savefig(path / f"pyfocus.page1_example.{ext}")
         plt.close()
 
     return len(centers), centers, fwhm
@@ -644,7 +657,14 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
 # Plotting Routines ==========================================================#
 def plot_optimal_focus(
-    focus, centers, optimal_focus_values, med_opt_focus, debug=False, pdf=None
+    focus,
+    centers,
+    optimal_focus_values,
+    med_opt_focus,
+    debug: bool = False,
+    pdf=None,
+    docfig: bool = False,
+    path: pathlib.Path = None,
 ):
     """Make the Optimal Focus Plot (IDL2 Window)
 
@@ -695,6 +715,9 @@ def plot_optimal_focus(
         plt.show()
     else:
         pdf.savefig()
+        if docfig:
+            for ext in ["png", "pdf", "svg"]:
+                plt.savefig(path / f"pyfocus.page2_example.{ext}")
     plt.close()
 
 
@@ -709,6 +732,8 @@ def plot_focus_curves(
     focus_0,
     fnom=2.7,
     pdf=None,
+    docfig: bool = False,
+    path: pathlib.Path = None,
 ):
     """Make the big plot of all the focus curves (IDL1 Window)
 
@@ -781,6 +806,10 @@ def plot_focus_curves(
         plt.show()
     else:
         pdf.savefig()
+        if docfig:
+            for ext in ["png", "pdf", "svg"]:
+                plt.savefig(path / f"pyfocus.page3_example.{ext}")
+
     plt.close()
 
 
@@ -821,19 +850,11 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class DFocus(scriptbase.ScriptBase):
+class DFocus(utils.ScriptBase):
     """Script class for ``dfocus`` tool
 
-    Script structure borrowed from :class:`pypeit.scripts.sciptbase.ScriptBase`.
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
-
-    @classmethod
-    def name(cls):
-        """
-        Provide the name of the script.  By default, this is the name of the
-        module.
-        """
-        return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
     def get_parser(cls, width=None):
@@ -864,26 +885,23 @@ class DFocus(scriptbase.ScriptBase):
             "--flog",
             action="store",
             type=str,
-            help="focus log to use (default: last)",
+            help="focus log to use",
             default="last",
         )
         parser.add_argument(
             "--thresh",
             action="store",
             type=float,
-            help="threshold for line detection (default: 100)",
+            help="threshold for line detection",
             default=100.0,
         )
         parser.add_argument(
             "--nodisplay",
-            action="store_false",
+            action="store_true",
             help="DO NOT launch Preview.app to display plots",
         )
-        parser.add_argument(
-            "--leave_files",
-            action="store_true",
-            help="DO NOT move the focus frames to focus/",
-        )
+        # Produce multiple graphics outputs for the documentation -- HIDDEN
+        parser.add_argument("-g", action="store_true", help=argparse.SUPPRESS)
         return parser
 
     @staticmethod
@@ -897,6 +915,6 @@ class DFocus(scriptbase.ScriptBase):
             pathlib.Path(".").resolve(),
             flog=args.flog,
             thresh=args.thresh,
-            launch_preview=args.nodisplay,
-            leave_focus_files=args.leave_files,
+            launch_preview=not args.nodisplay,
+            docfig=args.g,
         )

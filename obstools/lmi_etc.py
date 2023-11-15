@@ -526,3 +526,46 @@ def sky_count_per_sec_per_ap(
     rscale = SCALE * binning
     sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale * rscale
     return number_pixels(seeing, binning) * sky_count_per_pixel_per_sec
+
+
+# Command Line Script Infrastructure (borrowed from PypeIt) ==================#
+class LmiEtc(utils.ScriptBase):
+    """Script class for ``lmi_etc`` tool
+
+    Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
+    """
+
+    @classmethod
+    def get_parser(cls, width=None):
+        """Construct the command-line argument parser.
+
+        Parameters
+        ----------
+        description : :obj:`str`, optional
+            A short description of the purpose of the script.
+        width : :obj:`int`, optional
+            Restrict the width of the formatted help output to be no longer
+            than this number of characters, if possible given the help
+            formatter.  If None, the width is the same as the terminal
+            width.
+        formatter : :obj:`~argparse.HelpFormatter`
+            Class used to format the help output.
+
+        Returns
+        -------
+        :obj:`~argparse.ArgumentParser`
+            Command-line interpreter.
+        """
+
+        parser = super().get_parser(
+            description="LMI Exposure Time Calculator", width=width
+        )
+        return parser
+
+    @staticmethod
+    def main(args):
+        """Main Driver
+
+        Simple function that calls the main driver function.
+        """
+        # Giddy up!

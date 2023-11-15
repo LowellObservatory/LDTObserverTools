@@ -20,11 +20,16 @@ import warnings
 from obstools.version import version
 
 # Imports for building help docs
-from obstools import deveny_collfocus
-from obstools import deveny_grangle
-from obstools import dfocus
-from obstools import fix_ldt_header
-from obstools import scrub_deveny_pickup
+try:
+    from obstools import deveny_collfocus
+    from obstools import deveny_grangle
+    from obstools import dfocus
+    from obstools import lmi_etc
+    from obstools import fix_ldt_header
+    from obstools import neocp_ephem
+    from obstools import scrub_deveny_pickup
+except ImportError as err:
+    pass
 
 
 def short_warning(message, category, filename, lineno, file=None, line=None):
@@ -51,19 +56,13 @@ def script_classes() -> dict:
         Dictionary of {name:class} for all script classes
     """
     import numpy as np
-    from pypeit.scripts import scriptbase
-    from pypeit.utils import all_subclasses
+    from obstools import utils
 
     # Recursively collect all subclasses
-    # Since we use PypeIt's ScriptBase, remove all classes from that package
-    scr_class = np.array(
-        [
-            cls
-            for cls in list(all_subclasses(scriptbase.ScriptBase))
-            if "pypeit" not in cls.name()
-        ]
-    )
-    scr_name = np.array([c.name() for c in scr_class])
+    scr_class = np.array(list(utils.all_subclasses(utils.ScriptBase)))
+    print(scr_class)
+
+    scr_name = np.array([c.name for c in scr_class])
     # Construct a dictionary with the script name and class
     srt = np.argsort(scr_name)
     return dict(zip(scr_name[srt], scr_class[srt]))
