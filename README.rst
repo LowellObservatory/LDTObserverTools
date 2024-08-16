@@ -61,6 +61,15 @@ the GitHub `Issues
 `Pull Requests <https://github.com/LowellObservatory/LDTObserverTools/pulls>`__
 features to report bugs or suggest new tools and features.
 
+.. important::
+
+   If you try to run tools from this package and receive a PySimpleGUI notice
+   requesting you to register a license key, please update THIS PACKAGE to
+   version ``>= 0.6.3``.  PySimpleGUI moved to a subscription model on 1 July
+   2024, but this package (temporarily) points to an archived FOSS version of
+   the GUI library until the various user interfaces can be ported to a
+   different infrastructure.
+
 .. contents:: Table of Contents
     :depth: 1
     :local:
