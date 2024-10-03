@@ -634,7 +634,7 @@ class SmartFormatter(argparse.HelpFormatter):
     :class:`~argparse.ArgumentParser`.
 
     Borrows from
-    https://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
+    https://stackoverflow.com/questions/3853722/how-to-insert-newlines-on-argparse-help-text
 
     Help strings that use this formatter *must* begin with "R|".  If not, the
     help string is parsed by the base class.
