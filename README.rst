@@ -31,6 +31,9 @@
 .. |language| image:: https://img.shields.io/github/languages/top/LowellObservatory/LDTObserverTools
    :target: https://github.com/LowellObservatory/LDTObserverTools
 
+.. |CI| image:: https://github.com/LowellObservatory/LDTObserverTools/actions/workflows/ci_tests.yml/badge.svg
+   :target: https://github.com/LowellObservatory/LDTObserverTools/actions/workflows/ci_tests.yml
+
 .. image:: https://raw.githubusercontent.com/LowellObservatory/LDTObserverTools/main/doc/_static/obstools_logo.png
     :target: https://github.com/LowellObservatory/LDTObserverTools
     :width: 500
@@ -46,7 +49,7 @@ LDTObserverTools |forks| |stars| |watch|
 
 |astropy| |language| |License|
 
-|issues| |pulls|
+|issues| |pulls| |CI|
 
 The LDTObserverTools package is a collection of command-line and GUI tools
 for observers at the Lowell Discovery Telescope (LDT) in Happy Jack, AZ.
