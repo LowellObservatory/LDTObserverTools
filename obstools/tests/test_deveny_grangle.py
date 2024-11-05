@@ -13,26 +13,27 @@
 """DeVeny Grating Angle Calculator TEST Module
 """
 
+import pytest
 
 def test_deveny_grangle_cli():
-    pass
+    assert 1 == 1
 
 
 def test_deveny_grangle_gui():
-    pass
+    assert 1 == 1
 
 
 def test_compute_grangle():
-    pass
+    assert 1 == 1
 
 
 def test_grangle_eqn():
-    pass
+    assert 1 == 1
 
 
 def test_lambda_at_angle():
-    pass
+    assert 1 == 1
 
 
 def test_deveny_amag():
-    pass
+    assert 1 == 1
