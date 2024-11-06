@@ -25,11 +25,12 @@ This file contains various celestial time utilities for LDT.
 # 3rd-Party Libraries
 import astropy.coordinates
 import astropy.time
+import numpy as np
 
 # Local Libraries
 
 
-def lst_midnight(utdates: list):
+def lst_midnight(utdates: list[str]) -> np.ndarray:
     """Compute the LST at midnight for LDT on a list of UT dates
 
     The "LST at Midnight" is a helpful guide for determining what objects may
@@ -44,9 +45,12 @@ def lst_midnight(utdates: list):
 
     Returns
     -------
-    :obj:`list`
-        List of the output LST in HH:MM:SS format
+    :obj:`~numpy.ndarray`
+        Array of the output LST in HH:MM:SS format
     """
+    # Check input
+    if not isinstance(utdates, list):
+        raise ValueError(f"Incorrect input type {type(utdates)}")
     midnights = [f"{date}T07:00:00" for date in utdates]
     times = astropy.time.Time(
         midnights,
@@ -54,4 +58,4 @@ def lst_midnight(utdates: list):
         scale="utc",
         location=astropy.coordinates.EarthLocation.of_site("DCT"),
     )
-    return times.sidereal_time("apparent").to_string(precision=0)
+    return times.sidereal_time("apparent").to_string(precision=0, sep=":", pad=True)

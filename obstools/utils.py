@@ -74,7 +74,7 @@ def all_subclasses(cls):
 
 
 def check_float(potential_float) -> bool:
-    """Simple funtion to check whether something is a float
+    """Simple funtion to check whether something is (convertable to) a float
 
     Parameters
     ----------

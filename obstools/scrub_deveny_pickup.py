@@ -698,20 +698,24 @@ def fit_lines(
 
     # Create a progress bar for every occasion!
     progress_bar = tqdm(
-        total=np.sum(refit_lines)
-        if do_refit
-        else len(ind_obj)
-        if objmodel_check
-        else np.sum(valid_idx)
-        if fixed_sinusoid
-        else nrow,
-        colour="#87EBCF"
-        if do_refit
-        else "#EBC687"
-        if objmodel_check
-        else "#EB89EB"
-        if fixed_sinusoid
-        else "#87CEEB",
+        total=(
+            np.sum(refit_lines)
+            if do_refit
+            else (
+                len(ind_obj)
+                if objmodel_check
+                else np.sum(valid_idx) if fixed_sinusoid else nrow
+            )
+        ),
+        colour=(
+            "#87EBCF"
+            if do_refit
+            else (
+                "#EBC687"
+                if objmodel_check
+                else "#EB89EB" if fixed_sinusoid else "#87CEEB"
+            )
+        ),
         unit="row",
         unit_scale=False,
     )
@@ -1091,9 +1095,9 @@ def package_into_fits(
             "Median correlation coeff between parameters",
             before="EXTNAME",
         )
-    table_hdu.header[
-        "COMMENT"
-    ] = "Table contains the sinusoid fit coefficients for each row of the image"
+    table_hdu.header["COMMENT"] = (
+        "Table contains the sinusoid fit coefficients for each row of the image"
+    )
     table_hdu.header["HISTORY"] = history_str
     primary_hdu.header.append(("EXT0004", "FIT DATA", "Fit coefficients per line"))
 
