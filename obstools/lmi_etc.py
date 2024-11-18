@@ -29,7 +29,7 @@ for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 
 .. warning::
 
-    The LMI-specific pixel scale, gain, and readnoise are hard-coded into
+    The LMI-specific pixel scale, gain, and read noise are hard-coded into
     this module.
 
     

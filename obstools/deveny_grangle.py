@@ -76,7 +76,7 @@ def deveny_grangle_gui(max_gui: bool = False):
     wavelength between 3000A and 11,000A.  This interface uses the same
     subroutines as the CLI version and produces the same results.
 
-    This version optionally allows for the calcuation of the central wavelength
+    This version optionally allows for the calculation of the central wavelength
     given a grating angle
 
     Parameters

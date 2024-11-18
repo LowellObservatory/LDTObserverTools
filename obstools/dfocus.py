@@ -67,7 +67,7 @@ def dfocus(
     flog : :obj:`str`, optional
         Focus log to process.  If unspecified, process the last sequence in
         the directory.  (Default: 'last')
-        flog musy be of form: ``deveny_focus.YYYYMMDD.HHMMSS``
+        flog must be of form: ``deveny_focus.YYYYMMDD.HHMMSS``
     thresh : :obj:`float`, optional
         Line intensity threshold above background for detection (Default: 100.0)
     debug : :obj:`bool`, optional
@@ -388,7 +388,7 @@ def trim_deveny_image(filename):
     """Trim a DeVeny Image
 
     The IDL code from which this was ported contains a large amount of
-    vistigial code from previous versions of the DeVeny camera, including
+    vestigial code from previous versions of the DeVeny camera, including
     instances where the CCD was read out using 2 amplifiers and required
     special treatment in order to balance the two sides of the output image.
 
