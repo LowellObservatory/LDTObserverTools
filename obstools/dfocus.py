@@ -33,6 +33,7 @@ import warnings
 
 # 3rd-Party Libraries
 import astropy.io.fits
+import astropy.nddata
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
@@ -203,7 +204,7 @@ def dfocus(
 
 
 # Helper Functions (Chronological) ===========================================#
-def initialize_focus_values(path: pathlib.Path, flog: str):
+def initialize_focus_values(path: pathlib.Path, flog: str) -> dict:
     """Initialize a dictionary of focus values
 
     Create a dictionary of values (mainly from the header) that can be used by
@@ -279,7 +280,7 @@ def initialize_focus_values(path: pathlib.Path, flog: str):
     }
 
 
-def parse_focus_log(path: pathlib.Path, flog: str):
+def parse_focus_log(path: pathlib.Path, flog: str) -> tuple[int, list, str]:
     """Parse the focus log file produced by the DeVeny LOUI
 
     The DeVeny focus log file consists of filename, collimator focus, and other
@@ -339,7 +340,9 @@ def parse_focus_log(path: pathlib.Path, flog: str):
     return len(files), files, flog.name[-15:]
 
 
-def process_middle_image(focus, thresh, debug=False):
+def process_middle_image(
+    focus: dict, thresh: float, debug: bool = False
+) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
     """Process the middle focus image
 
     This finds the lines to be measured -- presumably the middle is closest to focus
@@ -384,7 +387,7 @@ def process_middle_image(focus, thresh, debug=False):
     return centers, trace, mid_collfoc, mspectra
 
 
-def trim_deveny_image(filename):
+def trim_deveny_image(filename: pathlib.Path) -> tuple[np.ndarray, float]:
     """Trim a DeVeny Image
 
     The IDL code from which this was ported contains a large amount of
@@ -408,22 +411,22 @@ def trim_deveny_image(filename):
     -------
     :obj:`~numpy.ndarray`
         The trimmed CCD image
+    :obj:`float`
+        The collimator focus value for this image
     """
 
     # Parameters for DeVeny (2015 Deep-Depletion Device):
     nxpix, prepix = 2048, 50
 
     # Read in the file
-    with astropy.io.fits.open(filename) as hdul:
-        image = hdul[0].data
-        collfoc = hdul[0].header["COLLFOC"]
+    ccd = astropy.nddata.CCDData.read(filename)
 
     # Trim the image (remove top and bottom rows) -- why this particular range?
     # Trim off the 50 prepixels and the 50 postpixels; RETURN
-    return image[12:512, prepix : prepix + nxpix], collfoc
+    return ccd.data[12:512, prepix : prepix + nxpix], ccd.header["COLLFOC"]
 
 
-def extract_spectrum(spectrum, traces, win):
+def extract_spectrum(spectrum: np.ndarray, traces: np.ndarray, win: int) -> np.ndarray:
     """Object spectral extraction routine
 
     Extract spectra by averaging over the specified window
@@ -464,16 +467,16 @@ def extract_spectrum(spectrum, traces, win):
 
 
 def find_lines(
-    image,
-    thresh=20.0,
-    minsep=11,
+    image: np.ndarray,
+    thresh: float = 20.0,
+    minsep: int = 11,
     verbose: bool = True,
     do_plot: bool = False,
-    focus_dict=None,
-    pdf=None,
+    focus_dict: dict = None,
+    pdf: PdfPages = None,
     docfig: bool = False,
     path: pathlib.Path = None,
-):
+) -> tuple[int, np.ndarray, np.ndarray]:
     """Automatically find and centroid lines in a 1-row image
 
     Uses :func:`scipy.signal.find_peaks` for this task
@@ -492,6 +495,12 @@ def find_lines(
         Create a plot on the provided axes?  [Default: False]
     focus_dict : :obj:`dict`, optional
         Dictionary containing needed variables for plot  [Default: None]
+    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`, optional
+        The PDF object into which to place plots (Default: None)
+    docfig : :obj:`bool`, optional
+        Are these figures for the documentation pages (Default: False)
+    path: : :obj:`~pathlib.Path`, optional
+        Path into which to save the documentation figures (Default: None)
 
     Returns
     -------
@@ -560,7 +569,9 @@ def find_lines(
     return len(centers), centers, fwhm
 
 
-def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
+def fit_focus_curves(
+    fwhm: np.ndarray, fnom: float = 2.7, norder: int = 2, debug: bool = False
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Fit line / star focus curves
 
     [extended_summary]
@@ -657,12 +668,12 @@ def fit_focus_curves(fwhm, fnom=2.7, norder=2, debug=False):
 
 # Plotting Routines ==========================================================#
 def plot_optimal_focus(
-    focus,
-    centers,
-    optimal_focus_values,
-    med_opt_focus,
+    focus: dict,
+    centers: np.ndarray,
+    optimal_focus_values: np.ndarray,
+    med_opt_focus: float,
     debug: bool = False,
-    pdf=None,
+    pdf: PdfPages = None,
     docfig: bool = False,
     path: pathlib.Path = None,
 ):
@@ -682,6 +693,12 @@ def plot_optimal_focus(
         Median optimal focus value
     debug : :obj:`bool`, optional
         Print debug statements  (Default: False)
+    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`, optional
+        The PDF object into which to place plots (Default: None)
+    docfig : :obj:`bool`, optional
+        Are these figures for the documentation pages (Default: False)
+    path: : :obj:`~pathlib.Path`, optional
+        Path into which to save the documentation figures (Default: None)
     """
     if debug:
         print("=" * 20)
@@ -722,16 +739,16 @@ def plot_optimal_focus(
 
 
 def plot_focus_curves(
-    centers,
-    line_width_array,
-    min_focus_values,
-    optimal_focus_values,
-    min_linewidths,
-    fit_pars,
-    delta_focus,
-    focus_0,
-    fnom=2.7,
-    pdf=None,
+    centers: np.ndarray,
+    line_width_array: np.ndarray,
+    min_focus_values: np.ndarray,
+    optimal_focus_values: np.ndarray,
+    min_linewidths: np.ndarray,
+    fit_pars: np.ndarray,
+    delta_focus: float,
+    focus_0: float,
+    fnom: float = 2.7,
+    pdf: PdfPages = None,
     docfig: bool = False,
     path: pathlib.Path = None,
 ):
@@ -753,12 +770,18 @@ def plot_focus_curves(
         List of the minumum linewidths found from the fitting
     fit_pars : :obj:`~numpy.ndarray`
         Array of the polynomial fit parameters for each line
-    df : :obj:`float`
+    delta_focus : :obj:`float`
         Spacing between COLLFOC settings
     focus_0 : :obj:`float`
         Lower end of the COLLFOC range
     fnom : :obj:`float`, optional
         Nominal (optimal) linewidth  (Default: 2.7)
+    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`, optional
+        The PDF object into which to place plots (Default: None)
+    docfig : :obj:`bool`, optional
+        Are these figures for the documentation pages (Default: False)
+    path: : :obj:`~pathlib.Path`, optional
+        Path into which to save the documentation figures (Default: None)
     """
     # Warning Filter -- Matplotlib doesn't like going from masked --> NaN
     warnings.simplefilter("ignore", UserWarning)
@@ -814,7 +837,9 @@ def plot_focus_curves(
 
 
 # Extra Routines =============================================================#
-def find_lines_in_spectrum(filename, thresh=100.0):
+def find_lines_in_spectrum(
+    filename: str | pathlib.Path, thresh: float = 100.0
+) -> np.ndarray:
     """Find the line centers in a spectrum
 
     This function is not directly utilized in ``dfocus``, but rather is included
@@ -825,7 +850,7 @@ def find_lines_in_spectrum(filename, thresh=100.0):
 
     Parameters
     ----------
-    filename : :obj:`str`
+    filename : :obj:`str` or :obj:`~pathlib.Path`
         Filename of the arc frame to find lines in
     thresh : :obj:`float`, optional
         Line intensity threshold above background for detection [Default: 100]
