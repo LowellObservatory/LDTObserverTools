@@ -1,6 +1,14 @@
 obstools package
 ================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obstools.tests
+
 Submodules
 ----------
 
