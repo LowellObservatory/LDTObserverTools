@@ -1,5 +1,11 @@
 name: Docs
-on: [push, pull_request, workflow_dispatch]
+on:
+  push: null
+  pull_request:
+    types:
+      - opened
+  workflow_dispatch: null
+
 permissions:
     contents: write
 jobs:

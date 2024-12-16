@@ -36,7 +36,7 @@ def fix_ldt_header(files: str | pathlib.Path | list, keyword: str, new_value):
     """Change FITS header keywords
 
     Sometimes at the telescope, incorrect or incomplete information is placed
-    into the FITS header.  This routine is a simple wraper around CCDPROC
+    into the FITS header.  This routine is a simple wrapper around CCDPROC
     functions for easily making changes to these keywords.
 
     Parameters

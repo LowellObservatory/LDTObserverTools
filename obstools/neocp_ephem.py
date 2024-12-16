@@ -38,7 +38,7 @@ structure::
     data-fields: <list>  # List of the data field names for each time point / orbit
     orbit-count: <int>   # The number of Monte Carlo orbits used to compute medians
 
-The ``eph`` member is a list of ``count`` ephermeris time points.  Each point
+The ``eph`` member is a list of ``count`` ephemeris time points.  Each point
 is a dictionary with the following structure::
 
     sigma-pos: <str>     # The 1-sigma plane-of-sky uncertainty (arcmin)

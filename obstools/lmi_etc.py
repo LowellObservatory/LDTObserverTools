@@ -29,7 +29,7 @@ for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 
 .. warning::
 
-    The LMI-specific pixel scale, gain, and readnoise are hard-coded into
+    The LMI-specific pixel scale, gain, and read noise are hard-coded into
     this module.
 
     
@@ -78,7 +78,7 @@ def exptime_given_snr_mag(
     phase: float,
     seeing: float,
     binning: int = 2,
-):
+) -> float:
     """Compute the exposure time given SNR and magnitude
 
     Given a desired signal-to-noise ratio and stellar magnitude, compute the
@@ -131,7 +131,7 @@ def exptime_given_peak_mag(
     phase: float,
     seeing: float,
     binning: int = 2,
-):
+) -> float:
     """Compute the exposure time given peak and mag
 
     Given a desired peak count level on the CCD and stellar magnitude, compute
@@ -184,7 +184,7 @@ def snr_given_exptime_mag(
     phase: float,
     seeing: float,
     binning: int = 2,
-):
+) -> float:
     """Compute the SNR given exposure time and magnitude
 
     Given a desired exposure time and stellar magnitude, compute the resulting
@@ -238,7 +238,7 @@ def mag_given_snr_exptime(
     phase: float,
     seeing: float,
     binning: int = 2,
-):
+) -> float:
     """Compute the magnitude given SNR and exposure time
 
     Given a desired signal-to-noise ratio and exposure time, compute the
@@ -292,7 +292,7 @@ def peak_counts(
     phase: float,
     seeing: float,
     binning: int = 2,
-):
+) -> float:
     """Compute the peak counts on the CCD for an exptime and mag
 
     Given a desired exposure time and stellar magnitude, compute the resulting
@@ -388,7 +388,7 @@ def check_etc_inputs(
         raise ValueError(f"Invalid signal-to-noise specified: {snr}")
 
 
-def counts_from_star_per_sec(band_dict: dict, mag: float, airmass: float):
+def counts_from_star_per_sec(band_dict: dict, mag: float, airmass: float) -> float:
     """Compute the counts per second from a star
 
     Compute the counts per second from a star given a band, magnitude, and
@@ -412,7 +412,7 @@ def counts_from_star_per_sec(band_dict: dict, mag: float, airmass: float):
     return band_dict["Star20"] * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
-def get_band_specific_values(band: str):
+def get_band_specific_values(band: str) -> dict:
     """Return the band-specific star and sky values
 
     Pull the correct row from ``etc_filter_info.ecsv`` containing the star count
@@ -443,7 +443,7 @@ def get_band_specific_values(band: str):
         return {}
 
 
-def number_pixels(seeing: float, binning: int):
+def number_pixels(seeing: float, binning: int) -> float:
     """Number of pixels in the measuring aperture
 
     Counts the number of pixels in the measuring aperture, based on the seeing
@@ -458,7 +458,7 @@ def number_pixels(seeing: float, binning: int):
     ----------
     seeing : :obj:`float`
         Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
+    binning : :obj:`int`
         Binning of the CCD
 
     Returns
@@ -470,7 +470,7 @@ def number_pixels(seeing: float, binning: int):
     return np.max([1.4 * fwhm * fwhm, 9.0])
 
 
-def read_noise_contribution(seeing: float, binning: int):
+def read_noise_contribution(seeing: float, binning: int) -> float:
     """Calculate read-noise contribution
 
     Compute the read-noise contribution to the measuring aperture by
@@ -494,7 +494,7 @@ def read_noise_contribution(seeing: float, binning: int):
 
 def sky_count_per_sec_per_ap(
     band_dict: dict, phase: float, seeing: float, binning: int
-):
+) -> float:
     """Determine sky counts per aperture per second
 
     [extended_summary]
