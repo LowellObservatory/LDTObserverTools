@@ -2,9 +2,9 @@
 name: CI Tests
 on:
   push:
-    branches:
-      - main
-  pull_request: null
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
 env:
   SETUP_XVFB: true
 jobs:
