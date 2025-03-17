@@ -1,0 +1,222 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>obstools.tests.test_dfocus &mdash; LDT Observer Tools 2023 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=beddf052" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a4664895"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/obstools_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">LMI Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_etc.html">Exposure Time Calculator</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DeVeny Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_grangle.html">Grating Angle Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_collfocus.html">Collimator Focus Sequence Estimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dfocus.html">Collimator Focus Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scrub_deveny_pickup.html">Pickup Noise Scrubber</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">General LDT Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../fix_ldt_header.html">Simple FITS Header Fixer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../neocp_ephem.html">NEO CP Ephemeris Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../input_validator.html">Input List Validator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../observer_target.html">Observer Target List Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">LDTObserverTools API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">LDT Observer Tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../obstools.html">obstools</a></li>
+      <li class="breadcrumb-item active">obstools.tests.test_dfocus</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for obstools.tests.test_dfocus</h1><div class="highlight"><pre>
+<span></span><span class="c1"># pylint: disable=missing-function-docstring</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1">#</span>
+<span class="c1">#  This file is part of LDTObserverTools.</span>
+<span class="c1">#</span>
+<span class="c1">#   This Source Code Form is subject to the terms of the Mozilla Public</span>
+<span class="c1">#   License, v. 2.0. If a copy of the MPL was not distributed with this</span>
+<span class="c1">#   file, You can obtain one at http://mozilla.org/MPL/2.0/.</span>
+<span class="c1">#</span>
+<span class="c1">#  Created on 18-Nov-2024</span>
+<span class="c1">#</span>
+<span class="c1">#  @author: tbowers</span>
+
+<span class="sd">&quot;&quot;&quot;DeVeny Collimator Focus Calculator TEST Module</span>
+
+<span class="sd">NOTE: Use unit testing as a guide for rewriting the dfocus module in a more</span>
+<span class="sd">      pythonic, less IDL style.  In particular, think about breaking down the</span>
+<span class="sd">      functions into functionality rather than narrative steps.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools</span><span class="w"> </span><span class="kn">import</span> <span class="n">dfocus</span>
+
+
+<div class="viewcode-block" id="test_dfocus">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_dfocus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dfocus</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_initialize_focus_values">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_initialize_focus_values">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_initialize_focus_values</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_parse_focus_log">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_parse_focus_log">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_parse_focus_log</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_process_middle_image">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_process_middle_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_process_middle_image</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_trim_deveny_image">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_trim_deveny_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_trim_deveny_image</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_extract_spectrum">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_extract_spectrum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_extract_spectrum</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_find_lines">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_find_lines">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_find_lines</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_fit_focus_curves">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_fit_focus_curves">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_fit_focus_curves</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_plot_optimal_focus">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_plot_optimal_focus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_plot_optimal_focus</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_plot_focus_curves">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_plot_focus_curves">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_plot_focus_curves</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_find_lines_in_spectrum">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_find_lines_in_spectrum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_find_lines_in_spectrum</span><span class="p">():</span>
+    <span class="k">pass</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lowell Observatory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
