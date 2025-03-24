@@ -1,12 +1,24 @@
 ---
 name: CI Tests
+
 on:
-  push:
-    branches: [ main, develop ]
+  workflow_dispatch:
   pull_request:
-    branches: [ main, develop ]
+  push:
+    branches:
+      - main
+  schedule:
+    # run every Monday at 6am UTC
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  SETUP_XVFB: true
+  SETUP_XVFB: True  # avoid issues if mpl tries to open a GUI window
+  TOXARGS: '-v'
+
 jobs:
   ci-tests:
     name: Tox env ${{ matrix.python }}-${{ matrix.toxenv }}
@@ -33,6 +45,10 @@ jobs:
       - name: Test with tox
         run: |
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
+              - name: Upload coverage to codecov
+      - name: Upload coverage to codecov
+        if: "endsWith(matrix.tox_env, '-cov')"
+        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574  # v5.4.0
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
