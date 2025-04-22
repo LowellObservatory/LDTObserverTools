@@ -120,7 +120,7 @@ def first_moment_1d(line: np.ndarray) -> float:
     return np.sum(yy * line) / np.sum(line)
 
 
-def flatten_comprehension(nested_list: list) -> list:
+def flatten_comprehension(nested_list: list[list]) -> list:
     """Flatten a single-depth nested list via list comprehension
 
     https://realpython.com/python-flatten-list/
