@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring
 # -*- coding: utf-8 -*-
 #
 #  This file is part of LDTObserverTools.
@@ -10,6 +9,7 @@
 #  Created on 18-Nov-2024
 #
 #  @author: tbowers
+# pylint: disable=missing-function-docstring
 
 """DeVeny Collimator Focus Calculator TEST Module
 
@@ -73,24 +73,24 @@ def test_parse_focus_headers():
     )
 
     # Test parsing the focus headers
-    focus_dict = dfocus.parse_focus_headers(focus_cl)
-    assert isinstance(focus_dict, dict)
+    focus_pars = dfocus.parse_focus_headers(focus_cl)
+    assert isinstance(focus_pars, dfocus.FocusParams)
 
     # Check outputs versus expected
-    assert focus_dict["mid_file"] == DV_TEST_FILES / "20250203.0025.fits"
-    assert np.isclose(focus_dict["nominal"], 2.76, atol=0.01)
-    assert focus_dict["start"] == 9.0
-    assert focus_dict["end"] == 13.0
-    assert focus_dict["delta"] == 0.5
-    assert focus_dict["mnttemp"] == 7.45
-    assert focus_dict["binning"] == "1x1"
+    assert focus_pars.mid_file == DV_TEST_FILES / "20250203.0025.fits"
+    assert np.isclose(focus_pars.nominal, 2.76, atol=0.01)
+    assert focus_pars.start == 9.0
+    assert focus_pars.end == 13.0
+    assert focus_pars.delta == 0.5
+    assert focus_pars.mnttemp == 7.45
+    assert focus_pars.binning == "1x1"
 
     # Use a focus log with all the same input DeVeny frame
     focus_cl, _ = dfocus.parse_focus_log(
         DV_TEST_FILES / "focus", "deveny_focus.20250202.allsame"
     )
     with pytest.raises(ObstoolsError) as err:
-        focus_dict = dfocus.parse_focus_headers(focus_cl)
+        focus_pars = dfocus.parse_focus_headers(focus_cl)
     assert str(err.value) == "No change in focus over this set of images"
 
 

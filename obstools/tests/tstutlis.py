@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring
 # -*- coding: utf-8 -*-
 #
 #  This file is part of LDTObserverTools.
@@ -10,6 +9,7 @@
 #  Created on 06-Feb-2025
 #
 #  @author: tbowers
+# pylint: disable=missing-function-docstring
 
 """
 Odds and ends in support of tests
