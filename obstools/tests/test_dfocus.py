@@ -155,9 +155,46 @@ def test_find_lines():
     assert len(centers) == 29
 
 
+@pytest.mark.filterwarnings("ignore::astropy.wcs.FITSFixedWarning")
 def test_fit_focus_curves():
-    # This is the next one on the list!
-    pass
+
+    # Get the focus parameters and middle image
+    focus_cl, _ = dfocus.parse_focus_log(
+        DV_TEST_FILES / "focus", "deveny_focus.20250203.081131"
+    )
+    focus_pars = dfocus.parse_focus_headers(focus_cl)
+    mid_ccd = astropy.nddata.CCDData.read(focus_pars.mid_file)
+    mid_2dspec = ccdproc.trim_image(mid_ccd, mid_ccd.header["TRIMSEC"]).data
+    mid_trace = dfocus.centered_trace(mid_2dspec.data)
+    mid_1dspec = dfocus.extract_spectrum(mid_2dspec, mid_trace, window=11, thresh=100.0)
+    mid_centers, _ = dfocus.find_lines(mid_1dspec, thresh=100.0)
+
+    # Run the loop over all files to build the linewidth array
+    line_width_array = []
+    for ccd in focus_cl.ccds():
+        spec2d = ccdproc.trim_image(ccd, ccd.header["TRIMSEC"]).data
+        spec1d = dfocus.extract_spectrum(spec2d, mid_trace, window=11)
+        these_centers, fwhm = dfocus.find_lines(spec1d, thresh=100.0, verbose=False)
+        line_dx = -4.0 * (ccd.header["COLLFOC"] - mid_ccd.header["COLLFOC"])
+        line_widths = []
+        for cen in mid_centers:
+            idx = np.abs((cen + line_dx) - these_centers) < 3.0
+            width = fwhm[idx][0] if np.sum(idx) else np.nan
+            line_widths.append(width if width > 2.0 else np.nan)
+        line_width_array.append(np.array(line_widths))
+    line_width_array = np.array(line_width_array)
+
+    # Test the fitting of focus curves
+    focus_curves = dfocus.fit_focus_curves(line_width_array, focus_pars)
+    assert isinstance(focus_curves, dfocus.FocusCurves)
+    # We should be finding 42 lines fit with quadratic functions
+    n_lines = 42
+    n_fitpars = 3
+    assert focus_curves.min_focus_values.shape == (n_lines,)
+    assert focus_curves.optimal_focus_values.shape == (n_lines,)
+    assert focus_curves.min_linewidths.shape == (n_lines,)
+    assert focus_curves.fit_pars.shape == (n_lines, n_fitpars)
+    # ADD MORE TESTS HERE CHECKING THE OUTPUTS!!!!!
 
 
 def test_plot_lines():
