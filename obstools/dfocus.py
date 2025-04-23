@@ -49,6 +49,62 @@ from obstools import utils
 
 # Dataclass definitions ======================================================#
 @dataclasses.dataclass
+class FocusParams:
+    """Focus Parameters DataClass
+
+    mid_file : :obj:`str`
+        The filename of the middle file in the focus sequence
+    nominal : :obj:`float`
+        Nominal linewidth in pixels based on slit width and grating
+        demagnification
+    start : :obj:`float`
+        Starting focus value in the focus sweep
+    end : :obj:`float`
+        Ending focus value in the focus sweep
+    delta : :obj:`float`
+        Step size between focus values in the sweep
+    mnttemp : :obj:`float`
+        Mount temperature from the middle image of the sweep
+    binning : :obj:`str`
+        Binning scheme of the CCD
+    plot_title : :obj:`str`
+        The plot title for ...
+    opt_title : :obj:`str`
+        The plot title for ...
+    """
+
+    mid_file: str
+    start: float
+    end: float
+    delta: float
+    plot_title: str
+    opt_title: str
+    mnttemp: float
+    nominal: float = 2.7
+    binning: str = "1x1"
+
+
+@dataclasses.dataclass
+class LineInfo:
+    """Extracted Line Information DataClass
+
+    spec_1d : :obj:`~numpy.ndarray`
+        Extracted 1D spectrum along the ``trace``
+    trace : :obj:`~numpy.ndarray`
+        Pixel locations of the extracted ``spec_1d``
+    centers : :obj:`~numpy.ndarray`
+        Centroid location (along the ``trace``) of each identified line
+    fwhm : :obj:`~numpy.ndarray`
+        FWHM (in pixles) of each identified line
+    """
+
+    spec_1d: np.ndarray
+    trace: np.ndarray
+    centers: np.ndarray
+    fwhm: np.ndarray
+
+
+@dataclasses.dataclass
 class FocusCurves:
     """Focus Curves DataClass
 
@@ -69,50 +125,14 @@ class FocusCurves:
 
 
 @dataclasses.dataclass
-class FocusParams:
-    """Focus Parameters DataClass
-
-    mid_file: :obj:`str`
-        The filename of the middle file in the focus sequence
-    nominal: :obj:`float`
-        Nominal linewidth in pixels based on slit width and grating
-        demagnification
-    start: :obj:`float`
-        Starting focus value in the focus sweep
-    end: :obj:`float`
-        Ending focus value in the focus sweep
-    delta: :obj:`float`
-        Step size between focus values in the sweep
-    mnttemp: :obj:`float`
-        Mount temperature from the middle image of the sweep
-    binning: :obj:`str`
-        Binning scheme of the CCD
-    plot_title: :obj:`str`
-        The plot title for ...
-    opt_title: :obj:`str`
-        The plot title for ...
-    """
-
-    mid_file: str
-    nominal: float
-    start: float
-    end: float
-    delta: float
-    plot_title: str
-    opt_title: str
-    mnttemp: float
-    binning: str
-
-
-@dataclasses.dataclass
 class PlotParams:
     """Plotting Parameters DataClass
 
-    pdf: :obj:`~matplotlib.backends.backend_pdf.PdfPages`
+    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`
         The PDF object into which to place plots
-    path: :obj:`~pathlib.Path`
+    path : :obj:`~pathlib.Path`
         The path in which to find the ``deveny_focus.*`` files
-    docfig: :obj:`bool`
+    docfig : :obj:`bool`
         Make example figures for online documentation?
     """
 
@@ -170,11 +190,7 @@ def dfocus(
     print(f"\n Processing center focus image {focus_pars.mid_file}...")
     mid_ccd = astropy.nddata.CCDData.read(focus_pars.mid_file)
     try:
-        mid_2dspec = ccdproc.trim_image(mid_ccd, mid_ccd.header["TRIMSEC"]).data
-        mid_trace = centered_trace(mid_2dspec.data)
-        mid_1dspec = extract_spectrum(mid_2dspec, mid_trace, window=11, thresh=thresh)
-        # Find the lines in the extracted spectrum
-        mid_centers, _ = find_lines(mid_1dspec, thresh=thresh)
+        mid_lines = get_lines_from_ccd(mid_ccd, thresh)
     except utils.ObstoolsError as err:
         # If errors, print error message and exit
         print(f"\n** {err} **\n")
@@ -189,12 +205,9 @@ def dfocus(
     line_width_array = []
     # Loop over the CCDs
     for ccd in focus_icl.ccds():
-        # Trim and extract the spectrum
-        spec2d = ccdproc.trim_image(ccd, ccd.header["TRIMSEC"]).data
-        spec1d = extract_spectrum(spec2d, mid_trace, window=11)
-
-        # Find FWHM of lines:
-        these_centers, fwhm = find_lines(spec1d, thresh=thresh, verbose=False)
+        this_lines = get_lines_from_ccd(
+            ccd, thresh, trace=mid_lines.trace, verbose=False
+        )
 
         # Empirical shifts in line location due to off-axis paraboloid
         #  collimator mirror
@@ -202,11 +215,11 @@ def dfocus(
 
         # Keep only the lines from this image that match the reference image
         line_widths = []
-        for cen in mid_centers:
+        for cen in mid_lines.centers:
             # Find lines within 3 pix of the (adjusted) reference line
-            idx = np.abs((cen + line_dx) - these_centers) < 3.0
+            idx = np.abs((cen + line_dx) - this_lines.centers) < 3.0
             # If there's something there wider than 2 pix, use it... else NaN
-            width = fwhm[idx][0] if np.sum(idx) else np.nan
+            width = this_lines.fwhm[idx][0] if np.sum(idx) else np.nan
             line_widths.append(width if width > 2.0 else np.nan)
 
         # Append these linewidths to the larger array for processing
@@ -240,7 +253,7 @@ def dfocus(
 
         #  The plot shown in the IDL0 window: Plot of the found lines
         plot_lines(
-            mid_1dspec,
+            mid_lines.spec_1d,
             thresh=thresh,
             do_plot=True,
             focus_pars=focus_pars,
@@ -251,7 +264,7 @@ def dfocus(
         # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
         plot_optimal_focus(
             focus_pars,
-            mid_centers,
+            mid_lines.centers,
             focus_curves.optimal_focus_values,
             med_opt_focus,
             plot_pars=plot_pars,
@@ -259,7 +272,7 @@ def dfocus(
 
         # The plot shown in the IDL1 window: Focus curves for each identified line
         plot_focus_curves(
-            mid_centers,
+            mid_lines.centers,
             line_width_array,
             focus_curves,
             focus_pars=focus_pars,
@@ -405,6 +418,47 @@ def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
         mnttemp=mnttemp,
         binning=binning,
     )
+
+
+def get_lines_from_ccd(
+    ccd: astropy.nddata.CCDData,
+    thresh: float = 20.0,
+    window: int = 11,
+    trace: np.ndarray = None,
+    verbose: bool = True,
+) -> LineInfo:
+    """Extract the lines from the CCD image
+
+    Since these steps are repeated often enough, pull them out into a separate
+    function.
+
+    Parameters
+    ----------
+    ccd : :obj:`~astropy.nddata.CCDData`
+        The CCD object returned from :meth:`~ccdproc.ImageFileCollection.ccds`
+    thresh : :obj:`float`, optional
+        Threshold above which to identify lines  (Default: 20 DN above bkgd)
+    window : :obj:`int`, optional
+        Window over which to average the spectrum  (Default: 11 pixels)
+
+    Returns
+    -------
+    :class:`LineInfo`
+        Contains the relevant information about the lines found in the frame
+    """
+    # Process the input CCDData object
+    spec_2d = ccdproc.trim_image(ccd, ccd.header["TRIMSEC"]).data
+
+    # If no trace provided, produce one
+    trace = centered_trace(spec_2d.data) if trace is None else trace
+
+    # Extract the spectrum
+    spec_1d = extract_spectrum(spec_2d, trace, window=window, thresh=thresh)
+    # Find the lines in the extracted spectrum
+    centers, fwhm = find_lines(spec_1d, thresh=thresh, verbose=verbose)
+
+    # Return the DataClass
+    return LineInfo(trace=trace, spec_1d=spec_1d, centers=centers, fwhm=fwhm)
 
 
 def centered_trace(spec2d: np.ndarray) -> np.ndarray:
