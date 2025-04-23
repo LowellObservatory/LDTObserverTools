@@ -21,6 +21,9 @@ env:
 jobs:
   ci-tests:
     name: Tox env ${{ matrix.python }}-${{ matrix.toxenv }}
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -50,6 +53,9 @@ jobs:
         uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574  # v5.4.0
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -80,6 +86,9 @@ jobs:
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
   conda:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: Conda environment check
@@ -93,6 +102,9 @@ jobs:
         run: |
           tox -e conda
   codestyle:
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
