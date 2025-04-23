@@ -553,13 +553,13 @@ def fit_focus_curves(
     # Get the number of focus frames, and number of found lines
     n_frames, n_centers = width_array.shape
 
-    # Create the various arrays / lists needed
+    # Create the various arrays needed (full of NaN to begin with)
     collfoc_vals = focus_pars.start + np.arange(n_frames) * focus_pars.delta
 
-    min_linewidth = []
-    min_collfoc = []
-    optimal_collfoc = []
-    foc_fits = []
+    min_linewidth = np.full((n_centers,), np.nan, dtype=float)
+    min_collfoc = np.full((n_centers,), np.nan, dtype=float)
+    optimal_collfoc = np.full((n_centers,), np.nan, dtype=float)
+    foc_fits = np.full((n_centers, fit_order + 1), np.nan, dtype=float)
 
     # Loop through lines to find the best focus for each one
     for i in range(n_centers):
@@ -576,35 +576,24 @@ def fit_focus_curves(
 
         # If more than 1/3 of the FHWM are bad for this line, skip and go on
         if np.sum(bad_idx) > n_frames / 3:
-            # Add values to the lists for proper indexing
-            for flst in [min_linewidth, min_collfoc, optimal_collfoc]:
-                flst.append(None)
-            foc_fits.append(np.full(fit_order + 1, np.nan))
             continue
 
         # Do a polynomial fit (norder) to the FWHM vs COLLFOC index
         # fit = np.polyfit(cf_idx_coarse, fwhms_of_this_line, norder)
         fit = utils.good_poly(collfoc_vals, widths_this_line, fit_order, 2.0)
-        foc_fits.append(fit)
+        foc_fits[i] = fit
         if debug:
             print(f"In fit_focus_curves(): fit = {fit}")
 
-        # If good_poly() returns zeros, deal with it accordingly
-        if all(value == 0 for value in fit):
-            min_collfoc.append(np.nan)
-            min_linewidth.append(np.nan)
-            optimal_collfoc.append(np.nan)
+        # If good_poly() returns zeros, skip and go on
+        #  If quadratic fit is concave DOWN, skip and go on
+        if all(value == 0 for value in fit) or fit[2] < 0:
             continue
 
         # Evaluate the curve minumum as root of derivative
-        #  BUT... only if concave UP
-        if fit[2] < 0:
-            min_collfoc.append(np.nan)
-            min_linewidth.append(np.nan)
-            continue
         poly = np.polynomial.Polynomial(fit)
-        min_collfoc.append(poly.deriv(1).roots()[0])
-        min_linewidth.append(poly(min_collfoc[i]))
+        min_collfoc[i] = poly.deriv(1).roots()[0]
+        min_linewidth[i] = poly(min_collfoc[i])
 
         # Compute the nominal focus position as the larger of the two points
         #  where the polymonial function crosses fnom
@@ -614,14 +603,14 @@ def fit_focus_curves(
         fnom_roots = fnom_curve.roots()
         if debug:
             print(f"FNOM Roots: {fnom_roots}")
-        optimal_collfoc.append(np.max(np.real(fnom_roots)))
+        optimal_collfoc[i] = np.max(np.real(fnom_roots))
 
     # After looping, return the items as numpy arrays
     return FocusCurves(
-        min_focus_values=np.array(min_collfoc, dtype=float),
-        optimal_focus_values=np.array(optimal_collfoc, dtype=float),
-        min_linewidths=np.array(min_linewidth, dtype=float),
-        fit_pars=np.asarray(foc_fits),
+        min_focus_values=min_collfoc,
+        optimal_focus_values=optimal_collfoc,
+        min_linewidths=min_linewidth,
+        fit_pars=foc_fits,
     )
 
 
