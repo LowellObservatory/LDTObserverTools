@@ -22,6 +22,7 @@ Dependencies Table
    :hidden:
 
    Exposure Time Calculator <lmi_etc>
+   LMI Quick Look Tool <lmi_ql>
 
 .. toctree::
    :caption: DeVeny Tools
@@ -32,6 +33,7 @@ Dependencies Table
    Collimator Focus Sequence Estimator <deveny_collfocus>
    Collimator Focus Calculator <dfocus>
    Pickup Noise Scrubber <scrub_deveny_pickup>
+   DeVeny Spectrum Quick Look Tool <deveny_ql>
 
 .. toctree::
    :caption: General LDT Tools

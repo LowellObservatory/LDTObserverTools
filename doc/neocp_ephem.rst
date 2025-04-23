@@ -20,6 +20,9 @@ Overview
      LDT TCS for observations.
 
 
+Also include MPC and/or AstOrb (Lowell) and/or IMCCE (in France) as sources for this tool.
+
+
 Usage
 =====
 
