@@ -38,13 +38,14 @@ def test_dfocus():
 
 def test_parse_focus_log():
 
-    # Test parsing "last log" and output types
+    # Test parsing "last log", output types, and contents of output
     retval = dfocus.parse_focus_log(DV_TEST_FILES / "focus", "last")
     assert isinstance(retval, tuple)
     focus_cl, focus_id = retval
     assert isinstance(focus_cl, ccdproc.ImageFileCollection)
     assert isinstance(focus_id, str)
     assert focus_id == "20250203.081131"
+    assert len(focus_cl.files) == 9
 
     # Test parsing of specifically named log
     focus_cl, focus_id = dfocus.parse_focus_log(
@@ -156,6 +157,15 @@ def test_find_lines():
 
 
 @pytest.mark.filterwarnings("ignore::astropy.wcs.FITSFixedWarning")
+def test_get_lines_from_ccd():
+
+    # Test the wrapper function on the test frame; check return value
+    ccd = astropy.nddata.CCDData.read(DV_TEST_FILES / "20250203.0025.fits")
+    lines = dfocus.get_lines_from_ccd(ccd, 100.0)
+    assert isinstance(lines, dfocus.LineInfo)
+
+
+@pytest.mark.filterwarnings("ignore::astropy.wcs.FITSFixedWarning")
 def test_fit_focus_curves():
 
     # Get the focus parameters and middle image
@@ -164,22 +174,19 @@ def test_fit_focus_curves():
     )
     focus_pars = dfocus.parse_focus_headers(focus_cl)
     mid_ccd = astropy.nddata.CCDData.read(focus_pars.mid_file)
-    mid_2dspec = ccdproc.trim_image(mid_ccd, mid_ccd.header["TRIMSEC"]).data
-    mid_trace = dfocus.centered_trace(mid_2dspec.data)
-    mid_1dspec = dfocus.extract_spectrum(mid_2dspec, mid_trace, window=11, thresh=100.0)
-    mid_centers, _ = dfocus.find_lines(mid_1dspec, thresh=100.0)
+    mid_lines = dfocus.get_lines_from_ccd(mid_ccd, 100.0)
 
     # Run the loop over all files to build the linewidth array
     line_width_array = []
     for ccd in focus_cl.ccds():
-        spec2d = ccdproc.trim_image(ccd, ccd.header["TRIMSEC"]).data
-        spec1d = dfocus.extract_spectrum(spec2d, mid_trace, window=11)
-        these_centers, fwhm = dfocus.find_lines(spec1d, thresh=100.0, verbose=False)
+        this_lines = dfocus.get_lines_from_ccd(
+            ccd, 100.0, trace=mid_lines.trace, verbose=False
+        )
         line_dx = -4.0 * (ccd.header["COLLFOC"] - mid_ccd.header["COLLFOC"])
         line_widths = []
-        for cen in mid_centers:
-            idx = np.abs((cen + line_dx) - these_centers) < 3.0
-            width = fwhm[idx][0] if np.sum(idx) else np.nan
+        for cen in mid_lines.centers:
+            idx = np.abs((cen + line_dx) - this_lines.centers) < 3.0
+            width = this_lines.fwhm[idx][0] if np.sum(idx) else np.nan
             line_widths.append(width if width > 2.0 else np.nan)
         line_width_array.append(np.array(line_widths))
     line_width_array = np.array(line_width_array)
