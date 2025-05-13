@@ -1,0 +1,8 @@
+obstools.deveny\_collfocus module
+=================================
+
+.. automodule:: obstools.deveny_collfocus
+   :members:
+   :private-members:
+   :show-inheritance:
+   :undoc-members:
