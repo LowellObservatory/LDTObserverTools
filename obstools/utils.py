@@ -531,10 +531,7 @@ class ScriptBase:
         Defines the main script entry point.
         """
         args = cls.parse_args()
-        if args.version:
-            print(f"  LDT Observer Tools (obstools) version {__version__}")
-        else:
-            sys.exit(cls.main(args))
+        sys.exit(cls.main(args))
 
     @classmethod
     @property
@@ -552,14 +549,10 @@ class ScriptBase:
         """
         parser = cls.get_parser()
         ScriptBase._fill_parser_cwd(parser)
-        # Add "--version" to bottom of all scripts
-        parser.add_argument(
-            "--version", action="store_true", help="Print version and exit"
-        )
-        return parser.parse_args() if options is None else parser.parse_args(options)
+        return parser.parse_args(options)
 
     @staticmethod
-    def _fill_parser_cwd(parser):
+    def _fill_parser_cwd(parser: argparse.ArgumentParser):
         """
         Replace the default of any action that is exactly ``'current working
         directory'`` with the value of ``os.getcwd()``.
@@ -584,9 +577,9 @@ class ScriptBase:
     @classmethod
     def get_parser(
         cls,
-        description=None,
-        width=None,
-        formatter=argparse.ArgumentDefaultsHelpFormatter,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
     ):
         """
         Construct the command-line argument parser.
@@ -624,6 +617,7 @@ class ScriptBase:
         return argparse.ArgumentParser(
             description=description,
             formatter_class=lambda prog: formatter(prog, width=width),
+            epilog=f"LDT Observer Tools (obstools) version {__version__}",
         )
 
 
