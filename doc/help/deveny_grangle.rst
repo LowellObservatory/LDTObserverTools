@@ -11,3 +11,5 @@
       --max       Use the MAX version of the GUI (compute wavelength from angle)
                   (default: False)
     
+    LDT Observer Tools (obstools) version 0.6.7
+    

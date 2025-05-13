@@ -8,3 +8,5 @@
     options:
       -h, --help  show this help message and exit
     
+    LDT Observer Tools (obstools) version 0.6.7
+    
