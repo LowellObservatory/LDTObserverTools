@@ -551,7 +551,6 @@ class ScriptBase:
         sys.exit(cls.main(args))
 
     @classmethod
-    @property
     def name(cls):
         """
         Provide the name of the script.  By default, this is the name of the
