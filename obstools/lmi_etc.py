@@ -7,8 +7,10 @@
 #   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 #  Created on 29-Dec-2021
+#  GUI Added on 11-Jul-2025
 #
 #  @author: tbowers
+# pylint: disable=no-name-in-module
 
 """LMI Exposure Time Calculator Module
 
@@ -36,18 +38,17 @@ for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 .. note::
 
     A GUI wrapper for these functions is forthcoming.
-
-.. todo::
-
-    Refactor this into a class to eliminate the continual passing back and
-    forth of the same arguments.
-    """
+"""
 
 # Built-In Libraries
+import argparse
+import dataclasses
+import sys
 
 # 3rd-Party Libraries
 import astropy.table
 import numpy as np
+from PyQt6.QtWidgets import QApplication, QMainWindow
 
 # Local Libraries
 from obstools import utils
@@ -69,16 +70,69 @@ BIAS = 1050  # ADU (approx) for 2x2 binning
 # ]
 
 
+@dataclasses.dataclass
+class ETCData:
+    """ETC Data Class
+
+    snr : :obj:`float`
+        Desired signal-to-noise ratio
+    mag : :obj:`float`
+        Magnitude in the band of the star desired
+    exptime : :obj:`float`
+        User-defined exposure time (seconds)
+    peak : :obj:`float`
+        Desired peak count level on the CCD (e-)
+    airmass : :obj:`float`
+        Airmass at which the observation will take place
+    band : :obj:`str`
+        The LMI filter for which to perform the calculation
+    phase : :obj:`float`
+        Moon phase (0-14)
+    seeing : :obj:`float`
+        Size of the seeing disk (arcsec)
+    binning : :obj:`int`, optional
+        Binning of the CCD  (Default: 2)
+    """
+
+    snr: float = None
+    mag: float = None
+    exptime: float = None
+    peak: float = None
+    airmass: float = None
+    band: str = None
+    phase: float = None
+    seeing: float = None
+    binning: int = 2
+
+
+@dataclasses.dataclass
+class BandData:
+    """Band-Specific Data Class
+
+    filter : :obj:`str`
+        Name of the filter
+    star20 : :obj:`float`
+        Expected counts/sec from a 20th magnitude star
+    extinction : :obj:`float`
+        The in-band extinction in magnitudes per airmass
+    sky0 : :obj:`float`
+        Constant sky brightness term (magnitudes)
+    sky1 : :obj:`float`
+        Linear in moon phase sky brightness term (magnitudes)
+    sky2 : :obj:`float`
+        Quadratic in moon phase sky brightness term (magnitudes)
+    """
+
+    filter: str = None
+    star20: float = None
+    extinction: float = None
+    sky0: float = None
+    sky1: float = None
+    sky2: float = None
+
+
 # User-Interface Computation Routines ========================================#
-def exptime_given_snr_mag(
-    snr: float,
-    mag: float,
-    airmass: float,
-    band: str,
-    phase: float,
-    seeing: float,
-    binning: int = 2,
-) -> float:
+def exptime_given_snr_mag(input_data: ETCData) -> float:
     """Compute the exposure time given SNR and magnitude
 
     Given a desired signal-to-noise ratio and stellar magnitude, compute the
@@ -87,20 +141,9 @@ def exptime_given_snr_mag(
 
     Parameters
     ----------
-    snr : :obj:`float`
-        Desired signal-to-noise ratio
-    mag : :obj:`float`
-        Magnitude in the band of the star desired
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
-    band : :obj:`str`
-        The LMI filter for which to perform the calculation
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
-        Binning of the CCD  (Default: 2)
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
@@ -108,30 +151,22 @@ def exptime_given_snr_mag(
         The desired exposure time in seconds
     """
     # Check the inputs
-    check_etc_inputs(airmass, phase, seeing, binning, mag=mag, snr=snr)
+    check_etc_inputs(input_data)
 
     # Load the necessary counts information
-    band_dict = get_band_specific_values(band)
-    star_counts = counts_from_star_per_sec(band_dict, mag, airmass)
-    sky_counts = sky_count_per_sec_per_ap(band_dict, phase, seeing, binning)
-    read_counts = read_noise_contribution(seeing, binning)
+    band_info = get_band_specific_values(input_data.band)
+    star_counts = counts_from_star_per_sec(band_info, input_data)
+    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
+    read_counts = read_noise_contribution(input_data.seeing, input_data.binning)
 
     # Do the computation
-    A = star_counts * star_counts
-    B = -snr * snr * (star_counts + sky_counts)
-    C = -snr * snr * (read_counts * read_counts)
-    return (-B + np.sqrt(B * B - 4.0 * A * C)) / (2.0 * A)
+    k_a = star_counts**2
+    k_b = -input_data.snr**2 * (star_counts + sky_counts)
+    k_c = -input_data.snr**2 * read_counts**2
+    return (-k_b + np.sqrt(k_b * k_b - 4.0 * k_a * k_c)) / (2.0 * k_a)
 
 
-def exptime_given_peak_mag(
-    peak: float,
-    mag: float,
-    airmass: float,
-    band: str,
-    phase: float,
-    seeing: float,
-    binning: int = 2,
-) -> float:
+def exptime_given_peak_mag(input_data: ETCData) -> float:
     """Compute the exposure time given peak and mag
 
     Given a desired peak count level on the CCD and stellar magnitude, compute
@@ -140,20 +175,9 @@ def exptime_given_peak_mag(
 
     Parameters
     ----------
-    peak : :obj:`float`
-        Desired peak count level on the CCD (e-)
-    mag : :obj:`float`
-        Magnitude in the band of the star desired
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
-    band : :obj:`str`
-        The LMI filter for which to perform the calculation
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
-        Binning of the CCD  (Default: 2)
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
@@ -161,30 +185,24 @@ def exptime_given_peak_mag(
         The desired exposure time in seconds
     """
     # Check the inputs
-    check_etc_inputs(airmass, phase, seeing, binning, mag=mag)
+    check_etc_inputs(input_data)
 
     # Load the necessary counts information
-    band_dict = get_band_specific_values(band)
-    star_counts = counts_from_star_per_sec(band_dict, mag, airmass)
-    sky_counts = sky_count_per_sec_per_ap(band_dict, phase, seeing, binning)
+    band_info = get_band_specific_values(input_data.band)
+    star_counts = counts_from_star_per_sec(band_info, input_data)
+    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
 
     # Do the computation
-    fwhm = seeing / (SCALE * binning)
-    sky_count_per_pixel_per_sec = sky_counts / number_pixels(seeing, binning)
-    return (peak - BIAS * GAIN) / (
-        star_counts / (1.13 * fwhm * fwhm) + sky_count_per_pixel_per_sec
+    fwhm = input_data.seeing / (SCALE * input_data.binning)
+    sky_count_per_pixel_per_sec = sky_counts / number_pixels(
+        input_data.seeing, input_data.binning
+    )
+    return (input_data.peak - BIAS * GAIN) / (
+        star_counts / (1.13 * fwhm**2) + sky_count_per_pixel_per_sec
     )
 
 
-def snr_given_exptime_mag(
-    exptime: float,
-    mag: float,
-    airmass: float,
-    band: str,
-    phase: float,
-    seeing: float,
-    binning: int = 2,
-) -> float:
+def snr_given_exptime_mag(input_data: ETCData) -> float:
     """Compute the SNR given exposure time and magnitude
 
     Given a desired exposure time and stellar magnitude, compute the resulting
@@ -193,20 +211,9 @@ def snr_given_exptime_mag(
 
     Parameters
     ----------
-    exptime : :obj:`float`
-        User-defined exposure time (seconds)
-    mag : :obj:`float`
-        Magnitude in the band of the star desired
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
-    band : :obj:`str`
-        The LMI filter for which to perform the calculation
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
-        Binning of the CCD  (Default: 2)
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
@@ -214,31 +221,25 @@ def snr_given_exptime_mag(
         The desired signal-to-noise ratio
     """
     # Check the inputs
-    check_etc_inputs(airmass, phase, seeing, binning, mag=mag, exptime=exptime)
+    check_etc_inputs(input_data=input_data)
 
     # Load the necessary counts information
-    band_dict = get_band_specific_values(band)
-    star_counts = counts_from_star_per_sec(band_dict, mag, airmass)
-    sky_counts = sky_count_per_sec_per_ap(band_dict, phase, seeing, binning)
-    read_counts = read_noise_contribution(seeing, binning)
+    band_info = get_band_specific_values(input_data.band)
+    star_counts = counts_from_star_per_sec(band_info, input_data)
+    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
+    read_counts = read_noise_contribution(input_data.seeing, input_data.binning)
 
     # Do the computation
-    signal = star_counts * exptime
+    signal = star_counts * input_data.exptime
     noise = np.sqrt(
-        star_counts * exptime + sky_counts * exptime + read_counts * read_counts
+        star_counts * input_data.exptime
+        + sky_counts * input_data.exptime
+        + read_counts**2
     )
     return signal / noise
 
 
-def mag_given_snr_exptime(
-    snr: float,
-    exptime: float,
-    airmass: float,
-    band: str,
-    phase: float,
-    seeing: float,
-    binning: int = 2,
-) -> float:
+def mag_given_snr_exptime(input_data: ETCData) -> float:
     """Compute the magnitude given SNR and exposure time
 
     Given a desired signal-to-noise ratio and exposure time, compute the
@@ -247,20 +248,9 @@ def mag_given_snr_exptime(
 
     Parameters
     ----------
-    snr : :obj:`float`
-        Desired signal-to-noise ratio
-    exptime : :obj:`float`
-        User-defined exposure time (seconds)
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
-    band : :obj:`str`
-        The LMI filter for which to perform the calculation
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
-        Binning of the CCD  (Default: 2)
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
@@ -268,31 +258,25 @@ def mag_given_snr_exptime(
         The limiting stellar magnitude
     """
     # Check the inputs
-    check_etc_inputs(airmass, phase, seeing, binning, exptime=exptime, snr=snr)
+    check_etc_inputs(input_data)
 
     # Load the necessary counts information
-    band_dict = get_band_specific_values(band)
-    sky_counts = sky_count_per_sec_per_ap(band_dict, phase, seeing, binning)
-    read_counts = read_noise_contribution(seeing, binning)
+    band_info = get_band_specific_values(input_data.band)
+    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
+    read_counts = read_noise_contribution(input_data.seeing, input_data.binning)
 
     # Do the computation
-    A = exptime * exptime
-    B = -snr * snr * exptime
-    C = -snr * snr * (sky_counts * exptime + read_counts * read_counts)
-    cts_from_star_per_sec = (-B + np.sqrt(B * B - 4.0 * A * C)) / (2.0 * A)
-    mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_dict["Star20"]) + 20.0
-    return mag_raw - band_dict["extinction"] * airmass
+    k_a = input_data.exptime**2
+    k_b = -input_data.snr**2 * input_data.exptime
+    k_c = -input_data.snr**2 * (
+        sky_counts * input_data.exptime + read_counts * read_counts
+    )
+    cts_from_star_per_sec = (-k_b + np.sqrt(k_b**2 - 4.0 * k_a * k_c)) / (2.0 * k_a)
+    mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_info["Star20"]) + 20.0
+    return mag_raw - band_info["extinction"] * input_data.airmass
 
 
-def peak_counts(
-    exptime: float,
-    mag: float,
-    airmass: float,
-    band: str,
-    phase: float,
-    seeing: float,
-    binning: int = 2,
-) -> float:
+def peak_counts(input_data: ETCData) -> float:
     """Compute the peak counts on the CCD for an exptime and mag
 
     Given a desired exposure time and stellar magnitude, compute the resulting
@@ -301,20 +285,9 @@ def peak_counts(
 
     Parameters
     ----------
-    exptime : :obj:`float`
-        User-defined exposure time (seconds)
-    mag : :obj:`float`
-        Magnitude in the band of the star desired
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
-    band : :obj:`str`
-        The LMI filter for which to perform the calculation
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
-        Binning of the CCD  (Default: 2)
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
@@ -322,28 +295,22 @@ def peak_counts(
         The desired counts on the CCD (e-)
     """
     # Load the necessary counts information
-    band_dict = get_band_specific_values(band)
-    star_counts = counts_from_star_per_sec(band_dict, mag, airmass)
-    sky_counts = sky_count_per_sec_per_ap(band_dict, phase, seeing, binning)
+    band_info = get_band_specific_values(input_data.band)
+    star_counts = counts_from_star_per_sec(band_info, input_data)
+    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
 
     # Do the computation
-    fwhm = seeing / (SCALE * binning)
-    sky_count_per_pixel_per_sec = sky_counts / number_pixels(seeing, binning)
+    fwhm = input_data.seeing / (SCALE * input_data.binning)
+    sky_count_per_pixel_per_sec = sky_counts / number_pixels(
+        input_data.seeing, input_data.binning
+    )
     return (
-        star_counts / (1.13 * fwhm * fwhm) + sky_count_per_pixel_per_sec
-    ) * exptime + BIAS * GAIN
+        star_counts / (1.13 * fwhm**2) + sky_count_per_pixel_per_sec
+    ) * input_data.exptime + BIAS * GAIN
 
 
 # Helper Routines (Alphabetical) =============================================#
-def check_etc_inputs(
-    airmass: float,
-    phase: float,
-    seeing: float,
-    binning: int,
-    exptime=None,
-    mag=None,
-    snr=None,
-):
+def check_etc_inputs(input_data: ETCData):
     """Check the ETC inputs for valid values
 
     Does a cursory check on the ETC inputs for proper range, etc.  These are
@@ -352,43 +319,36 @@ def check_etc_inputs(
 
     Parameters
     ----------
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`, optional
-        Binning of the CCD
-    exptime : :obj:`float`, optional
-        User-defined exposure time (seconds)  (Default: None)
-    mag : :obj:`float`, optional
-        Magnitude in the band of the star desired  (Default: None)
-    snr : :obj:`float`, optional
-        Desired signal-to-noise ratio [Default: None]
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Raises
     ------
     :obj:`ValueError`
         If any of the inputs are deemed to be out of range
     """
-    if airmass < 1 or airmass > 3:
-        raise ValueError(f"Invalid airmass specified: {airmass}")
-    if phase < 0 or phase > 14:
-        raise ValueError(f"Invalid moon phase specified: {phase}")
-    if seeing < 0.5 or seeing > 3.0:
-        raise ValueError(f"Invalid seeing specified: {seeing}")
-    if not isinstance(binning, int) or binning < 1 or binning > 4:
-        raise ValueError(f"Invalid binning specified: {binning}")
-    if exptime and (exptime < 0.001 or exptime > 1200):
-        raise ValueError(f"Invalid exposure time specified: {exptime}")
-    if mag and (mag < -1 or mag > 28):
-        raise ValueError(f"Invalid stellar magnitude specified: {mag}")
-    if snr and snr < 0.1:
-        raise ValueError(f"Invalid signal-to-noise specified: {snr}")
+    if input_data.airmass < 1 or input_data.airmass > 3:
+        raise ValueError(f"Invalid airmass specified: {input_data.airmass}")
+    if input_data.phase < 0 or input_data.phase > 14:
+        raise ValueError(f"Invalid moon phase specified: {input_data.phase}")
+    if input_data.seeing < 0.5 or input_data.seeing > 3.0:
+        raise ValueError(f"Invalid seeing specified: {input_data.seeing}")
+    if (
+        not isinstance(input_data.binning, int)
+        or input_data.binning < 1
+        or input_data.binning > 4
+    ):
+        raise ValueError(f"Invalid binning specified: {input_data.binning}")
+    if input_data.exptime and (input_data.exptime < 0.001 or input_data.exptime > 1200):
+        raise ValueError(f"Invalid exposure time specified: {input_data.exptime}")
+    if input_data.mag and (input_data.mag < -1 or input_data.mag > 28):
+        raise ValueError(f"Invalid stellar magnitude specified: {input_data.mag}")
+    if input_data.snr and input_data.snr < 0.1:
+        raise ValueError(f"Invalid signal-to-noise specified: {input_data.snr}")
 
 
-def counts_from_star_per_sec(band_dict: dict, mag: float, airmass: float) -> float:
+def counts_from_star_per_sec(band_info: BandData, input_data: ETCData) -> float:
     """Compute the counts per second from a star
 
     Compute the counts per second from a star given a band, magnitude, and
@@ -396,23 +356,22 @@ def counts_from_star_per_sec(band_dict: dict, mag: float, airmass: float) -> flo
 
     Parameters
     ----------
-    band_dict : :obj:`dict`
-        The dictionary from get_band_specific_values() containing star20 and sky
-    mag : :obj:`float`
-        Magnitude in the band of the star desired
-    airmass : :obj:`float`
-        Airmass at which the observation will take place
+    band_info : :class:`BandData`
+        The class from :meth:`get_band_specific_values` containing star20 and sky
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
     :obj:`float`
         Number of counts per second for the described star
     """
-    mag_corrected = mag + band_dict["extinction"] * airmass
-    return band_dict["Star20"] * np.power(10, -((mag_corrected - 20) / 2.5))
+    mag_corrected = input_data.mag + band_info.extinction * input_data.airmass
+    return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
-def get_band_specific_values(band: str) -> dict:
+def get_band_specific_values(band: str) -> BandData:
     """Return the band-specific star and sky values
 
     Pull the correct row from ``etc_filter_info.ecsv`` containing the star count
@@ -425,22 +384,24 @@ def get_band_specific_values(band: str) -> dict:
 
     Returns
     -------
-    :obj:`dict`
-        The dictionary representation of the table row.  If the band is
-        improperly specified (i.e. is not in the table), return an empty
-        dictionary.
+    :class:`BandData`
+        The class representation of the table row.  If the band is
+        improperly specified (i.e. is not in the table), raise an error.
     """
     # Read in the table, and index the filter column
     table = astropy.table.Table.read(utils.DATA / "etc_filter_info.ecsv")
     table.add_index("Filter")
 
+    band_info = BandData()
     try:
-        # Extract the row, and return it as a dictionary
+        # Extract the row, and return it as a BandData class
         row = table.loc[band]
-        return dict(zip(row.colnames, row))
-    except KeyError:
-        # Return an empty dictionary
-        return {}
+        for key, val in zip(row.colnames, row):
+            setattr(band_info, key, val)
+    except KeyError as err:
+        # Raise an error
+        raise ValueError(f"Improper LMI band provided: {band}") from err
+    return band_info
 
 
 def number_pixels(seeing: float, binning: int) -> float:
@@ -467,7 +428,7 @@ def number_pixels(seeing: float, binning: int) -> float:
         Equivalent number of pixels within the measuring aperture
     """
     fwhm = seeing / (SCALE * binning)
-    return np.max([1.4 * fwhm * fwhm, 9.0])
+    return np.max([1.4 * fwhm**2, 9.0])
 
 
 def read_noise_contribution(seeing: float, binning: int) -> float:
@@ -492,23 +453,18 @@ def read_noise_contribution(seeing: float, binning: int) -> float:
     return READ_NOISE * np.sqrt(number_pixels(seeing, binning))
 
 
-def sky_count_per_sec_per_ap(
-    band_dict: dict, phase: float, seeing: float, binning: int
-) -> float:
+def sky_count_per_sec_per_ap(band_info: BandData, input_data: ETCData) -> float:
     """Determine sky counts per aperture per second
 
     [extended_summary]
 
     Parameters
     ----------
-    band_dict : :obj:`dict`
-        The dictionary from get_band_specific_values() containing star20 and sky
-    phase : :obj:`float`
-        Moon phase (0-14)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`
-        Binning of the CCD
+    band_info : :class:`BandData`
+        The class from :meth:`get_band_specific_values` containing star20 and sky
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
@@ -516,16 +472,19 @@ def sky_count_per_sec_per_ap(
         Sky counts per second in the aperture
     """
     sky_brightness_per_arcsec2 = (
-        band_dict["sky0"]
-        + band_dict["sky1"] * phase
-        + band_dict["sky2"] * phase * phase
+        band_info.sky0
+        + band_info.sky1 * input_data.phase
+        + band_info.sky2 * input_data.phase**2
     )
-    sky_count_per_arcsec2_per_sec = band_dict["Star20"] * np.power(
+    sky_count_per_arcsec2_per_sec = band_info.star20 * np.power(
         10, -((sky_brightness_per_arcsec2 - 20) / 2.5)
     )
-    rscale = SCALE * binning
+    rscale = SCALE * input_data.binning
     sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale * rscale
-    return number_pixels(seeing, binning) * sky_count_per_pixel_per_sec
+    return (
+        number_pixels(input_data.seeing, input_data.binning)
+        * sky_count_per_pixel_per_sec
+    )
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
@@ -536,7 +495,12 @@ class LmiEtc(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters
@@ -569,3 +533,15 @@ class LmiEtc(utils.ScriptBase):
         Simple function that calls the main driver function.
         """
         # Giddy up!
+
+        # You need one (and only one) QApplication instance per application.
+        # Pass in sys.argv to allow command line arguments for your app.
+        # If you know you won't use command line arguments QApplication([]) works too.
+        app = QApplication(sys.argv)
+
+        # Create a Qt widget, which will be our window.
+        window = QMainWindow()
+        window.show()  # IMPORTANT!!!!! Windows are hidden by default.
+
+        # Start the event loop.
+        app.exec()
