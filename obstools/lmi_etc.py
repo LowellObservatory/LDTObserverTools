@@ -83,13 +83,13 @@ class ETCData:
     peak : :obj:`float`
         Desired peak count level on the CCD (e-)
     airmass : :obj:`float`
-        Airmass at which the observation will take place
+        Airmass at which the observation will take place  (Default: 1.0)
     band : :obj:`str`
-        The LMI filter for which to perform the calculation
+        The LMI filter for which to perform the calculation  (Default: "V")
     phase : :obj:`float`
-        Moon phase (0-14)
+        Moon phase (0-14)  (Default: 0)
     seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
+        Size of the seeing disk (arcsec)  (Default: 1.0")
     binning : :obj:`int`, optional
         Binning of the CCD  (Default: 2)
     """
@@ -98,10 +98,10 @@ class ETCData:
     mag: float = None
     exptime: float = None
     peak: float = None
-    airmass: float = None
-    band: str = None
-    phase: float = None
-    seeing: float = None
+    airmass: float = 1.0
+    band: str = "V"
+    phase: float = 0
+    seeing: float = 1.0
     binning: int = 2
 
 
@@ -158,11 +158,11 @@ def exptime_given_snr_mag(input_data: ETCData) -> float:
     sky_counts = sky_counts_per_sec_in_aperture(input_data)
     read_counts = read_noise_in_aperture(input_data)
 
-    # Do the computation
+    # Do the computation, quadratic style
     k_a = star_counts**2
     k_b = -input_data.snr**2 * (star_counts + sky_counts)
     k_c = -input_data.snr**2 * read_counts**2
-    return (-k_b + np.sqrt(k_b * k_b - 4.0 * k_a * k_c)) / (2.0 * k_a)
+    return (-k_b + np.sqrt(k_b**2 - 4.0 * k_a * k_c)) / (2.0 * k_a)
 
 
 def exptime_given_peak_mag(input_data: ETCData) -> float:
@@ -226,11 +226,7 @@ def snr_given_exptime_mag(input_data: ETCData) -> float:
 
     # Do the computation
     signal = star_counts * input_data.exptime
-    noise = np.sqrt(
-        star_counts * input_data.exptime
-        + sky_counts * input_data.exptime
-        + read_counts**2
-    )
+    noise = np.sqrt(signal + sky_counts * input_data.exptime + read_counts**2)
     return signal / noise
 
 
@@ -260,12 +256,10 @@ def mag_given_snr_exptime(input_data: ETCData) -> float:
     sky_counts = sky_counts_per_sec_in_aperture(input_data)
     read_counts = read_noise_in_aperture(input_data)
 
-    # Do the computation
+    # Do the computation, quadratic style
     k_a = input_data.exptime**2
     k_b = -input_data.snr**2 * input_data.exptime
-    k_c = -input_data.snr**2 * (
-        sky_counts * input_data.exptime + read_counts * read_counts
-    )
+    k_c = -input_data.snr**2 * (sky_counts * input_data.exptime + read_counts**2)
     cts_from_star_per_sec = (-k_b + np.sqrt(k_b**2 - 4.0 * k_a * k_c)) / (2.0 * k_a)
     mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_info.star20) + 20.0
     return mag_raw - band_info.extinction * input_data.airmass
@@ -365,9 +359,9 @@ def get_band_values(band: str) -> BandData:
     try:
         # Extract the row, and return it as a BandData class
         row = table.loc[band]
-        for key, val in zip(row.colnames, row):
-            setattr(band_info, key, val)
-    except KeyError as err:
+        for name, value in zip(row.colnames, row):
+            setattr(band_info, name, value)
+    except (KeyError, AttributeError) as err:
         # Raise an error
         raise ValueError(f"Improper LMI band provided: {band}") from err
     return band_info
