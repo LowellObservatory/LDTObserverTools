@@ -74,6 +74,8 @@ BIAS = 1050  # ADU (approx) for 2x2 binning
 class ETCData:
     """ETC Data Class
 
+    Attributes
+    ----------
     snr : :obj:`float`
         Desired signal-to-noise ratio
     mag : :obj:`float`
@@ -109,6 +111,8 @@ class ETCData:
 class BandData:
     """Band-Specific Data Class
 
+    Attributes
+    ----------
     filter : :obj:`str`
         Name of the filter
     star20 : :obj:`float`
