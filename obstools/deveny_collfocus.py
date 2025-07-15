@@ -311,7 +311,12 @@ class DevenyCollfocus(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters

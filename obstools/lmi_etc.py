@@ -154,10 +154,9 @@ def exptime_given_snr_mag(input_data: ETCData) -> float:
     check_etc_inputs(input_data)
 
     # Load the necessary counts information
-    band_info = get_band_specific_values(input_data.band)
-    star_counts = counts_from_star_per_sec(band_info, input_data)
-    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
-    read_counts = read_noise_contribution(input_data.seeing, input_data.binning)
+    star_counts = star_counts_per_sec(input_data)
+    sky_counts = sky_counts_per_sec_in_aperture(input_data)
+    read_counts = read_noise_in_aperture(input_data)
 
     # Do the computation
     k_a = star_counts**2
@@ -188,15 +187,12 @@ def exptime_given_peak_mag(input_data: ETCData) -> float:
     check_etc_inputs(input_data)
 
     # Load the necessary counts information
-    band_info = get_band_specific_values(input_data.band)
-    star_counts = counts_from_star_per_sec(band_info, input_data)
-    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
+    star_counts = star_counts_per_sec(input_data)
+    sky_counts = sky_counts_per_sec_in_aperture(input_data)
 
     # Do the computation
     fwhm = input_data.seeing / (SCALE * input_data.binning)
-    sky_count_per_pixel_per_sec = sky_counts / number_pixels(
-        input_data.seeing, input_data.binning
-    )
+    sky_count_per_pixel_per_sec = sky_counts / pixels_in_aperture(input_data)
     return (input_data.peak - BIAS * GAIN) / (
         star_counts / (1.13 * fwhm**2) + sky_count_per_pixel_per_sec
     )
@@ -224,10 +220,9 @@ def snr_given_exptime_mag(input_data: ETCData) -> float:
     check_etc_inputs(input_data=input_data)
 
     # Load the necessary counts information
-    band_info = get_band_specific_values(input_data.band)
-    star_counts = counts_from_star_per_sec(band_info, input_data)
-    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
-    read_counts = read_noise_contribution(input_data.seeing, input_data.binning)
+    star_counts = star_counts_per_sec(input_data)
+    sky_counts = sky_counts_per_sec_in_aperture(input_data)
+    read_counts = read_noise_in_aperture(input_data)
 
     # Do the computation
     signal = star_counts * input_data.exptime
@@ -261,9 +256,9 @@ def mag_given_snr_exptime(input_data: ETCData) -> float:
     check_etc_inputs(input_data)
 
     # Load the necessary counts information
-    band_info = get_band_specific_values(input_data.band)
-    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
-    read_counts = read_noise_contribution(input_data.seeing, input_data.binning)
+    band_info = get_band_values(input_data.band)
+    sky_counts = sky_counts_per_sec_in_aperture(input_data)
+    read_counts = read_noise_in_aperture(input_data)
 
     # Do the computation
     k_a = input_data.exptime**2
@@ -272,8 +267,8 @@ def mag_given_snr_exptime(input_data: ETCData) -> float:
         sky_counts * input_data.exptime + read_counts * read_counts
     )
     cts_from_star_per_sec = (-k_b + np.sqrt(k_b**2 - 4.0 * k_a * k_c)) / (2.0 * k_a)
-    mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_info["Star20"]) + 20.0
-    return mag_raw - band_info["extinction"] * input_data.airmass
+    mag_raw = -2.5 * np.log10(cts_from_star_per_sec / band_info.star20) + 20.0
+    return mag_raw - band_info.extinction * input_data.airmass
 
 
 def peak_counts(input_data: ETCData) -> float:
@@ -295,15 +290,12 @@ def peak_counts(input_data: ETCData) -> float:
         The desired counts on the CCD (e-)
     """
     # Load the necessary counts information
-    band_info = get_band_specific_values(input_data.band)
-    star_counts = counts_from_star_per_sec(band_info, input_data)
-    sky_counts = sky_count_per_sec_per_ap(band_info, input_data)
+    star_counts = star_counts_per_sec(input_data)
+    sky_counts = sky_counts_per_sec_in_aperture(input_data)
 
     # Do the computation
     fwhm = input_data.seeing / (SCALE * input_data.binning)
-    sky_count_per_pixel_per_sec = sky_counts / number_pixels(
-        input_data.seeing, input_data.binning
-    )
+    sky_count_per_pixel_per_sec = sky_counts / pixels_in_aperture(input_data)
     return (
         star_counts / (1.13 * fwhm**2) + sky_count_per_pixel_per_sec
     ) * input_data.exptime + BIAS * GAIN
@@ -348,30 +340,7 @@ def check_etc_inputs(input_data: ETCData):
         raise ValueError(f"Invalid signal-to-noise specified: {input_data.snr}")
 
 
-def counts_from_star_per_sec(band_info: BandData, input_data: ETCData) -> float:
-    """Compute the counts per second from a star
-
-    Compute the counts per second from a star given a band, magnitude, and
-    airmass.
-
-    Parameters
-    ----------
-    band_info : :class:`BandData`
-        The class from :meth:`get_band_specific_values` containing star20 and sky
-    input_data : :class:`ETCData`
-        The input data needed for this calculation, placed in an
-        :class:`ETCData` class.
-
-    Returns
-    -------
-    :obj:`float`
-        Number of counts per second for the described star
-    """
-    mag_corrected = input_data.mag + band_info.extinction * input_data.airmass
-    return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
-
-
-def get_band_specific_values(band: str) -> BandData:
+def get_band_values(band: str) -> BandData:
     """Return the band-specific star and sky values
 
     Pull the correct row from ``etc_filter_info.ecsv`` containing the star count
@@ -404,7 +373,7 @@ def get_band_specific_values(band: str) -> BandData:
     return band_info
 
 
-def number_pixels(seeing: float, binning: int) -> float:
+def pixels_in_aperture(input_data: ETCData) -> float:
     """Number of pixels in the measuring aperture
 
     Counts the number of pixels in the measuring aperture, based on the seeing
@@ -417,22 +386,21 @@ def number_pixels(seeing: float, binning: int) -> float:
 
     Parameters
     ----------
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`
-        Binning of the CCD
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
     :obj:`float`
         Equivalent number of pixels within the measuring aperture
     """
-    fwhm = seeing / (SCALE * binning)
+    fwhm = input_data.seeing / (SCALE * input_data.binning)
     return np.max([1.4 * fwhm**2, 9.0])
 
 
-def read_noise_contribution(seeing: float, binning: int) -> float:
-    """Calculate read-noise contribution
+def read_noise_in_aperture(input_data: ETCData) -> float:
+    """Calculate read-noise contribution in the aperture
 
     Compute the read-noise contribution to the measuring aperture by
     multiplying the read noise per pixel by the square root of the number
@@ -440,28 +408,25 @@ def read_noise_contribution(seeing: float, binning: int) -> float:
 
     Parameters
     ----------
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)
-    binning : :obj:`int`
-        Binning of the CCD
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
 
     Returns
     -------
     :obj:`float`
         The read-noise contribution to the photometry aperture
     """
-    return READ_NOISE * np.sqrt(number_pixels(seeing, binning))
+    return READ_NOISE * np.sqrt(pixels_in_aperture(input_data))
 
 
-def sky_count_per_sec_per_ap(band_info: BandData, input_data: ETCData) -> float:
+def sky_counts_per_sec_in_aperture(input_data: ETCData) -> float:
     """Determine sky counts per aperture per second
 
     [extended_summary]
 
     Parameters
     ----------
-    band_info : :class:`BandData`
-        The class from :meth:`get_band_specific_values` containing star20 and sky
     input_data : :class:`ETCData`
         The input data needed for this calculation, placed in an
         :class:`ETCData` class.
@@ -471,6 +436,7 @@ def sky_count_per_sec_per_ap(band_info: BandData, input_data: ETCData) -> float:
     :obj:`float`
         Sky counts per second in the aperture
     """
+    band_info = get_band_values(input_data.band)
     sky_brightness_per_arcsec2 = (
         band_info.sky0
         + band_info.sky1 * input_data.phase
@@ -481,10 +447,29 @@ def sky_count_per_sec_per_ap(band_info: BandData, input_data: ETCData) -> float:
     )
     rscale = SCALE * input_data.binning
     sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale * rscale
-    return (
-        number_pixels(input_data.seeing, input_data.binning)
-        * sky_count_per_pixel_per_sec
-    )
+    return pixels_in_aperture(input_data) * sky_count_per_pixel_per_sec
+
+
+def star_counts_per_sec(input_data: ETCData) -> float:
+    """Compute the counts per second from a star
+
+    Compute the counts per second from a star given a band, magnitude, and
+    airmass.
+
+    Parameters
+    ----------
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
+
+    Returns
+    -------
+    :obj:`float`
+        Number of counts per second for the described star
+    """
+    band_info = get_band_values(input_data.band)
+    mag_corrected = input_data.mag + band_info.extinction * input_data.airmass
+    return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
