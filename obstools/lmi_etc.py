@@ -10,7 +10,7 @@
 #  GUI Added on 11-Jul-2025
 #
 #  @author: tbowers
-# pylint: disable=no-name-in-module
+# pylint: disable=c-extension-no-member
 
 """LMI Exposure Time Calculator Module
 
@@ -48,10 +48,13 @@ import sys
 # 3rd-Party Libraries
 import astropy.table
 import numpy as np
-from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6 import QtCore
+from PyQt6 import QtGui
+from PyQt6 import QtWidgets
 
 # Local Libraries
 from obstools import utils
+from obstools.ETCWindow import Ui_MainWindow
 
 # Constants
 SCALE = 0.12  # "/pix
@@ -470,6 +473,42 @@ def star_counts_per_sec(input_data: ETCData) -> float:
     return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
+# GUI Class ==================================================================#
+class Color(QtWidgets.QWidget):
+    def __init__(self, color: str):
+        super().__init__()
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor(color))
+        self.setPalette(palette)
+
+
+class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    """Exposure Time Calculator Main Window Class
+
+    _extended_summary_
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.show()
+
+        self.exitButton.pressed.connect(self.exit_button_clicked)
+
+    def exit_button_clicked(self):
+        """The user clicked the "Exit" button
+
+        Display a confirmation dialog, and quit if "Yes"
+        """
+        button = QtWidgets.QMessageBox.question(
+            self, "", "Are you sure you want to quit?"
+        )
+
+        if button == QtWidgets.QMessageBox.StandardButton.Yes:
+            QtWidgets.QApplication.quit()
+
+
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class LmiEtc(utils.ScriptBase):
     """Script class for ``lmi_etc`` tool
@@ -520,10 +559,10 @@ class LmiEtc(utils.ScriptBase):
         # You need one (and only one) QApplication instance per application.
         # Pass in sys.argv to allow command line arguments for your app.
         # If you know you won't use command line arguments QApplication([]) works too.
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
 
         # Create a Qt widget, which will be our window.
-        window = QMainWindow()
+        window = ETCWindow()
         window.show()  # IMPORTANT!!!!! Windows are hidden by default.
 
         # Start the event loop.
