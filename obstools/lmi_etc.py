@@ -111,6 +111,37 @@ class ETCData:
 
 
 @dataclasses.dataclass
+class AuxData:
+    """Auxillary Data Class
+
+    Attributes
+    ----------
+    n_pix : :obj:`float`
+        Number of pixels in the measuing aperture
+    sky_bright : :obj:`float`
+        The in-band sky brightness (e- / pix)
+    num_e_star : :obj:`float`
+        Total number of electrons from the star in the aperture
+    peak_e_star : :obj:`float`
+        Peak number of electrons in the center of the image
+    noise_star : :obj:`float`
+        Noise contribution (in e-) from the star (Poisson)
+    noise_sky : :obj:`float`
+        Noise contribution (in e-) from the sky (Poisson)
+    noise_ccd : :obj:`float`
+        Noise contribution (in e-) from the CCD (readout)
+    """
+
+    n_pix: float = 0
+    sky_bright: float = 0
+    num_e_star: float = 0
+    peak_e_star: float = 0
+    noise_star: float = 0
+    noise_sky: float = 0
+    noise_ccd: float = 0
+
+
+@dataclasses.dataclass
 class BandData:
     """Band-Specific Data Class
 
@@ -367,7 +398,7 @@ def get_band_values(band: str) -> BandData:
         # Extract the row, and return it as a BandData class
         row = table.loc[band]
         for name, value in zip(row.colnames, row):
-            setattr(band_info, name, value)
+            setattr(band_info, name.lower(), value)
     except (KeyError, AttributeError) as err:
         # Raise an error
         raise ValueError(f"Improper LMI band provided: {band}") from err
@@ -469,24 +500,18 @@ def star_counts_per_sec(input_data: ETCData) -> float:
         Number of counts per second for the described star
     """
     band_info = get_band_values(input_data.band)
+    print(band_info)
     mag_corrected = input_data.mag + band_info.extinction * input_data.airmass
     return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
 # GUI Class ==================================================================#
-class Color(QtWidgets.QWidget):
-    def __init__(self, color: str):
-        super().__init__()
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor(color))
-        self.setPalette(palette)
-
-
 class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     """Exposure Time Calculator Main Window Class
 
-    _extended_summary_
+    The UI is defined in ETCWindow.ui and translated (via pyuic6) into python
+    in ETCWindow.py.  This class inherits the UI and defines the various
+    actions needed to compute ETCs from the GUI inputs.
     """
 
     def __init__(self):
@@ -494,7 +519,25 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.show()
 
+        # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
+        self.computeButton.pressed.connect(self.compute_button_clicked)
+        self.radioExpSnMag.toggled.connect(
+            lambda checked: self.set_stacked_page(0, checked)
+        )
+        self.radioExpPkMag.clicked.connect(
+            lambda checked: self.set_stacked_page(1, checked)
+        )
+        self.radioSnExpMag.clicked.connect(
+            lambda checked: self.set_stacked_page(2, checked)
+        )
+        self.radioMagSnExp.clicked.connect(
+            lambda checked: self.set_stacked_page(3, checked)
+        )
+
+        # Set default values
+        self.last_input_data = ETCData()
+        self.last_aux_data = AuxData()
 
     def exit_button_clicked(self):
         """The user clicked the "Exit" button
@@ -507,6 +550,103 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if button == QtWidgets.QMessageBox.StandardButton.Yes:
             QtWidgets.QApplication.quit()
+
+    def compute_button_clicked(self):
+        """The user clicked the "Compute" button
+
+        Poll the ETC mode, and read in the mode-specific values along with all
+        of the current Telescope Setup values to an :class:`ETCData` object.
+
+        Run the mode-specific function to compute the needed pieces, and fill
+        in the "Output" text labels in the GUI.
+        """
+        # Create an ETCData object, and load in the Telescope Setup information
+        input_data = ETCData(
+            band=self.inputBandpass.currentText(),
+            binning=self.inputBinning.value(),
+            seeing=self.inputSeeing.value(),
+            phase=self.inputLunarphase.currentIndex(),
+            airmass=self.inputAirmass.value(),
+        )
+        # Load in the proper mode-specific information and compute
+        match self.stackedWidget.currentIndex():
+            case 0:
+                input_data.snr = float(self.input_1_Snr.text())
+                input_data.mag = float(self.input_1_Magnitude.text())
+                input_data.exptime = exptime_given_snr_mag(input_data)
+
+            case 1:
+                input_data.peak = float(self.input_2_PkCts.text())
+                input_data.mag = float(self.input_2_Magnitude.text())
+                input_data.exptime = exptime_given_peak_mag(input_data)
+
+            case 2:
+                input_data.exptime = float(self.input_3_Exptime.text())
+                input_data.mag = float(self.input_3_Magnitude.text())
+                input_data.snr = snr_given_exptime_mag(input_data)
+
+            case 3:
+                input_data.snr = float(self.input_4_Snr.text())
+                input_data.exptime = float(self.input_4_Exptime.text())
+                input_data.mag = mag_given_snr_exptime(input_data)
+
+            case _:
+                raise ValueError(
+                    f"Incorrect index provided: {self.stackedWidget.currentIndex()}"
+                )
+
+        # Compute the auxillary data
+        aux_data = self.compute_aux_data(input_data)
+
+        # Display the results in the GUI
+        self.outputBandpass.setText(input_data.band)
+        self.outputMagnitude.setText(f"{input_data.mag:.1f}")
+        self.outputSnratio.setText(f"{input_data.snr:.1f}")
+        self.outputExptime.setText(f"{input_data.exptime:.1f}")
+        self.outputBinning.setText(f"{input_data.binning:.0f}")
+
+        self.outputNpix.setText(f"{aux_data.n_pix:.1f}")
+        self.outputSkybright.setText(f"{aux_data.sky_bright:.1f}")
+        self.outputNestar.setText(f"{aux_data.num_e_star:.1f}")
+        self.outputPeakestar.setText(f"{aux_data.peak_e_star:.1f}")
+        self.outputNoisestar.setText(f"{aux_data.noise_star:.1f}")
+        self.outputNoisesky.setText(f"{aux_data.noise_sky:.1f}")
+        self.outputNoiseccd.setText(f"{aux_data.noise_ccd:.1f}")
+
+        # Put all results into instance attributes for possible saving
+        self.last_input_data = input_data
+        self.last_aux_data = aux_data
+
+    def compute_aux_data(self, inuput_data: ETCData) -> AuxData:
+        """compute_aux_data _summary_
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        inuput_data : ETCData
+            _description_
+
+        Returns
+        -------
+        AuxData
+            _description_
+        """
+        return AuxData()
+
+    def set_stacked_page(self, index: int, checked: bool):
+        """Show the proper ETC Mode page
+
+        Parameters
+        ----------
+        index : :obj:`int`
+            The stackedWidget index to show
+        checked : :obj:`bool`
+            Is the event a "checked" or "unchecked"?
+        """
+        # Only change the page if the radio button was checked (not unchecked)
+        if checked:
+            self.stackedWidget.setCurrentIndex(index)
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#

@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>801</width>
+    <height>618</height>
+   </rect>
+  </property>
   <property name="sizePolicy">
    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
     <horstretch>0</horstretch>
@@ -79,6 +87,9 @@
        </item>
        <item>
         <widget class="QStackedWidget" name="stackedWidget">
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
          <widget class="QWidget" name="ExpSnMag">
           <layout class="QGridLayout" name="gridLayout_5">
            <item row="0" column="0">
@@ -135,7 +146,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="inout_2_Magnitude"/>
+            <widget class="QLineEdit" name="input_2_Magnitude"/>
            </item>
           </layout>
          </widget>
@@ -199,6 +210,9 @@
         <widget class="QPushButton" name="computeButton">
          <property name="text">
           <string>Compute</string>
+         </property>
+         <property name="default">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -309,7 +323,7 @@
        <item row="6" column="0">
         <widget class="QLabel" name="label_25">
          <property name="text">
-          <string>Noise Contribution (CCD) [e-]:</string>
+          <string>Noise contribution (CCD) [e-]:</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -444,7 +458,7 @@
         <widget class="QWidget" name="commonInput" native="true">
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="2">
-           <widget class="QComboBox" name="comboBox">
+           <widget class="QComboBox" name="inputBandpass">
             <property name="editable">
              <bool>false</bool>
             </property>
@@ -749,7 +763,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>801</width>
      <height>24</height>
     </rect>
    </property>
