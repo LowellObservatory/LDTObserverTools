@@ -18,6 +18,11 @@
    <string>LMI Exposure Time Calculator</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QGroupBox" name="modeSelector">
@@ -32,7 +37,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QLabel" name="labelMode">
+        <widget class="QLabel" name="label_26">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -72,6 +77,131 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QStackedWidget" name="stackedWidget">
+         <widget class="QWidget" name="ExpSnMag">
+          <layout class="QGridLayout" name="gridLayout_5">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Magnitude :</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="input_1_Magnitude"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>S/N ratio (&gt;0.1) :</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="input_1_Snr"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="ExpPeakMag">
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Peak Counts [e-]:</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="input_2_PkCts"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Magnitude :</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="inout_2_Magnitude"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="SnrExpMag">
+          <layout class="QGridLayout" name="gridLayout_7">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Exposure Time (s) (&gt;0.001) :</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="input_3_Exptime"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Magnitude :</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="input_3_Magnitude"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="MagSnrExp">
+          <layout class="QGridLayout" name="gridLayout_8">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>S/N ratio (&gt;0.1) :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="input_4_Snr"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Exposure Time (s) (&gt;0.001) :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="input_4_Exptime"/>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="computeButton">
+         <property name="text">
+          <string>Compute</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
@@ -89,7 +219,7 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
        <item row="4" column="0">
-        <widget class="QLabel" name="labelNoisestar">
+        <widget class="QLabel" name="label_23">
          <property name="text">
           <string>Noise contribution (star) [e-] :</string>
          </property>
@@ -99,7 +229,7 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="labelNpix">
+        <widget class="QLabel" name="label_19">
          <property name="text">
           <string>Num pixels in aperture :</string>
          </property>
@@ -109,7 +239,7 @@
         </widget>
        </item>
        <item row="2" column="0">
-        <widget class="QLabel" name="labelNestar">
+        <widget class="QLabel" name="label_21">
          <property name="text">
           <string>Num e- from star :</string>
          </property>
@@ -119,7 +249,7 @@
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QLabel" name="labelPeakestar">
+        <widget class="QLabel" name="label_22">
          <property name="text">
           <string>Peak e- from star :</string>
          </property>
@@ -150,7 +280,7 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="labelSkybright">
+        <widget class="QLabel" name="label_20">
          <property name="text">
           <string>Sky brightness (e-/pix) :</string>
          </property>
@@ -167,7 +297,7 @@
         </widget>
        </item>
        <item row="5" column="0">
-        <widget class="QLabel" name="labelNoisesky">
+        <widget class="QLabel" name="label_24">
          <property name="text">
           <string>Noise contribution (sky) [e-] :</string>
          </property>
@@ -177,7 +307,7 @@
         </widget>
        </item>
        <item row="6" column="0">
-        <widget class="QLabel" name="labelNoiseccd">
+        <widget class="QLabel" name="label_25">
          <property name="text">
           <string>Noise Contribution (CCD) [e-]:</string>
          </property>
@@ -224,7 +354,7 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="labelBandpass">
+        <widget class="QLabel" name="label_14">
          <property name="text">
           <string>Bandpass :</string>
          </property>
@@ -233,8 +363,25 @@
          </property>
         </widget>
        </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="outputExptime">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_18">
+         <property name="text">
+          <string>Binning :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
        <item row="3" column="0">
-        <widget class="QLabel" name="labelExptime">
+        <widget class="QLabel" name="label_17">
          <property name="text">
           <string>Exposure Time (s) :</string>
          </property>
@@ -250,45 +397,8 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="labelMagnitude">
-         <property name="text">
-          <string>Magnitude :</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="labelSNratio">
-         <property name="text">
-          <string>S/N Ratio :</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="labelBinning">
-         <property name="text">
-          <string>Binning :</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="1">
         <widget class="QLabel" name="outputSnratio">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLabel" name="outputExptime">
          <property name="text">
           <string/>
          </property>
@@ -301,315 +411,332 @@
          </property>
         </widget>
        </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Magnitude :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_16">
+         <property name="text">
+          <string>S/N Ratio :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
     <item row="0" column="1">
      <widget class="QGroupBox" name="inputBox">
       <property name="title">
-       <string>Inputs</string>
+       <string>Telescope Setup</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QStackedWidget" name="modeInput">
-         <property name="currentIndex">
-          <number>1</number>
+        <widget class="QWidget" name="commonInput" native="true">
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="2">
+           <widget class="QComboBox" name="comboBox">
+            <property name="editable">
+             <bool>false</bool>
+            </property>
+            <property name="currentIndex">
+             <number>2</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>U</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>B</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>V</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>R</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>I</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>VR</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Hα-On</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Hα-Off</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>[OIII]</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>WR</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>u'</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>g'</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>r'</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>i'</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>z'</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>yish</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QComboBox" name="inputLunarphase">
+            <item>
+             <property name="text">
+              <string comment="0">0 (new moon)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>1</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>2</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>3</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>4</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>5</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>6</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string comment="7">7 (first/last quarter)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>8</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>9</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>10</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>11</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>12</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>13</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string comment="14">14 (full moon)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>CCD Binning Factor :</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Seeing (arcseconds) :</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>Airmass :</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="2">
+           <widget class="QDoubleSpinBox" name="inputAirmass">
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>2.400000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.200000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QSpinBox" name="inputBinning">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>4</number>
+            </property>
+            <property name="value">
+             <number>2</number>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Lunar Phase (days) :</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QDoubleSpinBox" name="inputSeeing">
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>0.600000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>2.400000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.200000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Bandpass :</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QGroupBox" name="tableButtons">
+      <property name="whatsThis">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+      <property name="title">
+       <string>Save Outputs</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QPushButton" name="buttonAdd2Table">
+         <property name="text">
+          <string>Add to Table</string>
          </property>
-         <widget class="QWidget" name="page_3">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>10</height>
-           </size>
-          </property>
-         </widget>
-         <widget class="QWidget" name="page_4">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>10</height>
-           </size>
-          </property>
-          <widget class="QWidget" name="commonInput" native="true">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>30</y>
-             <width>356</width>
-             <height>204</height>
-            </rect>
-           </property>
-           <layout class="QGridLayout" name="gridLayout_4">
-            <item row="0" column="2">
-             <widget class="QComboBox" name="comboBox">
-              <property name="editable">
-               <bool>false</bool>
-              </property>
-              <property name="currentIndex">
-               <number>2</number>
-              </property>
-              <item>
-               <property name="text">
-                <string>U</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>B</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>V</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>R</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>I</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>VR</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Hα-On</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Hα-Off</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>[OIII]</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>WR</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>u'</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>g'</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>r'</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>i'</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>z'</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>yish</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QComboBox" name="inputLunarphase">
-              <item>
-               <property name="text">
-                <string comment="0">0 (new moon)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>1</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>2</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>3</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>4</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>5</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>6</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string comment="7">7 (first/last quarter)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>8</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>9</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>10</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>11</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>12</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>13</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string comment="14">14 (full moon)</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="labelBinning_2">
-              <property name="text">
-               <string>CCD Binning Factor :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Bandpass :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="labelSeeing">
-              <property name="text">
-               <string>Seeing (arcseconds) :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="0">
-             <widget class="QLabel" name="labelAirmass">
-              <property name="text">
-               <string>Airmass :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="2">
-             <widget class="QDoubleSpinBox" name="inputAirmass">
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="minimum">
-               <double>1.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>2.400000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.200000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QSpinBox" name="inputBinning">
-              <property name="minimum">
-               <number>1</number>
-              </property>
-              <property name="maximum">
-               <number>4</number>
-              </property>
-              <property name="value">
-               <number>2</number>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="labelLunarphase">
-              <property name="text">
-               <string>Lunar Phase (days) :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QDoubleSpinBox" name="inputSeeing">
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="minimum">
-               <double>0.600000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>2.400000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.200000000000000</double>
-              </property>
-              <property name="value">
-               <double>1.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="buttonShowTable">
+         <property name="text">
+          <string>Show Table</string>
+         </property>
         </widget>
        </item>
       </layout>
