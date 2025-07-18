@@ -717,6 +717,55 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         super().__init__()
         self.setupUi(self)
 
+        # Connect buttons to actions
+        self.buttonSavetable.clicked.connect(self.save_table_button_clicked)
+        self.buttonCleartable.clicked.connect(self.clear_table_button_clicked)
+        self.buttonRemoverow.clicked.connect(self.remove_row_button_clicked)
+
+        # Looks prettier with this stuff
+        self.tableDatalog.resizeColumnsToContents()
+        self.tableDatalog.resizeRowsToContents()
+
+        # Actually show the table
+        self.tableDatalog.show()
+
+    def save_table_button_clicked(self):
+        # Open the save file dialog, including format question
+        print("Saving Table!!!")
+
+    def clear_table_button_clicked(self):
+        # Open an "are you sure" dialog, then clear the table
+        print("Clearing Table!!!")
+
+        # Clear datafilenames
+        self.datafilenames = []
+
+        # Clear the table, reset column/row N to zero, update table columns
+        self.tableDatalog.clear()
+        self.tableDatalog.setColumnCount(0)
+        self.tableDatalog.setRowCount(0)
+        self.update_table_cols()
+
+        # Looks prettier with this stuff, and show the table
+        self.tableDatalog.resizeColumnsToContents()
+        self.tableDatalog.resizeRowsToContents()
+        self.tableDatalog.show()
+
+    def remove_row_button_clicked(self):
+        # Remove the indexed row
+        print("Removing Row!!!")
+
+        bad = self.tableDatalog.currentRow()
+        # -1 means we didn't select anything
+        if bad != -1:
+            # Clear the data we don't need anymore
+            del self.datafilenames[bad]
+            self.tableDatalog.removeRow(self.tableDatalog.currentRow())
+
+            # Redraw
+            self.tableDatalog.setVerticalHeaderLabels(self.datafilenames)
+            self.write_datalog()
+
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class LmiEtc(utils.ScriptBase):
