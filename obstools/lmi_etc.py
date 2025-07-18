@@ -51,8 +51,8 @@ import numpy as np
 from PyQt6 import QtWidgets
 
 # Local Libraries
-from obstools.ETCMainWindow import Ui_MainWindow
-from obstools.ETCDataWindow import Ui_ETCDataWindow
+from obstools.UI.ETCMainWindow import Ui_MainWindow
+from obstools.UI.ETCDataWindow import Ui_ETCDataWindow
 from obstools import utils
 
 # Constants
