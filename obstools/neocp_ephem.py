@@ -93,7 +93,6 @@ The output format for LDT TCS is::
 # Built-In Libraries
 import argparse
 import datetime
-import sys
 
 # 3rd-Party Libraries
 import astropy.coordinates

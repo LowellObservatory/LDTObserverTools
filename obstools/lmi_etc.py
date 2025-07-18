@@ -33,17 +33,11 @@ for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 
     The LMI-specific pixel scale, gain, and read noise are hard-coded into
     this module.
-
-    
-.. note::
-
-    A GUI wrapper for these functions is forthcoming.
 """
 
 # Built-In Libraries
 import argparse
 import dataclasses
-import sys
 
 # 3rd-Party Libraries
 import astropy.table
@@ -62,14 +56,16 @@ GAIN = 2.89  # e-/ADU
 BIAS = 1050  # ADU (approx) for 2x2 binning
 
 
-# Define the API as the "User-Interface Computation Routines"
-# __all__ = [
-#     "exptime_given_snr_mag",
-#     "exptime_given_peak_mag",
-#     "snr_given_exptime_mag",
-#     "mag_given_snr_exptime",
-#     "peak_counts",
-# ]
+# Define the API as dataclasses, computation routines, and the external script
+__all__ = [
+    "ETCData",
+    "AuxData",
+    "exptime_given_snr_mag",
+    "exptime_given_peak_mag",
+    "snr_given_exptime_mag",
+    "mag_given_snr_exptime",
+    "LmiEtc",
+]
 
 
 @dataclasses.dataclass
@@ -78,35 +74,35 @@ class ETCData:
 
     Attributes
     ----------
-    snr : :obj:`float`
-        Desired signal-to-noise ratio
-    mag : :obj:`float`
-        Magnitude in the band of the star desired
     exptime : :obj:`float`
         User-defined exposure time (seconds)
+    band : :obj:`str`
+        The LMI filter for which to perform the calculation
+    mag : :obj:`float`
+        Magnitude in the band of the star desired
+    snr : :obj:`float`
+        Desired signal-to-noise ratio
+    binning : :obj:`int`, optional
+        Binning of the CCD
+    seeing : :obj:`float`
+        Size of the seeing disk (arcsec)
+    airmass : :obj:`float`
+        Airmass at which the observation will take place
+    phase : :obj:`float`
+        Moon phase (0-14)
     peak : :obj:`float`
         Desired peak count level on the CCD (e-)
-    airmass : :obj:`float`
-        Airmass at which the observation will take place  (Default: 1.0)
-    band : :obj:`str`
-        The LMI filter for which to perform the calculation  (Default: "V")
-    phase : :obj:`float`
-        Moon phase (0-14)  (Default: 0)
-    seeing : :obj:`float`
-        Size of the seeing disk (arcsec)  (Default: 1.0")
-    binning : :obj:`int`, optional
-        Binning of the CCD  (Default: 2)
     """
 
-    snr: float = None
-    mag: float = None
     exptime: float = None
-    peak: float = None
-    airmass: float = 1.0
     band: str = "V"
-    phase: float = 0
-    seeing: float = 1.0
+    mag: float = None
+    snr: float = None
     binning: int = 2
+    seeing: float = 1.0
+    airmass: float = 1.0
+    phase: float = 0
+    peak: float = None
 
 
 @dataclasses.dataclass
@@ -520,7 +516,10 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.show()
 
         # Connect the table view window
-        self.tableWindow = TableWindow()
+        self.tableWindow = TableWindow(
+            [f.name for f in dataclasses.fields(ETCData)]
+            + [f.name for f in dataclasses.fields(AuxData)]
+        )
 
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
@@ -649,16 +648,10 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         save_dict = dataclasses.asdict(self.last_input_data)
         save_dict.update(dataclasses.asdict(self.last_aux_data))
-        self.etc_table = astropy.table.vstack(
-            [self.etc_table, astropy.table.Table([save_dict])]
-        )
+        new_row = astropy.table.Table([save_dict])
+        self.etc_table = astropy.table.vstack([self.etc_table, new_row])
         self.etc_table.pprint()
-
-    def show_table_window(self):
-        """Show / Hide the Save Data Table
-
-        Look at how Ryan does the display in the obslog generator
-        """
+        self.tableWindow.add_row_to_table(new_row)
 
     def compute_aux_data(self, input_data: ETCData) -> AuxData:
         """Compute auxillary output data
@@ -711,9 +704,15 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     The UI is defined in ETCWindow.ui and translated (via pyuic6) into python
     in ETCWindow.py.  This class inherits the UI and defines the various
     actions needed to compute ETCs from the GUI inputs.
+
+    Parameters
+    ----------
+    table_colnames : :obj:`list`
+        List of the column names for the data table
     """
 
-    def __init__(self):
+    def __init__(self, table_colnames: list):
+        self.table_colnames = table_colnames
         super().__init__()
         self.setupUi(self)
 
@@ -723,22 +722,31 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         self.buttonRemoverow.clicked.connect(self.remove_row_button_clicked)
 
         # Looks prettier with this stuff
+        self.update_table_cols()
         self.tableDatalog.resizeColumnsToContents()
         self.tableDatalog.resizeRowsToContents()
 
         # Actually show the table
         self.tableDatalog.show()
 
+        # Init things
+        self.last_row = 0
+
     def save_table_button_clicked(self):
+        """The user clicked the "Save Table" button
+
+        _extended_summary_
+        """
         # Open the save file dialog, including format question
         print("Saving Table!!!")
 
     def clear_table_button_clicked(self):
+        """The user clicked the "Clear Table" button
+
+        _extended_summary_
+        """
         # Open an "are you sure" dialog, then clear the table
         print("Clearing Table!!!")
-
-        # Clear datafilenames
-        self.datafilenames = []
 
         # Clear the table, reset column/row N to zero, update table columns
         self.tableDatalog.clear()
@@ -752,6 +760,10 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         self.tableDatalog.show()
 
     def remove_row_button_clicked(self):
+        """The user clicked the "Remove Row" button
+
+        _extended_summary_
+        """
         # Remove the indexed row
         print("Removing Row!!!")
 
@@ -765,6 +777,75 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
             # Redraw
             self.tableDatalog.setVerticalHeaderLabels(self.datafilenames)
             self.write_datalog()
+
+    def update_table_cols(self):
+        """Update the number and labels of table columns
+
+        Update based on the current content of self.headers
+        """
+        # Add the number of columns we'll need for the header keys given
+        for _ in self.table_colnames:
+            col_position = self.tableDatalog.columnCount()
+            self.tableDatalog.insertColumn(col_position)
+        self.tableDatalog.setHorizontalHeaderLabels(self.table_colnames)
+
+    def add_row_to_table(self, new_row: astropy.table.Table):
+        """Add a row to the displayed data table
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        new_row : :obj:`~astropy.table.Table`
+            The new data row as an AstroPy table object.
+        """
+        # Disable fun stuff while we update
+        self.tableDatalog.setSortingEnabled(False)
+        self.tableDatalog.horizontalHeader().setSectionsMovable(False)
+        self.tableDatalog.horizontalHeader().setDragEnabled(False)
+        self.tableDatalog.horizontalHeader().setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.NoDragDrop
+        )
+
+        # Capture the last row position so we know where to start
+        self.last_row = self.tableDatalog.rowCount()
+
+        # Actually set the labels for rows
+        self.tableDatalog.setVerticalHeaderLabels(
+            [f"{i}" for i in range(1, self.last_row + 2)]
+        )
+
+        # Create the data table items and populate things
+        #   Note! This is for use with headerDict style of grabbing stuff
+        for n, row in enumerate(new_row):
+            for m, hkey in enumerate(self.table_colnames):
+                newitem = QtWidgets.QTableWidgetItem(str(row[hkey]))
+                print(f" >>> Setting item {row[hkey]} at position {n}x{m}")
+                self.tableDatalog.setItem(n + self.last_row, m + 0, newitem)
+
+        # Resize to minimum required, then display
+        # self.tableDatalog.resizeColumnsToContents()
+        self.tableDatalog.resizeRowsToContents()
+
+        # Seems to be more trouble than it's worth, so keep this commented
+        # self.tableDatalog.setSortingEnabled(True)
+
+        # Reenable fun stuff
+        self.tableDatalog.horizontalHeader().setSectionsMovable(True)
+        self.tableDatalog.horizontalHeader().setDragEnabled(True)
+        self.tableDatalog.horizontalHeader().setDragDropMode(
+            QtWidgets.QAbstractItemView.DragDropMode.InternalMove
+        )
+
+        # Looks prettier with this stuff
+        self.tableDatalog.resizeColumnsToContents()
+        self.tableDatalog.resizeRowsToContents()
+
+        self.tableDatalog.show()
+
+        # Should add this as a checkbox option to always scroll to bottom
+        #   whenever a new file comes in...
+        self.tableDatalog.scrollToBottom()
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
