@@ -48,13 +48,11 @@ import sys
 # 3rd-Party Libraries
 import astropy.table
 import numpy as np
-from PyQt6 import QtCore
-from PyQt6 import QtGui
 from PyQt6 import QtWidgets
 
 # Local Libraries
-from obstools import utils
 from obstools.ETCWindow import Ui_MainWindow
+from obstools import utils
 
 # Constants
 SCALE = 0.12  # "/pix
@@ -303,36 +301,6 @@ def mag_given_snr_exptime(input_data: ETCData) -> float:
     return mag_raw - band_info.extinction * input_data.airmass
 
 
-def peak_counts(input_data: ETCData) -> float:
-    """Compute the peak counts on the CCD for an exptime and mag
-
-    Given a desired exposure time and stellar magnitude, compute the resulting
-    counts on the CCD for a particular LMI Filter, moon phase, seeing and
-    CCD binning.
-
-    Parameters
-    ----------
-    input_data : :class:`ETCData`
-        The input data needed for this calculation, placed in an
-        :class:`ETCData` class.
-
-    Returns
-    -------
-    :obj:`float`
-        The desired counts on the CCD (e-)
-    """
-    # Load the necessary counts information
-    star_counts = star_counts_per_sec(input_data)
-    sky_counts = sky_counts_per_sec_in_aperture(input_data)
-
-    # Do the computation
-    fwhm = input_data.seeing / (SCALE * input_data.binning)
-    sky_count_per_pixel_per_sec = sky_counts / pixels_in_aperture(input_data)
-    return (
-        star_counts / (1.13 * fwhm**2) + sky_count_per_pixel_per_sec
-    ) * input_data.exptime + BIAS * GAIN
-
-
 # Helper Routines (Alphabetical) =============================================#
 def check_etc_inputs(input_data: ETCData):
     """Check the ETC inputs for valid values
@@ -405,6 +373,40 @@ def get_band_values(band: str) -> BandData:
     return band_info
 
 
+def peak_counts(input_data: ETCData, star_only: bool = False) -> float:
+    """Compute the peak counts on the CCD for an exptime and mag
+
+    Given a desired exposure time and stellar magnitude, compute the resulting
+    counts on the CCD for a particular LMI Filter, moon phase, seeing and
+    CCD binning.
+
+    Parameters
+    ----------
+    input_data : :class:`ETCData`
+        The input data needed for this calculation, placed in an
+        :class:`ETCData` class.
+    star_only : :obj:`bool`, optional
+        Return the peak counts from the star only (not counting sky and detector bias)
+
+    Returns
+    -------
+    :obj:`float`
+        The desired counts on the CCD (e-)
+    """
+    # Load the necessary counts information
+    star_counts = star_counts_per_sec(input_data)
+    sky_counts = sky_counts_per_sec_in_aperture(input_data)
+
+    # Do the computation
+    fwhm = input_data.seeing / (SCALE * input_data.binning)
+    sky_count_per_pixel_per_sec = sky_counts / pixels_in_aperture(input_data)
+    if star_only:
+        return star_counts / (1.13 * fwhm**2) * input_data.exptime
+    return (
+        star_counts / (1.13 * fwhm**2) + sky_count_per_pixel_per_sec
+    ) * input_data.exptime + BIAS * GAIN
+
+
 def pixels_in_aperture(input_data: ETCData) -> float:
     """Number of pixels in the measuring aperture
 
@@ -455,8 +457,6 @@ def read_noise_in_aperture(input_data: ETCData) -> float:
 def sky_counts_per_sec_in_aperture(input_data: ETCData) -> float:
     """Determine sky counts per aperture per second
 
-    [extended_summary]
-
     Parameters
     ----------
     input_data : :class:`ETCData`
@@ -478,7 +478,7 @@ def sky_counts_per_sec_in_aperture(input_data: ETCData) -> float:
         10, -((sky_brightness_per_arcsec2 - 20) / 2.5)
     )
     rscale = SCALE * input_data.binning
-    sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale * rscale
+    sky_count_per_pixel_per_sec = sky_count_per_arcsec2_per_sec * rscale**2
     return pixels_in_aperture(input_data) * sky_count_per_pixel_per_sec
 
 
@@ -500,7 +500,6 @@ def star_counts_per_sec(input_data: ETCData) -> float:
         Number of counts per second for the described star
     """
     band_info = get_band_values(input_data.band)
-    print(band_info)
     mag_corrected = input_data.mag + band_info.extinction * input_data.airmass
     return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
 
@@ -534,10 +533,13 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.radioMagSnExp.clicked.connect(
             lambda checked: self.set_stacked_page(3, checked)
         )
+        self.buttonAdd2Table.clicked.connect(self.add_data_to_table)
+        self.buttonShowTable.clicked.connect(self.show_table_window)
 
         # Set default values
         self.last_input_data = ETCData()
         self.last_aux_data = AuxData()
+        self.etc_table = astropy.table.Table()
 
     def exit_button_clicked(self):
         """The user clicked the "Exit" button
@@ -602,7 +604,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.outputBandpass.setText(input_data.band)
         self.outputMagnitude.setText(f"{input_data.mag:.1f}")
         self.outputSnratio.setText(f"{input_data.snr:.1f}")
-        self.outputExptime.setText(f"{input_data.exptime:.1f}")
+        self.outputExptime.setText(f"{input_data.exptime:.2f}")
         self.outputBinning.setText(f"{input_data.binning:.0f}")
 
         self.outputNpix.setText(f"{aux_data.n_pix:.1f}")
@@ -617,22 +619,55 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.last_input_data = input_data
         self.last_aux_data = aux_data
 
-    def compute_aux_data(self, inuput_data: ETCData) -> AuxData:
-        """compute_aux_data _summary_
+    def add_data_to_table(self):
+        """Add the current calculation to a saved table
 
-        _extended_summary_
+        Add the current contents of :attr:`last_input_data` and
+        :attr:`last_aux_data` to a :obj:`~astropy.table.Table` saved as an
+        instance attribute.
+        """
+        save_dict = dataclasses.asdict(self.last_input_data)
+        save_dict.update(dataclasses.asdict(self.last_aux_data))
+        self.etc_table = astropy.table.vstack(
+            [self.etc_table, astropy.table.Table([save_dict])]
+        )
+        self.etc_table.pprint()
+
+    def show_table_window(self):
+        """Show / Hide the Save Data Table
+
+        Look at how Ryan does the display in the obslog generator
+        """
+
+    def compute_aux_data(self, input_data: ETCData) -> AuxData:
+        """Compute auxillary output data
+
+        These are the ancillary data computed from the ``input_data`` requested
+        for the exposure time calculator.
 
         Parameters
         ----------
-        inuput_data : ETCData
-            _description_
+        input_data : :class:`ETCData`
+            The input data needed for this calculation, placed in an
+            :class:`ETCData` class.
 
         Returns
         -------
-        AuxData
-            _description_
+        :class:`AuxData`
+            The auxillary data object associated with this ``input_data``
         """
-        return AuxData()
+        n_pix = pixels_in_aperture(input_data)
+        total_star_cts = star_counts_per_sec(input_data) * input_data.exptime
+        total_sky_cts = sky_counts_per_sec_in_aperture(input_data) * input_data.exptime
+        return AuxData(
+            n_pix=n_pix,
+            sky_bright=total_sky_cts / n_pix,
+            num_e_star=total_star_cts,
+            peak_e_star=peak_counts(input_data, star_only=True),
+            noise_star=np.sqrt(total_star_cts),
+            noise_sky=np.sqrt(total_sky_cts),
+            noise_ccd=read_noise_in_aperture(input_data),
+        )
 
     def set_stacked_page(self, index: int, checked: bool):
         """Show the proper ETC Mode page
@@ -695,15 +730,10 @@ class LmiEtc(utils.ScriptBase):
         Simple function that calls the main driver function.
         """
         # Giddy up!
+        app = QtWidgets.QApplication([])
 
-        # You need one (and only one) QApplication instance per application.
-        # Pass in sys.argv to allow command line arguments for your app.
-        # If you know you won't use command line arguments QApplication([]) works too.
-        app = QtWidgets.QApplication(sys.argv)
+        # Create the ETCWindow() widget
+        _ = ETCWindow()
 
-        # Create a Qt widget, which will be our window.
-        window = ETCWindow()
-        window.show()  # IMPORTANT!!!!! Windows are hidden by default.
-
-        # Start the event loop.
+        # Start the event loop
         app.exec()

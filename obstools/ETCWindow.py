@@ -258,22 +258,6 @@ class Ui_MainWindow(object):
         self.keyOutputs.setObjectName("keyOutputs")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.keyOutputs)
         self.gridLayout_2.setObjectName("gridLayout_2")
-        self.outputBandpass = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.outputBandpass.setText("")
-        self.outputBandpass.setObjectName("outputBandpass")
-        self.gridLayout_2.addWidget(self.outputBandpass, 0, 1, 1, 1)
-        self.label_14 = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.label_14.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_14.setObjectName("label_14")
-        self.gridLayout_2.addWidget(self.label_14, 0, 0, 1, 1)
-        self.outputExptime = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.outputExptime.setText("")
-        self.outputExptime.setObjectName("outputExptime")
-        self.gridLayout_2.addWidget(self.outputExptime, 3, 1, 1, 1)
         self.label_18 = QtWidgets.QLabel(parent=self.keyOutputs)
         self.label_18.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight
@@ -282,34 +266,6 @@ class Ui_MainWindow(object):
         )
         self.label_18.setObjectName("label_18")
         self.gridLayout_2.addWidget(self.label_18, 4, 0, 1, 1)
-        self.label_17 = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.label_17.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_17.setObjectName("label_17")
-        self.gridLayout_2.addWidget(self.label_17, 3, 0, 1, 1)
-        self.outputMagnitude = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.outputMagnitude.setText("")
-        self.outputMagnitude.setObjectName("outputMagnitude")
-        self.gridLayout_2.addWidget(self.outputMagnitude, 1, 1, 1, 1)
-        self.outputSnratio = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.outputSnratio.setText("")
-        self.outputSnratio.setObjectName("outputSnratio")
-        self.gridLayout_2.addWidget(self.outputSnratio, 2, 1, 1, 1)
-        self.outputBinning = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.outputBinning.setText("")
-        self.outputBinning.setObjectName("outputBinning")
-        self.gridLayout_2.addWidget(self.outputBinning, 4, 1, 1, 1)
-        self.label_15 = QtWidgets.QLabel(parent=self.keyOutputs)
-        self.label_15.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_15.setObjectName("label_15")
-        self.gridLayout_2.addWidget(self.label_15, 1, 0, 1, 1)
         self.label_16 = QtWidgets.QLabel(parent=self.keyOutputs)
         self.label_16.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight
@@ -318,6 +274,50 @@ class Ui_MainWindow(object):
         )
         self.label_16.setObjectName("label_16")
         self.gridLayout_2.addWidget(self.label_16, 2, 0, 1, 1)
+        self.outputExptime = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.outputExptime.setText("")
+        self.outputExptime.setObjectName("outputExptime")
+        self.gridLayout_2.addWidget(self.outputExptime, 0, 1, 1, 1)
+        self.outputSnratio = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.outputSnratio.setText("")
+        self.outputSnratio.setObjectName("outputSnratio")
+        self.gridLayout_2.addWidget(self.outputSnratio, 3, 1, 1, 1)
+        self.label_14 = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.label_14.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_14.setObjectName("label_14")
+        self.gridLayout_2.addWidget(self.label_14, 0, 0, 1, 1)
+        self.outputMagnitude = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.outputMagnitude.setText("")
+        self.outputMagnitude.setObjectName("outputMagnitude")
+        self.gridLayout_2.addWidget(self.outputMagnitude, 2, 1, 1, 1)
+        self.outputBandpass = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.outputBandpass.setText("")
+        self.outputBandpass.setObjectName("outputBandpass")
+        self.gridLayout_2.addWidget(self.outputBandpass, 1, 1, 1, 1)
+        self.label_15 = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.label_15.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_15.setObjectName("label_15")
+        self.gridLayout_2.addWidget(self.label_15, 1, 0, 1, 1)
+        self.outputBinning = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.outputBinning.setText("")
+        self.outputBinning.setObjectName("outputBinning")
+        self.gridLayout_2.addWidget(self.outputBinning, 4, 1, 1, 1)
+        self.label_17 = QtWidgets.QLabel(parent=self.keyOutputs)
+        self.label_17.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_17.setObjectName("label_17")
+        self.gridLayout_2.addWidget(self.label_17, 3, 0, 1, 1)
         self.gridLayout.addWidget(self.keyOutputs, 1, 0, 1, 1)
         self.inputBox = QtWidgets.QGroupBox(parent=self.centralwidget)
         self.inputBox.setObjectName("inputBox")
@@ -499,11 +499,11 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Noise contribution (CCD) [e-]:")
         )
         self.keyOutputs.setTitle(_translate("MainWindow", "Key Outputs"))
-        self.label_14.setText(_translate("MainWindow", "Bandpass :"))
         self.label_18.setText(_translate("MainWindow", "Binning :"))
-        self.label_17.setText(_translate("MainWindow", "Exposure Time (s) :"))
-        self.label_15.setText(_translate("MainWindow", "Magnitude :"))
-        self.label_16.setText(_translate("MainWindow", "S/N Ratio :"))
+        self.label_16.setText(_translate("MainWindow", "Magnitude :"))
+        self.label_14.setText(_translate("MainWindow", "Exposure Time (s) :"))
+        self.label_15.setText(_translate("MainWindow", "Filter :"))
+        self.label_17.setText(_translate("MainWindow", "S/N Ratio :"))
         self.inputBox.setTitle(_translate("MainWindow", "Telescope Setup"))
         self.inputBandpass.setItemText(0, _translate("MainWindow", "U"))
         self.inputBandpass.setItemText(1, _translate("MainWindow", "B"))
@@ -511,8 +511,8 @@ class Ui_MainWindow(object):
         self.inputBandpass.setItemText(3, _translate("MainWindow", "R"))
         self.inputBandpass.setItemText(4, _translate("MainWindow", "I"))
         self.inputBandpass.setItemText(5, _translate("MainWindow", "VR"))
-        self.inputBandpass.setItemText(6, _translate("MainWindow", "Hα-On"))
-        self.inputBandpass.setItemText(7, _translate("MainWindow", "Hα-Off"))
+        self.inputBandpass.setItemText(6, _translate("MainWindow", "Hα-on"))
+        self.inputBandpass.setItemText(7, _translate("MainWindow", "Hα-off"))
         self.inputBandpass.setItemText(8, _translate("MainWindow", "[OIII]"))
         self.inputBandpass.setItemText(9, _translate("MainWindow", "WR"))
         self.inputBandpass.setItemText(10, _translate("MainWindow", "u'"))
@@ -546,7 +546,7 @@ class Ui_MainWindow(object):
         self.label_11.setText(_translate("MainWindow", "Seeing (arcseconds) :"))
         self.label_13.setText(_translate("MainWindow", "Airmass :"))
         self.label_12.setText(_translate("MainWindow", "Lunar Phase (days) :"))
-        self.label_9.setText(_translate("MainWindow", "Bandpass :"))
+        self.label_9.setText(_translate("MainWindow", "Filter :"))
         self.tableButtons.setWhatsThis(
             _translate("MainWindow", "<html><head/><body><p><br/></p></body></html>")
         )

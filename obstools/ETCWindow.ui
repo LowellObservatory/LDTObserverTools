@@ -360,30 +360,6 @@
        <string>Key Outputs</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="1">
-        <widget class="QLabel" name="outputBandpass">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_14">
-         <property name="text">
-          <string>Bandpass :</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLabel" name="outputExptime">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
        <item row="4" column="0">
         <widget class="QLabel" name="label_18">
          <property name="text">
@@ -394,8 +370,32 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="label_17">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_16">
+         <property name="text">
+          <string>Magnitude :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="outputExptime">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLabel" name="outputSnratio">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_14">
          <property name="text">
           <string>Exposure Time (s) :</string>
          </property>
@@ -404,17 +404,27 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="2" column="1">
         <widget class="QLabel" name="outputMagnitude">
          <property name="text">
           <string/>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
-        <widget class="QLabel" name="outputSnratio">
+       <item row="1" column="1">
+        <widget class="QLabel" name="outputBandpass">
          <property name="text">
           <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Filter :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -425,18 +435,8 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_15">
-         <property name="text">
-          <string>Magnitude :</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_16">
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_17">
          <property name="text">
           <string>S/N Ratio :</string>
          </property>
@@ -497,12 +497,12 @@
             </item>
             <item>
              <property name="text">
-              <string>Hα-On</string>
+              <string>Hα-on</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Hα-Off</string>
+              <string>Hα-off</string>
              </property>
             </item>
             <item>
@@ -717,7 +717,7 @@
           <item row="0" column="0">
            <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>Bandpass :</string>
+             <string>Filter :</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
