@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'obstools/ETCWindow.ui'
+# Form implementation generated from reading ui file 'obstools/ETCMainWindow.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #

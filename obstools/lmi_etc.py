@@ -51,7 +51,8 @@ import numpy as np
 from PyQt6 import QtWidgets
 
 # Local Libraries
-from obstools.ETCWindow import Ui_MainWindow
+from obstools.ETCMainWindow import Ui_MainWindow
+from obstools.ETCDataWindow import Ui_ETCDataWindow
 from obstools import utils
 
 # Constants
@@ -518,6 +519,9 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.show()
 
+        # Connect the table view window
+        self.tableWindow = TableWindow()
+
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
         self.computeButton.pressed.connect(self.compute_button_clicked)
@@ -534,7 +538,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda checked: self.set_stacked_page(3, checked)
         )
         self.buttonAdd2Table.clicked.connect(self.add_data_to_table)
-        self.buttonShowTable.clicked.connect(self.show_table_window)
+        self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
 
         # Set default values
         self.last_input_data = ETCData()
@@ -619,6 +623,23 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.last_input_data = input_data
         self.last_aux_data = aux_data
 
+    def show_table_button_clicked(self):
+        """The user clicked the "Show Table" button
+
+        The table of saved ETC values can be shown in a separate window.  By
+        pressing the "Show Table" button, that window is displayed and the
+        button text is changed to allow the user to hide the window upon next
+        click of the button.
+        """
+        if self.tableWindow.isVisible():
+            # Hide the window and make the button say "Show"
+            self.tableWindow.hide()
+            self.buttonShowTable.setText("Show Table")
+        else:
+            # Show the window and make the button say "Hide"
+            self.tableWindow.show()
+            self.buttonShowTable.setText("Hide Table")
+
     def add_data_to_table(self):
         """Add the current calculation to a saved table
 
@@ -682,6 +703,19 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Only change the page if the radio button was checked (not unchecked)
         if checked:
             self.stackedWidget.setCurrentIndex(index)
+
+
+class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
+    """Exposure Time Calculator Saved Values Table Window Class
+
+    The UI is defined in ETCWindow.ui and translated (via pyuic6) into python
+    in ETCWindow.py.  This class inherits the UI and defines the various
+    actions needed to compute ETCs from the GUI inputs.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
