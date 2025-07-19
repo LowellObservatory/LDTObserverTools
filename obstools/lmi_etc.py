@@ -68,6 +68,7 @@ __all__ = [
 ]
 
 
+# Dataclass objects ==========================================================#
 @dataclasses.dataclass
 class ETCData:
     """ETC Data Class
@@ -501,7 +502,7 @@ def star_counts_per_sec(input_data: ETCData) -> float:
     return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
 
 
-# GUI Class ==================================================================#
+# GUI Classes ================================================================#
 class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     """Exposure Time Calculator Main Window Class
 
@@ -516,10 +517,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.show()
 
         # Connect the table view window
-        self.tableWindow = TableWindow(
-            [f.name for f in dataclasses.fields(ETCData)]
-            + [f.name for f in dataclasses.fields(AuxData)]
-        )
+        self.tableWindow = TableWindow(self.table_colnames)
 
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
@@ -536,7 +534,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.radioMagSnExp.clicked.connect(
             lambda checked: self.set_stacked_page(3, checked)
         )
-        self.buttonAdd2Table.clicked.connect(self.add_data_to_table)
+        self.buttonAdd2Table.clicked.connect(self.add_data_button_clicked)
         self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
 
         # Set default values
@@ -550,10 +548,14 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Display a confirmation dialog, and quit if "Yes"
         """
         button = QtWidgets.QMessageBox.question(
-            self, "", "Are you sure you want to quit?"
+            self,
+            "",
+            "Are you sure you want to quit?",
+            buttons=QtWidgets.QMessageBox.StandardButton.Ok
+            | QtWidgets.QMessageBox.StandardButton.Cancel,
         )
 
-        if button == QtWidgets.QMessageBox.StandardButton.Yes:
+        if button == QtWidgets.QMessageBox.StandardButton.Ok:
             QtWidgets.QApplication.quit()
 
     def compute_button_clicked(self):
@@ -639,8 +641,8 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWindow.show()
             self.buttonShowTable.setText("Hide Table")
 
-    def add_data_to_table(self):
-        """Add the current calculation to a saved table
+    def add_data_button_clicked(self):
+        """The user clicked the "Add to Table" button
 
         Add the current contents of :attr:`last_input_data` and
         :attr:`last_aux_data` to a :obj:`~astropy.table.Table` saved as an
@@ -648,9 +650,9 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         save_dict = dataclasses.asdict(self.last_input_data)
         save_dict.update(dataclasses.asdict(self.last_aux_data))
-        new_row = astropy.table.Table([save_dict])
+        new_row = self.set_format(astropy.table.Table([save_dict]))
         self.etc_table = astropy.table.vstack([self.etc_table, new_row])
-        self.etc_table.pprint()
+        # Send the new row to the TableWindow
         self.tableWindow.add_row_to_table(new_row)
 
     def compute_aux_data(self, input_data: ETCData) -> AuxData:
@@ -697,6 +699,43 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if checked:
             self.stackedWidget.setCurrentIndex(index)
 
+    @property
+    def table_colnames(self) -> list:
+        """Column names for the data table
+
+        This method builds the column names from the dataclass attributes for
+        both the :class:`ETCData` class containing the inputs to the
+        calculation and the :class:`AuxData` class containing the detailed
+        outputs.
+
+        Returns
+        -------
+        :obj:`list`
+            The column names for the output data table
+        """
+        return [f.name for f in dataclasses.fields(ETCData)] + [
+            f.name for f in dataclasses.fields(AuxData)
+        ]
+
+    @staticmethod
+    def set_format(table: astropy.table.Table) -> astropy.table.Table:
+        """Set column formats for the data table
+
+        This primarily deals with rounding and ease of display
+
+        Parameters
+        ----------
+        table : :obj:`~astropy.table.Table`
+            Input (unclean) table
+
+        Returns
+        -------
+        :obj:`~astropy.table.Table`
+            Output (cleaned) table
+        """
+        # TODO: Implement this!!!!!
+        return table
+
 
 class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     """Exposure Time Calculator Saved Values Table Window Class
@@ -739,6 +778,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         """
         # Open the save file dialog, including format question
         print("Saving Table!!!")
+        # TODO: Implement this!!!!!
 
     def clear_table_button_clicked(self):
         """The user clicked the "Clear Table" button
@@ -746,7 +786,15 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         _extended_summary_
         """
         # Open an "are you sure" dialog, then clear the table
-        print("Clearing Table!!!")
+        button = QtWidgets.QMessageBox.question(
+            self,
+            "",
+            "Are you sure you want to clear the data table?",
+            buttons=QtWidgets.QMessageBox.StandardButton.Ok
+            | QtWidgets.QMessageBox.StandardButton.Cancel,
+        )
+        if button == QtWidgets.QMessageBox.StandardButton.Cancel:
+            return
 
         # Clear the table, reset column/row N to zero, update table columns
         self.tableDatalog.clear()
@@ -765,18 +813,17 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         _extended_summary_
         """
         # Remove the indexed row
-        print("Removing Row!!!")
-
         bad = self.tableDatalog.currentRow()
         # -1 means we didn't select anything
         if bad != -1:
             # Clear the data we don't need anymore
-            del self.datafilenames[bad]
             self.tableDatalog.removeRow(self.tableDatalog.currentRow())
 
             # Redraw
-            self.tableDatalog.setVerticalHeaderLabels(self.datafilenames)
-            self.write_datalog()
+            self.tableDatalog.setVerticalHeaderLabels(
+                f"{i}" for i in range(1, self.tableDatalog.rowCount() + 2)
+            )
+            self.tableDatalog.show()
 
     def update_table_cols(self):
         """Update the number and labels of table columns
@@ -792,7 +839,8 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     def add_row_to_table(self, new_row: astropy.table.Table):
         """Add a row to the displayed data table
 
-        _extended_summary_
+        Take the latest calculation from the ETC and add it to the TableWidget
+        object holding the data.
 
         Parameters
         ----------
@@ -809,6 +857,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
 
         # Capture the last row position so we know where to start
         self.last_row = self.tableDatalog.rowCount()
+        self.tableDatalog.insertRow(self.last_row)
 
         # Actually set the labels for rows
         self.tableDatalog.setVerticalHeaderLabels(
@@ -820,8 +869,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         for n, row in enumerate(new_row):
             for m, hkey in enumerate(self.table_colnames):
                 newitem = QtWidgets.QTableWidgetItem(str(row[hkey]))
-                print(f" >>> Setting item {row[hkey]} at position {n}x{m}")
-                self.tableDatalog.setItem(n + self.last_row, m + 0, newitem)
+                self.tableDatalog.setItem(n + self.last_row, m, newitem)
 
         # Resize to minimum required, then display
         # self.tableDatalog.resizeColumnsToContents()
@@ -891,13 +939,11 @@ class LmiEtc(utils.ScriptBase):
     def main(args):
         """Main Driver
 
-        Simple function that calls the main driver function.
+        Set up the top-level PyQt6 objects and start the event loop
         """
-        # Giddy up!
+        # Create the QApplication object and main Qt window
         app = QtWidgets.QApplication([])
-
-        # Create the ETCWindow() widget
         _ = ETCWindow()
 
-        # Start the event loop
+        # Giddy up!
         app.exec()

@@ -45,7 +45,7 @@ class Ui_ETCDataWindow(object):
 
     def retranslateUi(self, ETCDataWindow):
         _translate = QtCore.QCoreApplication.translate
-        ETCDataWindow.setWindowTitle(_translate("ETCDataWindow", "MainWindow"))
+        ETCDataWindow.setWindowTitle(_translate("ETCDataWindow", "ETC Data Table"))
         self.buttonSavetable.setText(_translate("ETCDataWindow", "Save Table"))
         self.buttonRemoverow.setText(
             _translate("ETCDataWindow", "Remove Highlighted Row")
