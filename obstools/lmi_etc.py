@@ -97,15 +97,15 @@ class ETCData:
         Desired peak count level on the CCD (e-)
     """
 
-    exptime: float = None
+    exptime: float = 0
     band: str = "V"
-    mag: float = None
-    snr: float = None
+    mag: float = 0
+    snr: float = 0
     binning: int = 2
     seeing: float = 1.0
     airmass: float = 1.0
     phase: float = 0
-    peak: float = None
+    peak: float = 0
 
 
 @dataclasses.dataclass
