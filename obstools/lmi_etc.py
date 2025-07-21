@@ -38,6 +38,8 @@ for a 20th magnitude star measured with a radius = 1.4 x FWHM in pixels.
 # Built-In Libraries
 import argparse
 import dataclasses
+import pathlib
+import re
 
 # 3rd-Party Libraries
 import astropy.table
@@ -601,6 +603,8 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 raise ValueError(
                     f"Incorrect index provided: {self.stackedWidget.currentIndex()}"
                 )
+        # Clean the etc data object
+        input_data = self.clean_etc_data(input_data)
 
         # Compute the auxillary data
         aux_data = self.compute_aux_data(input_data)
@@ -650,12 +654,34 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         save_dict = dataclasses.asdict(self.last_input_data)
         save_dict.update(dataclasses.asdict(self.last_aux_data))
-        new_row = self.set_format(astropy.table.Table([save_dict]))
+        new_row = astropy.table.Table([save_dict])
         self.etc_table = astropy.table.vstack([self.etc_table, new_row])
         # Send the new row to the TableWindow
         self.tableWindow.add_row_to_table(new_row)
 
-    def compute_aux_data(self, input_data: ETCData) -> AuxData:
+    @staticmethod
+    def clean_etc_data(input_data: ETCData) -> ETCData:
+        """Clean (round) the ETC data
+
+        Parameters
+        ----------
+        input_data : :class:`ETCData`
+            The input data needed for this calculation, placed in an
+            :class:`ETCData` class.
+
+        Returns
+        -------
+        :class:`ETCData`
+            The cleaned (rounded) ``input_data``
+        """
+        input_data.airmass = np.round(input_data.airmass, 2)
+        input_data.exptime = np.round(input_data.exptime, 2)
+        input_data.mag = np.round(input_data.mag, 2)
+        input_data.peak = 0 if input_data.peak is None else np.round(input_data.peak, 0)
+        return input_data
+
+    @staticmethod
+    def compute_aux_data(input_data: ETCData) -> AuxData:
         """Compute auxillary output data
 
         These are the ancillary data computed from the ``input_data`` requested
@@ -676,13 +702,13 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         total_star_cts = star_counts_per_sec(input_data) * input_data.exptime
         total_sky_cts = sky_counts_per_sec_in_aperture(input_data) * input_data.exptime
         return AuxData(
-            n_pix=n_pix,
-            sky_bright=total_sky_cts / n_pix,
-            num_e_star=total_star_cts,
-            peak_e_star=peak_counts(input_data, star_only=True),
-            noise_star=np.sqrt(total_star_cts),
-            noise_sky=np.sqrt(total_sky_cts),
-            noise_ccd=read_noise_in_aperture(input_data),
+            n_pix=np.round(n_pix, 2),
+            sky_bright=np.round(total_sky_cts / n_pix, 1),
+            num_e_star=np.round(total_star_cts, 1),
+            peak_e_star=np.round(peak_counts(input_data, star_only=True), 0),
+            noise_star=np.round(np.sqrt(total_star_cts), 2),
+            noise_sky=np.round(np.sqrt(total_sky_cts), 2),
+            noise_ccd=np.round(read_noise_in_aperture(input_data), 2),
         )
 
     def set_stacked_page(self, index: int, checked: bool):
@@ -717,25 +743,6 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             f.name for f in dataclasses.fields(AuxData)
         ]
 
-    @staticmethod
-    def set_format(table: astropy.table.Table) -> astropy.table.Table:
-        """Set column formats for the data table
-
-        This primarily deals with rounding and ease of display
-
-        Parameters
-        ----------
-        table : :obj:`~astropy.table.Table`
-            Input (unclean) table
-
-        Returns
-        -------
-        :obj:`~astropy.table.Table`
-            Output (cleaned) table
-        """
-        # TODO: Implement this!!!!!
-        return table
-
 
 class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     """Exposure Time Calculator Saved Values Table Window Class
@@ -749,6 +756,14 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     table_colnames : :obj:`list`
         List of the column names for the data table
     """
+
+    # File format filters for saving the table to disk
+    FILE_FILTERS = [
+        "Comma Separated Values (*.csv)",
+        "Enhanced Character-Separated Values (*.ecsv)",
+        "Astropy Fixed-Width Text files (*.txt)",
+        "FITS Bintable (*.fits)",
+    ]
 
     def __init__(self, table_colnames: list):
         self.table_colnames = table_colnames
@@ -774,16 +789,58 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     def save_table_button_clicked(self):
         """The user clicked the "Save Table" button
 
-        _extended_summary_
+        Save the presently displayed table to disk in one of several formats.
+        This option is provided as a value-added feature over the standard
+        web-based LMI ETC.
         """
         # Open the save file dialog, including format question
-        print("Saving Table!!!")
-        # TODO: Implement this!!!!!
+        file_name, selected_filter = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Save As",
+            str(pathlib.Path.cwd()),
+            ";;".join(self.FILE_FILTERS),
+            self.FILE_FILTERS[1],
+        )
+        file_name = pathlib.Path(file_name)
+
+        # Stuff the current Qt data table into an AstroPy Table
+        table_data = []
+        for row in range(self.tableDatalog.rowCount()):
+            row_data = {}
+            for column in range(self.tableDatalog.columnCount()):
+                if not (item := self.tableDatalog.item(row, column)):
+                    val = None
+                else:
+                    try:
+                        val = float(item.text())
+                        if np.isclose(val, int(val)):
+                            val = int(val)
+                    except ValueError:
+                        val = item.text()
+                row_data.update({self.table_colnames[column]: val})
+            table_data.append(row_data)
+        table_data = astropy.table.Table(table_data)
+        table_data.pprint()
+
+        # Save the table in the format specified
+        match (m_format := re.findall(r"\((.*?)\)", selected_filter)[0].strip("*")):
+            case ".ecsv":
+                t_format = "ascii.ecsv"
+            case ".csv":
+                t_format = "ascii.csv"
+            case ".txt":
+                t_format = "ascii.fixed_width"
+            case ".fits":
+                t_format = "fits"
+            case _:
+                raise ValueError(f"Unrecognized save file format: {m_format}")
+        table_data.write(file_name, format=t_format, overwrite=True)
 
     def clear_table_button_clicked(self):
         """The user clicked the "Clear Table" button
 
-        _extended_summary_
+        Clear the table of ETC values, offering a "Confirm" dialog to avoid
+        accidental deletion of hard-thought values.
         """
         # Open an "are you sure" dialog, then clear the table
         button = QtWidgets.QMessageBox.question(
@@ -810,7 +867,9 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
     def remove_row_button_clicked(self):
         """The user clicked the "Remove Row" button
 
-        _extended_summary_
+        Remove the highlighted line from the table.  This may be useful for
+        accidental double-saving or removing of undesirfed lines from the
+        table.
         """
         # Remove the indexed row
         bad = self.tableDatalog.currentRow()
