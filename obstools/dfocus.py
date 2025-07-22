@@ -7,6 +7,7 @@
 #   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 #  Created on 01-Feb-2021
+#  Modified: 08-Jan-2025
 #
 #  @author: tbowers
 
@@ -26,23 +27,126 @@ DeVeny LOUI.
 
 # Built-In Libraries
 import argparse
+import dataclasses
 import os
 import pathlib
 import sys
 import warnings
 
 # 3rd-Party Libraries
-import astropy.io.fits
 import astropy.nddata
+import ccdproc
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
-from tqdm import tqdm
+import tqdm
 
 # Local Libraries
 from obstools import deveny_grangle
 from obstools import utils
+
+
+# Dataclass definitions ======================================================#
+@dataclasses.dataclass
+class FocusParams:
+    """Focus Parameters DataClass
+
+    Attributes
+    ----------
+    mid_file : :obj:`~pathlib.Path`
+        The filename of the middle file in the focus sequence
+    nominal : :obj:`float`
+        Nominal linewidth in pixels based on slit width and grating
+        demagnification
+    start : :obj:`float`
+        Starting focus value in the focus sweep
+    end : :obj:`float`
+        Ending focus value in the focus sweep
+    delta : :obj:`float`
+        Step size between focus values in the sweep
+    mnttemp : :obj:`float`
+        Mount temperature from the middle image of the sweep
+    binning : :obj:`str`
+        Binning scheme of the CCD
+    plot_title : :obj:`str`
+        The plot title for ...
+    opt_title : :obj:`str`
+        The plot title for ...
+    """
+
+    mid_file: pathlib.Path
+    start: float
+    end: float
+    delta: float
+    plot_title: str
+    opt_title: str
+    mnttemp: float
+    nominal: float = 2.7
+    binning: str = "1x1"
+
+
+@dataclasses.dataclass
+class LineInfo:
+    """Extracted Line Information DataClass
+
+    Attributes
+    ----------
+    spec_1d : :obj:`~numpy.ndarray`
+        Extracted 1D spectrum along the ``trace``
+    trace : :obj:`~numpy.ndarray`
+        Pixel locations of the extracted ``spec_1d``
+    centers : :obj:`~numpy.ndarray`
+        Centroid location (along the ``trace``) of each identified line
+    fwhm : :obj:`~numpy.ndarray`
+        FWHM (in pixles) of each identified line
+    """
+
+    spec_1d: np.ndarray
+    trace: np.ndarray
+    centers: np.ndarray
+    fwhm: np.ndarray
+
+
+@dataclasses.dataclass
+class FocusCurves:
+    """Focus Curves DataClass
+
+    Attributes
+    ----------
+    min_cf_idx_value : :obj:`~numpy.ndarray`
+        Best fit focus values
+    optimal_cf_idx_value : :obj:`~numpy.ndarray`
+        Best fit linewidths
+    min_linewidth : :obj:`~numpy.ndarray`
+        Minimum linewidths
+    foc_fits : :obj:`~numpy.ndarray`
+        Fit parameters (for plotting)
+    """
+
+    min_focus_values: np.ndarray
+    optimal_focus_values: np.ndarray
+    min_linewidths: np.ndarray
+    fit_pars: np.ndarray
+
+
+@dataclasses.dataclass
+class PlotParams:
+    """Plotting Parameters DataClass
+
+    Attributes
+    ----------
+    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`
+        The PDF object into which to place plots
+    path : :obj:`~pathlib.Path`
+        The path in which to find the ``deveny_focus.*`` files
+    docfig : :obj:`bool`
+        Make example figures for online documentation?
+    """
+
+    pdf: PdfPages
+    path: pathlib.Path
+    docfig: bool
 
 
 # User-facing Function =======================================================#
@@ -50,7 +154,6 @@ def dfocus(
     path: pathlib.Path,
     flog: str = "last",
     thresh: float = 100.0,
-    debug: bool = False,
     launch_preview: bool = True,
     docfig: bool = False,
 ):
@@ -71,8 +174,6 @@ def dfocus(
         flog must be of form: ``deveny_focus.YYYYMMDD.HHMMSS``
     thresh : :obj:`float`, optional
         Line intensity threshold above background for detection (Default: 100.0)
-    debug : :obj:`bool`, optional
-        Print debug statements  (Default: False)
     launch_preview : :obj:`bool`, optional
         Display the plots by launching Preview  (Default: True)
     docfig : :obj:`bool`, optional
@@ -83,113 +184,106 @@ def dfocus(
     print("=" * n_cols)
     print("  DeVeny Collimator Focus Calculator")
 
-    # Initialize a dictionary to hold lots of variables
-    focus = initialize_focus_values(path, flog)
-    if focus["delta"] == 0:
-        print("\n** No successful focus run completed in this directory. **\n")
+    try:
+        # Get the Image File Collection for this focus run and initialize a
+        #    dictionary to hold information from the headers
+        focus_icl, focus_id = parse_focus_log(path, flog)
+        focus_pars = parse_focus_headers(focus_icl)
+    except utils.ObstoolsError as err:
+        # If errors, print error message and exit
+        print(f"\n** {err} **\n")
         sys.exit(1)
 
     # Process the middle image to get line centers, arrays, trace
-    centers, trace, mid_collfoc, mspectra = process_middle_image(
-        focus, thresh, debug=debug
-    )
+    print(f"\n Processing center focus image {focus_pars.mid_file}...")
+    mid_ccd = astropy.nddata.CCDData.read(focus_pars.mid_file)
+    try:
+        mid_lines = get_lines_from_ccd(mid_ccd, thresh)
+    except utils.ObstoolsError as err:
+        # If errors, print error message and exit
+        print(f"\n** {err} **\n")
+        sys.exit(1)
 
     # Run through files, showing a progress bar
     print("\n Processing arc images...")
-    prog_bar = tqdm(total=focus["n"], unit="frame", unit_scale=False, colour="yellow")
+    prog_bar = tqdm.tqdm(
+        total=len(focus_icl.files), unit="frame", unit_scale=False, colour="yellow"
+    )
 
     line_width_array = []
-    for foc_file in focus["files"]:
-        # Trim and extract the spectrum
-        spectrum, collfoc = trim_deveny_image(foc_file)
-        spectra = extract_spectrum(spectrum, trace, win=11)
-
-        # Find FWHM of lines:
-        _, these_centers, fwhm = find_lines(spectra, thresh=thresh, verbose=False)
+    # Loop over the CCDs
+    for ccd in focus_icl.ccds():
+        this_lines = get_lines_from_ccd(
+            ccd, thresh, trace=mid_lines.trace, verbose=False
+        )
 
         # Empirical shifts in line location due to off-axis paraboloid
         #  collimator mirror
-        line_dx = -4.0 * (collfoc - mid_collfoc)
+        line_dx = -4.0 * (ccd.header["COLLFOC"] - mid_ccd.header["COLLFOC"])
 
-        # Keep only the lines from `these_centers` that match the
-        #  reference image
+        # Keep only the lines from this image that match the reference image
         line_widths = []
-        for cen in centers:
-            # Find line within 3 pix of the (adjusted) reference line
-            idx = np.where(np.absolute((cen + line_dx) - these_centers) < 3.0)[0]
-            # If there's something there wider than 2 piux, use it... else NaN
-            width = fwhm[idx][0] if len(idx) else np.nan
+        for cen in mid_lines.centers:
+            # Find lines within 3 pix of the (adjusted) reference line
+            idx = np.abs((cen + line_dx) - this_lines.centers) < 3.0
+            # If there's something there wider than 2 pix, use it... else NaN
+            width = this_lines.fwhm[idx][0] if np.sum(idx) else np.nan
             line_widths.append(width if width > 2.0 else np.nan)
 
         # Append these linewidths to the larger array for processing
-        line_width_array.append(np.asarray(line_widths))
+        line_width_array.append(np.array(line_widths))
         prog_bar.update(1)
 
     # Close the progress bar, end of loop
     prog_bar.close()
-    line_width_array = np.asarray(line_width_array)
+    line_width_array = np.array(line_width_array)
 
     print(
         f"\n  Median value of all linewidths: {np.nanmedian(line_width_array):.2f} pix"
     )
 
     # Fit the focus curve:
-    min_focus_index, optimal_focus_index, min_linewidths, fit_pars = fit_focus_curves(
-        line_width_array, fnom=focus["nominal"]
-    )
+    focus_curves = fit_focus_curves(line_width_array, focus_pars)
 
     # Convert the returned indices into actual COLLFOC values, find medians
-    print("=" * n_cols)
-    min_focus_values = min_focus_index * focus["delta"] + focus["start"]
-    optimal_focus_values = optimal_focus_index * focus["delta"] + focus["start"]
-    # med_min_focus = np.real(np.nanmedian(min_focus_values))
-    med_opt_focus = np.real(np.nanmedian(optimal_focus_values))
+    med_opt_focus = np.real(np.nanmedian(focus_curves.optimal_focus_values))
 
-    if focus["binning"] != "1x1":
-        print(f"*** CCD is operating in binning {focus['binning']} (col x row)")
+    print("=" * n_cols)
+    if focus_pars.binning != "1x1":
+        print(f"*** CCD is operating in binning {focus_pars.binning} (col x row)")
     print(f"*** Recommended (Median) Optimal Focus Position: {med_opt_focus:.2f} mm")
-    print(f"*** Note: Current Mount Temperature is: {focus['mnttemp']:.1f}ºC")
+    print(f"*** Note: Current Mount Temperature is: {focus_pars.mnttemp:.1f}ºC")
 
     # =========================================================================#
     # Make the multipage PDF plot
-    with PdfPages(pdf_fn := path / f"pyfocus.{focus['id']}.pdf") as pdf:
+    with PdfPages(pdf_fn := path / f"pyfocus.{focus_id}.pdf") as pdf:
+        plot_pars = PlotParams(pdf=pdf, path=path, docfig=docfig)
+
         #  The plot shown in the IDL0 window: Plot of the found lines
-        find_lines(
-            mspectra,
-            thresh=thresh,
-            do_plot=True,
-            focus_dict=focus,
-            pdf=pdf,
-            verbose=False,
-            path=path,
-            docfig=docfig,
+        # Find the line centers in the image
+        plot_lines(
+            mid_lines.spec_1d,
+            find_lines(mid_lines.spec_1d, thresh, verbose=False)[0],
+            focus_pars=focus_pars,
+            plot_pars=plot_pars,
         )
 
         # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
         plot_optimal_focus(
-            focus,
-            centers,
-            optimal_focus_values,
+            focus_pars,
+            mid_lines.centers,
+            focus_curves.optimal_focus_values,
             med_opt_focus,
-            pdf=pdf,
-            path=path,
-            docfig=docfig,
+            plot_pars=plot_pars,
         )
 
         # The plot shown in the IDL1 window: Focus curves for each identified line
         plot_focus_curves(
-            centers,
+            mid_lines.centers,
             line_width_array,
-            min_focus_values,
-            optimal_focus_values,
-            min_linewidths,
-            fit_pars,
-            focus["delta"],
-            focus["start"],
-            fnom=focus["nominal"],
-            pdf=pdf,
-            path=path,
-            docfig=docfig,
+            focus_curves,
+            focus_pars=focus_pars,
+            plot_pars=plot_pars,
         )
 
     # Print the location of the plots
@@ -199,88 +293,14 @@ def dfocus(
     if launch_preview:
         try:
             os.system(f"/usr/bin/open -a Preview {pdf_fn}")
-        except Exception as err:
+        except OSError as err:
             print(f"Cannot open Preview.app\n{err}")
 
 
 # Helper Functions (Chronological) ===========================================#
-def initialize_focus_values(path: pathlib.Path, flog: str) -> dict:
-    """Initialize a dictionary of focus values
-
-    Create a dictionary of values (mainly from the header) that can be used by
-    subsequent routines.
-
-    Parameters
-    ----------
-    path : :obj:`~pathlib.Path`
-        The path to the current working directory
-    flog : :obj:`str`
-        Identifier for the focus log to be processed
-
-    Returns
-    -------
-    :obj:`dict`
-        Dictionary of the various needed quantities
-    """
-    # Parse the log file to obtain file list
-    n_files, files, focus_id = parse_focus_log(path, flog)
-
-    # Escape hatch if no files found (e.g., run in the wrong directory)
-    if not n_files:
-        return {"delta": 0}
-
-    # Pull the spectrograph setup from the first focus file:
-    hdr0 = astropy.io.fits.getheader(files[0])
-    slitasec = hdr0["SLITASEC"]
-    grating = hdr0["GRATING"]
-    grangle = hdr0["GRANGLE"]
-    lampcal = hdr0["LAMPCAL"]
-    mnttemp = hdr0["MNTTEMP"]
-    binning = hdr0["CCDSUM"].replace(" ", "x")
-
-    # Compute the nominal line width
-    nominal_focus = 2.94 * slitasec * deveny_grangle.deveny_amag(grangle)
-
-    # Pull the collimator focus values from the first and last files
-    focus_0 = hdr0["COLLFOC"]
-    focus_1 = (astropy.io.fits.getheader(files[-1]))["COLLFOC"]
-    # Find the delta between focus values
-    try:
-        delta_focus = (focus_1 - focus_0) / (n_files - 1)
-    except ZeroDivisionError:
-        delta_focus = 0
-
-    # Examine the middle image
-    mid_file = files[n_files // 2]
-
-    dfl_title = (
-        f"{mid_file.name}   Grating: {grating}   GRANGLE: "
-        + f"{grangle:.2f}   Lamps: {lampcal}"
-    )
-
-    opt_title = (
-        f"Grating: {grating}    Slit width: {slitasec:.2f} arcsec"
-        + f"    Binning: {binning}    Nominal line width: "
-        + f"{nominal_focus:.2f} pixels"
-    )
-
-    return {
-        "n": n_files,
-        "files": files,
-        "mid_file": mid_file,
-        "id": focus_id,
-        "nominal": nominal_focus,
-        "start": focus_0,
-        "end": focus_1,
-        "delta": delta_focus,
-        "plot_title": dfl_title,
-        "opt_title": opt_title,
-        "mnttemp": mnttemp,
-        "binning": binning,
-    }
-
-
-def parse_focus_log(path: pathlib.Path, flog: str) -> tuple[int, list, str]:
+def parse_focus_log(
+    path: pathlib.Path, flog: str
+) -> tuple[ccdproc.ImageFileCollection, str]:
     """Parse the focus log file produced by the DeVeny LOUI
 
     The DeVeny focus log file consists of filename, collimator focus, and other
@@ -307,12 +327,11 @@ def parse_focus_log(path: pathlib.Path, flog: str) -> tuple[int, list, str]:
 
     Returns
     -------
-    n_files : :obj:`int`
-        Number of files for this focus run
-    files: :obj:`list`
-        List of :obj:`~pathlib.Path` files associated with this focus run
-    focus_id: :obj:`str`
-        The focus ID
+    :obj:`~ccdproc.ImageFileCollection`
+        The Image File Collection containing the information about focus images
+        requested
+    :obj:`str`
+        The Focus ID to be used for creating the PDF chart outputs
     """
     # Just to be sure...
     path = path.resolve()
@@ -321,12 +340,17 @@ def parse_focus_log(path: pathlib.Path, flog: str) -> tuple[int, list, str]:
     if flog.lower() == "last":
         focfiles = sorted(path.glob("deveny_focus*"))
         try:
-            flog = focfiles[-1]
-        except IndexError:
-            # In the event of no files, return empty things
-            return 0, [], ""
+            flog = pathlib.Path(focfiles[-1])
+        except IndexError as err:
+            # In the event of no focus files, raise exception
+            raise utils.ObstoolsError(
+                "No successful focus run completed in this directory"
+            ) from err
     else:
         flog = path / flog
+
+    if not flog.is_file():
+        raise utils.ObstoolsError("Specified focus run not in this directory")
 
     files = []
     with open(flog, "r", encoding="utf8") as file_object:
@@ -336,100 +360,145 @@ def parse_focus_log(path: pathlib.Path, flog: str) -> tuple[int, list, str]:
         for line in file_object:
             files.append(path.parent / line.strip().split()[0])
 
-    # Return the list of files, and the FocusID
-    return len(files), files, flog.name[-15:]
+    # Return the Image File Collection
+    return ccdproc.ImageFileCollection(filenames=files), flog.name[-15:]
 
 
-def process_middle_image(
-    focus: dict, thresh: float, debug: bool = False
-) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
-    """Process the middle focus image
+def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
+    """Parse focus headers values into a dictionary
 
-    This finds the lines to be measured -- presumably the middle is closest to focus
+    Create a dictionary of values (mainly from the header) that can be used by
+    subsequent routines.
 
     Parameters
     ----------
-    focus : :obj:`dict`, optional
-        Dictionary containing needed variables for plot
-    thresh : :obj:`float`
-        Line intensity threshold above background for detection
-    debug : :obj:`bool`, optional
-        Print debug statements  (Default: False)
+    focus_icl : :obj:`~ccdproc.ImageFileCollection`
+        The Image File Collection containing the focus files for this run
 
     Returns
     -------
-    centers, :obj:`~numpy.ndarray`
-        Centers
-    trace, :obj:`~numpy.ndarray`
-        Trace
-    mid_collfoc, :obj:`float`
-        Collimator focus of the middle frame
-    mspectra, :obj:`~numpy.ndarray`
-        The spectrum from the middle frame (for later plotting)
+    :class:`FocusParams`
+        DataClass containing the focus sweep parameters
     """
-    print(f"\n Processing center focus image {focus['mid_file']}...")
-    spectrum, mid_collfoc = trim_deveny_image(focus["mid_file"])
+    # Pull the spectrograph setup from the first focus file:
+    row = focus_icl.summary[0]
+    slitasec = row["slitasec"]
+    grating = row["grating"]
+    grangle = row["grangle"]
+    lampcal = row["lampcal"]
+    mnttemp = row["mnttemp"]
+    binning = row["ccdsum"].replace(" ", "x")
 
-    # Build the trace for spectrum extraction
-    n_y, n_x = spectrum.shape
-    trace = np.full(n_x, n_y / 2, dtype=float).reshape((1, n_x))
-    mspectra = extract_spectrum(spectrum, trace, win=11)
-    if debug:
-        print(f"Traces: {trace}")
-        print(f"Middle Spectrum: {mspectra}")
+    # Compute the nominal line width
+    nominal_lw = 2.94 * slitasec * deveny_grangle.deveny_amag(grangle)
 
-    # Find the lines in the extracted spectrum
-    n_c, centers, _ = find_lines(mspectra, thresh=thresh)
-    if debug:
-        print(f"Back in the main program, number of lines: {n_c}")
-        print(f"Line Centers: {[f'{cent:.1f}' for cent in centers]}")
+    # Pull the collimator focus values from the first and last files
+    focus_0 = row["collfoc"]
+    focus_1 = focus_icl.summary["collfoc"][-1]
+    # Find the delta between focus values
+    delta_focus = (focus_1 - focus_0) / (len(focus_icl.files) - 1)
+    if delta_focus == 0:
+        raise utils.ObstoolsError("No change in focus over this set of images")
 
-    return centers, trace, mid_collfoc, mspectra
+    # Examine the middle image
+    mid_file = pathlib.Path(focus_icl.files[len(focus_icl.files) // 2])
+
+    find_lines_title = (
+        f"{mid_file.name}   Grating: {grating}   GRANGLE: "
+        + f"{grangle:.2f}   Lamps: {lampcal}"
+    )
+
+    optimal_focus_title = (
+        f"Grating: {grating}    Slit width: {slitasec:.2f} arcsec"
+        + f"    Binning: {binning}    Nominal line width: "
+        + f"{nominal_lw:.2f} pixels"
+    )
+
+    return FocusParams(
+        mid_file=mid_file,
+        nominal=nominal_lw,
+        start=focus_0,
+        end=focus_1,
+        delta=delta_focus,
+        plot_title=find_lines_title,
+        opt_title=optimal_focus_title,
+        mnttemp=mnttemp,
+        binning=binning,
+    )
 
 
-def trim_deveny_image(filename: pathlib.Path) -> tuple[np.ndarray, float]:
-    """Trim a DeVeny Image
+def get_lines_from_ccd(
+    ccd: astropy.nddata.CCDData,
+    thresh: float = 20.0,
+    window: int = 11,
+    trace: np.ndarray = None,
+    verbose: bool = True,
+) -> LineInfo:
+    """Extract the lines from the CCD image
 
-    The IDL code from which this was ported contains a large amount of
-    vestigial code from previous versions of the DeVeny camera, including
-    instances where the CCD was read out using 2 amplifiers and required
-    special treatment in order to balance the two sides of the output image.
-
-    The code below consists of the lines of code that were actually running
-    using the keywords passed from current version of ``dfocus.pro``, and the
-    pieces of that code that are actually used.
-
-    Specifically, this routine trims off the 50 prescan and 50 postscan pixels,
-    as well as several rows off the top and bottom.  (Extracts rows ``[12:512]``)
+    Since these steps are repeated often enough, pull them out into a separate
+    function.
 
     Parameters
     ----------
-    filename : :obj:`~pathlib.Path`
-        Filename of the spectrum to get and trim
+    ccd : :obj:`~astropy.nddata.CCDData`
+        The CCD object returned from :meth:`~ccdproc.ImageFileCollection.ccds`
+    thresh : :obj:`float`, optional
+        Threshold above which to identify lines  (Default: 20 DN above bkgd)
+    window : :obj:`int`, optional
+        Window over which to average the spectrum  (Default: 11 pixels)
+
+    Returns
+    -------
+    :class:`LineInfo`
+        Contains the relevant information about the lines found in the frame
+    """
+    # Process the input CCDData object
+    spec_2d = ccdproc.trim_image(ccd, ccd.header["TRIMSEC"]).data
+
+    # If no trace provided, produce one
+    trace = centered_trace(spec_2d.data) if trace is None else trace
+
+    # Extract the spectrum
+    spec_1d = extract_spectrum(spec_2d, trace, window=window, thresh=thresh)
+    # Find the lines in the extracted spectrum
+    centers, fwhm = find_lines(spec_1d, thresh=thresh, verbose=verbose)
+
+    # Return the DataClass
+    return LineInfo(trace=trace, spec_1d=spec_1d, centers=centers, fwhm=fwhm)
+
+
+def centered_trace(spec2d: np.ndarray) -> np.ndarray:
+    """Construct a simple trace down the middle of the image
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    spec2d : :obj:`~numpy.ndarray`
+        The 2D image for which to create the trace
 
     Returns
     -------
     :obj:`~numpy.ndarray`
-        The trimmed CCD image
-    :obj:`float`
-        The collimator focus value for this image
+        The desired trace
     """
-
-    # Parameters for DeVeny (2015 Deep-Depletion Device):
-    nxpix, prepix = 2048, 50
-
-    # Read in the file
-    ccd = astropy.nddata.CCDData.read(filename)
-
-    # Trim the image (remove top and bottom rows) -- why this particular range?
-    # Trim off the 50 prepixels and the 50 postpixels; RETURN
-    return ccd.data[12:512, prepix : prepix + nxpix], ccd.header["COLLFOC"]
+    # Build the trace for spectrum extraction
+    n_y, n_x = spec2d.shape
+    return np.full(n_x, n_y / 2, dtype=float).reshape((1, n_x))
 
 
-def extract_spectrum(spectrum: np.ndarray, traces: np.ndarray, win: int) -> np.ndarray:
+def extract_spectrum(
+    spectrum: np.ndarray,
+    traces: np.ndarray,
+    window: int,
+    thresh: float = 20.0,
+    verbose: bool = False,
+) -> np.ndarray:
     """Object spectral extraction routine
 
-    Extract spectra by averaging over the specified window
+    Extract spectra by averaging over the specified window and background
+    subtract
 
     Parameters
     ----------
@@ -437,46 +506,54 @@ def extract_spectrum(spectrum: np.ndarray, traces: np.ndarray, win: int) -> np.n
         The trimmed spectral image
     traces : :obj:`~numpy.ndarray`
         The trace(s) along which to extract spectra
-    win : :obj:`int`
+    window : :obj:`int`
         Window over which to average the spectrum
+    thresh : :obj:`float`, optional
+        Threshold above which to identify lines [Default: 20 DN above bkgd]
+    verbose : :obj:`bool`, optional
+        Produce verbose output?  [Default: False]
 
     Returns
     -------
     :obj:`~numpy.ndarray`
-        2D or 3D array of spectra of individual orders
+        Background-subtracted extracted spectrum
     """
     # Spec out the shape, and create an empty array to hold the output spectra
     norders, n_x = traces.shape
-    spectra = np.empty((norders, n_x), dtype=float)
-    speca = np.empty(n_x, dtype=float)
+    if norders != 1:
+        raise utils.ObstoolsError("Cannot deal with multiple traces")
+    extracted_spectrum = np.empty(n_x, dtype=float)
 
     # Set extraction window size
-    half_window = int(win) // 2
+    half_window = int(window) // 2
 
-    for order in range(norders):
-        # Because of python indexing, we need to "+1" the upper limit in order
-        #   to get the full wsize elements for the average
-        trace = traces[order, :].astype(int)
-        for i in range(n_x):
-            speca[i] = np.average(
-                spectrum[trace[i] - half_window : trace[i] + half_window + 1, i]
-            )
-        spectra[order, :] = speca.reshape((1, n_x))
+    # Because of python indexing, we need to "+1" the upper limit in order
+    #   to get the full wsize elements for the average
+    trace = traces[0, :].astype(int)
+    # Do this as a loop since a trace may not be a simple row through the image
+    for i in range(n_x):
+        extracted_spectrum[i] = np.average(
+            spectrum[trace[i] - half_window : trace[i] + half_window + 1, i]
+        )
 
-    return spectra
+    # Find background from median value of the image:
+    bkgd = np.median(extracted_spectrum)
+    if verbose:
+        print(
+            f"  Background level: {bkgd:.1f}"
+            + f"   Detection threshold level: {bkgd+thresh:.1f}"
+        )
+
+    # Return the background-subtracted spectrum
+    return extracted_spectrum - bkgd
 
 
 def find_lines(
-    image: np.ndarray,
+    spectrum: np.ndarray,
     thresh: float = 20.0,
     minsep: int = 11,
     verbose: bool = True,
-    do_plot: bool = False,
-    focus_dict: dict = None,
-    pdf: PdfPages = None,
-    docfig: bool = False,
-    path: pathlib.Path = None,
-) -> tuple[int, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Automatically find and centroid lines in a 1-row image
 
     Uses :func:`scipy.signal.find_peaks` for this task
@@ -484,198 +561,180 @@ def find_lines(
     Parameters
     ----------
     image : :obj:`~numpy.ndarray`
-        Extracted spectrum
+        Extracted 1D spectrum
     thresh : :obj:`float`, optional
         Threshold above which to indentify lines [Default: 20 DN above bkgd]
     minsep : :obj:`int`, optional
         Minimum line separation for identification [Default: 11 pixels]
     verbose : :obj:`bool`, optional
         Produce verbose output?  [Default: False]
-    do_plot : :obj:`bool`, optional
-        Create a plot on the provided axes?  [Default: False]
-    focus_dict : :obj:`dict`, optional
-        Dictionary containing needed variables for plot  [Default: None]
-    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`, optional
-        The PDF object into which to place plots (Default: None)
-    docfig : :obj:`bool`, optional
-        Are these figures for the documentation pages (Default: False)
-    path: : :obj:`~pathlib.Path`, optional
-        Path into which to save the documentation figures (Default: None)
 
     Returns
     -------
-    n_c : :obj:`int`
-        Number of lines found and returned
     centers : :obj:`~numpy.ndarray`
         Line centers (pixel #)
     fwhm : :obj:`~numpy.ndarray`
         The computed FWHM for each peak
     """
-    # Get size and flatten to 1D
-    _, n_x = image.shape
-    spec = np.ndarray.flatten(image)
-
-    # Find background from median value of the image:
-    bkgd = np.median(spec)
-    if verbose:
-        print(
-            f"  Background level: {bkgd:.1f}"
-            + f"   Detection threshold level: {bkgd+thresh:.1f}"
-        )
-
     # Use scipy to find peaks & widths -- no more janky IDL-based junk
-    centers, _ = scipy.signal.find_peaks(
-        newspec := spec - bkgd, height=thresh, distance=minsep
-    )
-    fwhm = (scipy.signal.peak_widths(newspec, centers))[0]
-
+    centers, _ = scipy.signal.find_peaks(spectrum, height=thresh, distance=minsep)
+    fwhm = (scipy.signal.peak_widths(spectrum, centers))[0]
+    # Print a statement, if desired
     if verbose:
         print(f" Number of lines found: {len(centers)}")
-
-    # Produce a plot for posterity, if directed
-    if do_plot:
-        # Set up the plot environment
-        _, axis = plt.subplots()
-        tsz = 8
-
-        # Plot the spectrum, mark the peaks, and label them
-        axis.plot(np.arange(len(spec)), newspec)
-        axis.set_ylim(0, (yrange := 1.2 * max(newspec)))
-        axis.plot(centers, newspec[centers.astype(int)] + 0.02 * yrange, "k*")
-        for cen in centers:
-            axis.text(
-                cen,
-                newspec[int(np.round(cen))] + 0.03 * yrange,
-                f"{cen:.0f}",
-                fontsize=tsz,
-            )
-
-        # Make pretty & Save
-        axis.set_title(focus_dict["plot_title"], fontsize=tsz * 1.2)
-        axis.set_xlabel("CCD Column", fontsize=tsz)
-        axis.set_ylabel("I (DN)", fontsize=tsz)
-        axis.set_xlim(0, n_x + 2)
-        axis.tick_params("both", labelsize=tsz, direction="in", top=True, right=True)
-        plt.tight_layout()
-        if pdf is None:
-            plt.show()
-        else:
-            pdf.savefig()
-            if docfig:
-                for ext in ["png", "pdf", "svg"]:
-                    plt.savefig(path / f"pyfocus.page1_example.{ext}")
-        plt.close()
-
-    return len(centers), centers, fwhm
+    return centers, fwhm
 
 
 def fit_focus_curves(
-    fwhm: np.ndarray, fnom: float = 2.7, norder: int = 2, debug: bool = False
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Fit line / star focus curves
+    width_array: np.ndarray,
+    focus_pars: FocusParams,
+    fit_order: int = 2,
+    debug: bool = False,
+) -> FocusCurves:
+    """Fit line focus curves
 
     [extended_summary]
 
     Parameters
     ----------
-    fwhm : :obj:`~numpy.ndarray`
+    width_array : :obj:`~numpy.ndarray`
         Array of FWHM for all lines as a function of COLLFOC
-    fnom : :obj:`float`, optional
-        Nominal FHWM of an in-focus line. (Default: 2.7)
-    norder : :obj:`int`, optional
+    focus_pars : :class:`FocusParams`
+        Focus parameters DataClass from :func:`parse_focus_headers`
+    fit_order : :obj:`int`, optional
         Polynomial order of the focus fit (Default: 2 = Quadratic)
     debug : :obj:`bool`, optional
         Print debug statements  (Default: False)
 
     Returns
     -------
-    min_cf_idx_value : :obj:`~numpy.ndarray`
-        Best fit focus values
-    optimal_cf_idx_value : :obj:`~numpy.ndarray`
-        Best fit linewidths
-    min_linewidth : :obj:`~numpy.ndarray`
-        Minimum linewidths
-    foc_fits : :obj:`~numpy.ndarray`
-        Fit parameters (for plotting)
+    :class:`FocusCurves`
+        The focus curve object.
     """
-    # Warning Filter -- Polyfit RankWarning, don't wanna hear about it
-    warnings.simplefilter("ignore", np.RankWarning)
+    # Get the number of focus frames, and number of found lines
+    n_frames, n_centers = width_array.shape
 
-    # Create the various arrays / lists needed
-    n_focus, n_centers = fwhm.shape
-    min_linewidth = []
-    min_cf_idx_value = []
-    optimal_cf_idx_value = []
-    foc_fits = []
+    # Create the various arrays needed (full of NaN to begin with)
+    collfoc_vals = focus_pars.start + np.arange(n_frames) * focus_pars.delta
 
-    # Fitting arrays (these are indices for collimator focus)
-    cf_idx_coarse = np.arange(n_focus, dtype=float)
-    cf_idx_fine = np.arange(0, n_focus - 1 + 0.1, 0.1, dtype=float)
+    min_linewidth = np.full((n_centers,), np.nan, dtype=float)
+    min_collfoc = np.full((n_centers,), np.nan, dtype=float)
+    optimal_collfoc = np.full((n_centers,), np.nan, dtype=float)
+    foc_fits = np.full((n_centers, fit_order + 1), np.nan, dtype=float)
 
     # Loop through lines to find the best focus for each one
     for i in range(n_centers):
         # Data are the FWHM for this line at different COLLFOC
-        fwhms_of_this_line = fwhm[:, i]
+        widths_this_line = width_array[:, i]
 
         # Find unphysically large or small FWHM (or NaN) -- set to np.nan
-        bad_idx = np.where(
-            np.logical_or(fwhms_of_this_line < 1.0, fwhms_of_this_line > 15.0)
+        bad_idx = (
+            (widths_this_line < 1.0)
+            | (widths_this_line > 15.0)
+            | ~np.isfinite(widths_this_line)
         )
-        fwhms_of_this_line[bad_idx] = np.nan
-        fwhms_of_this_line[np.isnan(fwhms_of_this_line)] = np.nan
+        widths_this_line[bad_idx] = np.nan
 
-        # If more than 3 of the FHWM are bad for this line, skip and go on
-        if len(bad_idx) > 3:
-            # Add values to the lists for proper indexing
-            for flst in [min_linewidth, min_cf_idx_value, optimal_cf_idx_value]:
-                flst.append(None)
+        # If more than 1/3 of the FHWM are bad for this line, skip and go on
+        if np.sum(bad_idx) > n_frames / 3:
             continue
 
         # Do a polynomial fit (norder) to the FWHM vs COLLFOC index
         # fit = np.polyfit(cf_idx_coarse, fwhms_of_this_line, norder)
-        fit = utils.good_poly(cf_idx_coarse, fwhms_of_this_line, norder, 2.0)
-        foc_fits.append(fit)
+        fit = utils.good_poly(collfoc_vals, widths_this_line, fit_order, 2.0)
+        foc_fits[i] = fit
         if debug:
             print(f"In fit_focus_curves(): fit = {fit}")
 
-        # If good_poly() returns zeros, deal with it accordingly
-        if all(value == 0 for value in fit):
-            min_cf_idx_value.append(np.nan)
-            min_linewidth.append(np.nan)
-            optimal_cf_idx_value.append(np.nan)
+        # If good_poly() returns zeros, skip and go on
+        #  If quadratic fit is concave DOWN, skip and go on
+        if all(value == 0 for value in fit) or fit[2] < 0:
             continue
 
-        # Use the fine grid to evaluate the curve miniumum
-        focus_curve = np.polyval(fit, cf_idx_fine)  # fitfine
-        min_cf_idx_value.append(cf_idx_fine[np.argmin(focus_curve)])  # focus
-        min_linewidth.append(np.min(focus_curve))  # minfoc
+        # Evaluate the curve minumum as root of derivative
+        poly = np.polynomial.Polynomial(fit)
+        min_collfoc[i] = poly.deriv(1).roots()[0]
+        min_linewidth[i] = poly(min_collfoc[i])
 
         # Compute the nominal focus position as the larger of the two points
         #  where the polymonial function crosses fnom
-        coeffs = [fit[0], fit[1], fit[2] - fnom]
+        fnom_curve = np.polynomial.Polynomial(
+            [fit[0] - focus_pars.nominal, fit[1], fit[2]]
+        )
+        fnom_roots = fnom_curve.roots()
         if debug:
-            print(f"Roots: {np.roots(coeffs)}")
-        optimal_cf_idx_value.append(np.max(np.real(np.roots(coeffs))))
+            print(f"FNOM Roots: {fnom_roots}")
+        optimal_collfoc[i] = np.max(np.real(fnom_roots))
 
     # After looping, return the items as numpy arrays
-    return (
-        np.asarray(min_cf_idx_value),
-        np.asarray(optimal_cf_idx_value),
-        np.asarray(min_linewidth),
-        np.asarray(foc_fits),
+    return FocusCurves(
+        min_focus_values=min_collfoc,
+        optimal_focus_values=optimal_collfoc,
+        min_linewidths=min_linewidth,
+        fit_pars=foc_fits,
     )
 
 
 # Plotting Routines ==========================================================#
+def plot_lines(
+    spectrum: np.ndarray,
+    centers: np.ndarray,
+    focus_pars: FocusParams = None,
+    plot_pars: PlotParams = None,
+):
+    """Plot centroid lines in a 1-row image
+
+    Parameters
+    ----------
+    spectrum : :obj:`~numpy.ndarray`
+        Extracted spectrum
+    centers : :obj:`~numpy.ndarray`
+        The line centers, as reported by :func:`find_lines`
+    focus_pars : :class:`FocusParams`, optional
+        DataClass containing needed variables for plot
+    plot_pars : :class:`PlotParams`, optional
+        DataClass containing needed parameters for plotting
+    """
+    # Set up the plot environment
+    _, axis = plt.subplots()
+    tsz = 8
+
+    # Plot the spectrum, mark the peaks, and label them
+    axis.plot(np.arange(len(spectrum)), spectrum)
+    axis.set_ylim(0, (yrange := 1.2 * max(spectrum)))
+    axis.plot(centers, spectrum[centers.astype(int)] + 0.02 * yrange, "k*")
+    for cen in centers:
+        axis.text(
+            cen,
+            spectrum[int(np.round(cen))] + 0.03 * yrange,
+            f"{cen:.0f}",
+            fontsize=tsz,
+        )
+
+    # Make pretty & Save
+    axis.set_title(focus_pars.plot_title, fontsize=tsz * 1.2)
+    axis.set_xlabel("CCD Column", fontsize=tsz)
+    axis.set_ylabel("I (DN)", fontsize=tsz)
+    axis.set_xlim(0, len(spectrum) + 2)
+    axis.tick_params("both", labelsize=tsz, direction="in", top=True, right=True)
+    plt.tight_layout()
+    if plot_pars.pdf is None:
+        plt.show()
+    else:
+        plot_pars.pdf.savefig()
+        if plot_pars.docfig:
+            for ext in ["png", "pdf", "svg"]:
+                plt.savefig(plot_pars.path / f"pyfocus.page1_example.{ext}")
+    plt.close()
+
+
 def plot_optimal_focus(
-    focus: dict,
+    focus: FocusParams,
     centers: np.ndarray,
     optimal_focus_values: np.ndarray,
     med_opt_focus: float,
+    plot_pars: PlotParams,
     debug: bool = False,
-    pdf: PdfPages = None,
-    docfig: bool = False,
-    path: pathlib.Path = None,
 ):
     """Make the Optimal Focus Plot (IDL2 Window)
 
@@ -683,8 +742,8 @@ def plot_optimal_focus(
 
     Parameters
     ----------
-    focus : :obj:`dict`
-        Dictionary of the various focus-related quantities
+    focus : :class:`FocusParams`
+        Dataclass of the various focus-related quantities
     centers : :obj:`~numpy.ndarray`
         Array of the centers of each line
     optimal_focus_values : :obj:`~numpy.ndarray`
@@ -693,12 +752,8 @@ def plot_optimal_focus(
         Median optimal focus value
     debug : :obj:`bool`, optional
         Print debug statements  (Default: False)
-    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`, optional
-        The PDF object into which to place plots (Default: None)
-    docfig : :obj:`bool`, optional
-        Are these figures for the documentation pages (Default: False)
-    path: : :obj:`~pathlib.Path`, optional
-        Path into which to save the documentation figures (Default: None)
+    plot_pars : :class:`PlotParams`
+        DataClass containing needed parameters for plotting
     """
     if debug:
         print("=" * 20)
@@ -707,11 +762,11 @@ def plot_optimal_focus(
     tsz = 8
     axis.plot(centers, optimal_focus_values, ".")
     axis.set_xlim(0, 2050)
-    axis.set_ylim(focus["start"] - focus["delta"], focus["end"] + focus["delta"])
+    axis.set_ylim(focus.start - focus.delta, focus.end + focus.delta)
     axis.set_title(
         "Optimal focus position vs. line position, median =  "
         + f"{med_opt_focus:.2f} mm  "
-        + f"(Mount Temp: {focus['mnttemp']:.1f}$^\\circ$C)",
+        + f"(Mount Temp: {focus.mnttemp:.1f}$^\\circ$C)",
         fontsize=tsz * 1.2,
     )
     axis.hlines(
@@ -722,35 +777,28 @@ def plot_optimal_focus(
         color="magenta",
         ls="--",
     )
-    axis.set_xlabel(f"CCD Column\n{focus['opt_title']}", fontsize=tsz)
+    axis.set_xlabel(f"CCD Column\n{focus.opt_title}", fontsize=tsz)
     axis.set_ylabel("Optimal Focus (mm)", fontsize=tsz)
     axis.grid(which="both", color="#c0c0c0", linestyle="-", linewidth=0.5)
 
     axis.tick_params("both", labelsize=tsz, direction="in", top=True, right=True)
     plt.tight_layout()
-    if pdf is None:
+    if plot_pars.pdf is None:
         plt.show()
     else:
-        pdf.savefig()
-        if docfig:
+        plot_pars.pdf.savefig()
+        if plot_pars.docfig:
             for ext in ["png", "pdf", "svg"]:
-                plt.savefig(path / f"pyfocus.page2_example.{ext}")
+                plt.savefig(plot_pars.path / f"pyfocus.page2_example.{ext}")
     plt.close()
 
 
 def plot_focus_curves(
     centers: np.ndarray,
     line_width_array: np.ndarray,
-    min_focus_values: np.ndarray,
-    optimal_focus_values: np.ndarray,
-    min_linewidths: np.ndarray,
-    fit_pars: np.ndarray,
-    delta_focus: float,
-    focus_0: float,
-    fnom: float = 2.7,
-    pdf: PdfPages = None,
-    docfig: bool = False,
-    path: pathlib.Path = None,
+    focus_curves: FocusCurves,
+    focus_pars: FocusParams,
+    plot_pars: PlotParams,
 ):
     """Make the big plot of all the focus curves (IDL1 Window)
 
@@ -762,59 +810,61 @@ def plot_focus_curves(
         List of line centers from find_lines()
     line_width_array : :obj:`~numpy.ndarray`
         Array of line widths from each COLLFOC setting for each line
-    min_focus_values : :obj:`~numpy.ndarray`
-        List of the minimum focus values found from the polynomial fit
-    optimal_focus_values : :obj:`~numpy.ndarray`
-        List of the optimal focus values found from the polynomial fit
-    min_linewidths : :obj:`~numpy.ndarray`
-        List of the minumum linewidths found from the fitting
-    fit_pars : :obj:`~numpy.ndarray`
-        Array of the polynomial fit parameters for each line
-    delta_focus : :obj:`float`
-        Spacing between COLLFOC settings
-    focus_0 : :obj:`float`
-        Lower end of the COLLFOC range
-    fnom : :obj:`float`, optional
-        Nominal (optimal) linewidth  (Default: 2.7)
-    pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`, optional
-        The PDF object into which to place plots (Default: None)
-    docfig : :obj:`bool`, optional
-        Are these figures for the documentation pages (Default: False)
-    path: : :obj:`~pathlib.Path`, optional
-        Path into which to save the documentation figures (Default: None)
+    focus_curves : :class:`FocusCurves`
+        The set of outputs from the focus curve fitting
+    focus_pars : :obj:`FocusParams`, optional
+        DataClass containing needed variables for plot
+    plot_pars : :class:`PlotParams`
+        DataClass containing needed parameters for plotting
     """
     # Warning Filter -- Matplotlib doesn't like going from masked --> NaN
     warnings.simplefilter("ignore", UserWarning)
 
     # Set up variables
-    n_foc, n_c = line_width_array.shape
-    focus_idx = np.arange(n_foc)
-    focus_x = focus_idx * delta_focus + focus_0
+    n_frames, n_lines = line_width_array.shape
+    focus_idx = np.arange(n_frames)
+    focus_x = focus_idx * focus_pars.delta + focus_pars.start
 
     # Set the plotting array
     ncols = 6
-    nrows = n_c // ncols + 1
+    nrows = n_lines // ncols + 1
     fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=(8.5, 11))
     tsz = 6  # type size
 
     for i, axis in enumerate(axes.flatten()):
-        if i < n_c:
+        if i < n_lines:
             # Plot the points and the polynomial fit
             axis.plot(focus_x, line_width_array[:, i], "kD", fillstyle="none")
-            axis.plot(focus_x, np.polyval(fit_pars[i, :], focus_idx), "g-")
+            poly = np.polynomial.Polynomial(focus_curves.fit_pars[i, :])
+            axis.plot(focus_x, poly(focus_x), "g-")
 
             # Plot vertical lines to indicate minimum and optimal focus
-            axis.vlines(min_focus_values[i], 0, min_linewidths[i], color="r", ls="-")
-            axis.vlines(optimal_focus_values[i], 0, fnom, color="b", ls="-")
+            axis.vlines(
+                focus_curves.min_focus_values[i],
+                0,
+                focus_curves.min_linewidths[i],
+                color="r",
+                ls="-",
+            )
+            axis.vlines(
+                focus_curves.optimal_focus_values[i],
+                0,
+                focus_pars.nominal,
+                color="b",
+                ls="-",
+            )
 
             # Plot parameters to make pretty
             # ax.set_ylim(0, np.nanmax(line_width_array[:,i]))
             axis.set_ylim(0, 7.9)
-            axis.set_xlim(np.min(focus_x) - delta_focus, np.max(focus_x) + delta_focus)
+            axis.set_xlim(
+                np.min(focus_x) - focus_pars.delta, np.max(focus_x) + focus_pars.delta
+            )
             axis.set_xlabel("Collimator Position (mm)", fontsize=tsz)
             axis.set_ylabel("FWHM (pix)", fontsize=tsz)
             axis.set_title(
-                f"LC: {centers[i]:.0f}  Fnom: {fnom:.2f} pixels", fontsize=tsz
+                f"LC: {centers[i]:.0f}  Fnom: {focus_pars.nominal:.2f} pixels",
+                fontsize=tsz,
             )
             axis.tick_params(
                 "both", labelsize=tsz, direction="in", top=True, right=True
@@ -825,13 +875,13 @@ def plot_focus_curves(
             fig.delaxes(axis)
 
     plt.tight_layout()
-    if pdf is None:
+    if plot_pars.pdf is None:
         plt.show()
     else:
-        pdf.savefig()
-        if docfig:
+        plot_pars.pdf.savefig()
+        if plot_pars.docfig:
             for ext in ["png", "pdf", "svg"]:
-                plt.savefig(path / f"pyfocus.page3_example.{ext}")
+                plt.savefig(plot_pars.path / f"pyfocus.page3_example.{ext}")
 
     plt.close()
 
@@ -861,15 +911,16 @@ def find_lines_in_spectrum(
         List of line centers found in the image
     """
     # Get the trimmed image
-    spectrum, _ = trim_deveny_image(filename)
+    ccd = astropy.nddata.CCDData.read(filename)
+    spectrum = ccdproc.trim_image(ccd, ccd.header["TRIMSEC"]).data
 
     # Build the trace for spectrum extraction
     n_y, n_x = spectrum.shape
     traces = np.full(n_x, n_y / 2, dtype=float).reshape((1, n_x))
-    spectra = extract_spectrum(spectrum, traces, win=11)
+    spectra = extract_spectrum(spectrum, traces, window=11)
 
     # Find the lines!
-    _, centers, _ = find_lines(spectra, thresh=thresh)
+    centers, _ = find_lines(spectra, thresh=thresh)
 
     return centers
 
