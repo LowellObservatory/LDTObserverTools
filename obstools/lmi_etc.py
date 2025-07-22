@@ -801,7 +801,10 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
             ";;".join(self.FILE_FILTERS),
             self.FILE_FILTERS[1],
         )
+        # Check that what is returned from the dialog box is sane
         file_name = pathlib.Path(file_name)
+        if file_name.is_dir():
+            return
 
         # Stuff the current Qt data table into an AstroPy Table
         table_data = []

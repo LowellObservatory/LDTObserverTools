@@ -28,151 +28,6 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName("gridLayout")
-        self.modeSelector = QtWidgets.QGroupBox(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
-        )
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.modeSelector.sizePolicy().hasHeightForWidth())
-        self.modeSelector.setSizePolicy(sizePolicy)
-        self.modeSelector.setObjectName("modeSelector")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.modeSelector)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.label_26 = QtWidgets.QLabel(parent=self.modeSelector)
-        self.label_26.setEnabled(True)
-        self.label_26.setObjectName("label_26")
-        self.verticalLayout.addWidget(self.label_26)
-        self.radioExpSnMag = QtWidgets.QRadioButton(parent=self.modeSelector)
-        self.radioExpSnMag.setChecked(True)
-        self.radioExpSnMag.setObjectName("radioExpSnMag")
-        self.verticalLayout.addWidget(self.radioExpSnMag)
-        self.radioExpPkMag = QtWidgets.QRadioButton(parent=self.modeSelector)
-        self.radioExpPkMag.setObjectName("radioExpPkMag")
-        self.verticalLayout.addWidget(self.radioExpPkMag)
-        self.radioSnExpMag = QtWidgets.QRadioButton(parent=self.modeSelector)
-        self.radioSnExpMag.setObjectName("radioSnExpMag")
-        self.verticalLayout.addWidget(self.radioSnExpMag)
-        self.radioMagSnExp = QtWidgets.QRadioButton(parent=self.modeSelector)
-        self.radioMagSnExp.setObjectName("radioMagSnExp")
-        self.verticalLayout.addWidget(self.radioMagSnExp)
-        self.stackedWidget = QtWidgets.QStackedWidget(parent=self.modeSelector)
-        self.stackedWidget.setObjectName("stackedWidget")
-        self.ExpSnMag = QtWidgets.QWidget()
-        self.ExpSnMag.setObjectName("ExpSnMag")
-        self.gridLayout_5 = QtWidgets.QGridLayout(self.ExpSnMag)
-        self.gridLayout_5.setObjectName("gridLayout_5")
-        self.input_1_Snr = QtWidgets.QLineEdit(parent=self.ExpSnMag)
-        self.input_1_Snr.setObjectName("input_1_Snr")
-        self.gridLayout_5.addWidget(self.input_1_Snr, 1, 1, 1, 1)
-        self.label_2 = QtWidgets.QLabel(parent=self.ExpSnMag)
-        self.label_2.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_2.setObjectName("label_2")
-        self.gridLayout_5.addWidget(self.label_2, 1, 0, 1, 1)
-        self.input_1_Magnitude = QtWidgets.QLineEdit(parent=self.ExpSnMag)
-        self.input_1_Magnitude.setObjectName("input_1_Magnitude")
-        self.gridLayout_5.addWidget(self.input_1_Magnitude, 0, 1, 1, 1)
-        self.label = QtWidgets.QLabel(parent=self.ExpSnMag)
-        self.label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label.setObjectName("label")
-        self.gridLayout_5.addWidget(self.label, 0, 0, 1, 1)
-        self.stackedWidget.addWidget(self.ExpSnMag)
-        self.ExpPeakMag = QtWidgets.QWidget()
-        self.ExpPeakMag.setObjectName("ExpPeakMag")
-        self.gridLayout_6 = QtWidgets.QGridLayout(self.ExpPeakMag)
-        self.gridLayout_6.setObjectName("gridLayout_6")
-        self.label_3 = QtWidgets.QLabel(parent=self.ExpPeakMag)
-        self.label_3.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_3.setObjectName("label_3")
-        self.gridLayout_6.addWidget(self.label_3, 0, 0, 1, 1)
-        self.input_2_PkCts = QtWidgets.QLineEdit(parent=self.ExpPeakMag)
-        self.input_2_PkCts.setObjectName("input_2_PkCts")
-        self.gridLayout_6.addWidget(self.input_2_PkCts, 0, 1, 1, 1)
-        self.label_4 = QtWidgets.QLabel(parent=self.ExpPeakMag)
-        self.label_4.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_4.setObjectName("label_4")
-        self.gridLayout_6.addWidget(self.label_4, 1, 0, 1, 1)
-        self.input_2_Magnitude = QtWidgets.QLineEdit(parent=self.ExpPeakMag)
-        self.input_2_Magnitude.setObjectName("input_2_Magnitude")
-        self.gridLayout_6.addWidget(self.input_2_Magnitude, 1, 1, 1, 1)
-        self.stackedWidget.addWidget(self.ExpPeakMag)
-        self.SnrExpMag = QtWidgets.QWidget()
-        self.SnrExpMag.setObjectName("SnrExpMag")
-        self.gridLayout_7 = QtWidgets.QGridLayout(self.SnrExpMag)
-        self.gridLayout_7.setObjectName("gridLayout_7")
-        self.label_5 = QtWidgets.QLabel(parent=self.SnrExpMag)
-        self.label_5.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_5.setObjectName("label_5")
-        self.gridLayout_7.addWidget(self.label_5, 0, 0, 1, 1)
-        self.input_3_Exptime = QtWidgets.QLineEdit(parent=self.SnrExpMag)
-        self.input_3_Exptime.setObjectName("input_3_Exptime")
-        self.gridLayout_7.addWidget(self.input_3_Exptime, 0, 1, 1, 1)
-        self.label_6 = QtWidgets.QLabel(parent=self.SnrExpMag)
-        self.label_6.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_6.setObjectName("label_6")
-        self.gridLayout_7.addWidget(self.label_6, 1, 0, 1, 1)
-        self.input_3_Magnitude = QtWidgets.QLineEdit(parent=self.SnrExpMag)
-        self.input_3_Magnitude.setObjectName("input_3_Magnitude")
-        self.gridLayout_7.addWidget(self.input_3_Magnitude, 1, 1, 1, 1)
-        self.stackedWidget.addWidget(self.SnrExpMag)
-        self.MagSnrExp = QtWidgets.QWidget()
-        self.MagSnrExp.setObjectName("MagSnrExp")
-        self.gridLayout_8 = QtWidgets.QGridLayout(self.MagSnrExp)
-        self.gridLayout_8.setObjectName("gridLayout_8")
-        self.label_7 = QtWidgets.QLabel(parent=self.MagSnrExp)
-        self.label_7.setObjectName("label_7")
-        self.gridLayout_8.addWidget(self.label_7, 0, 0, 1, 1)
-        self.input_4_Snr = QtWidgets.QLineEdit(parent=self.MagSnrExp)
-        self.input_4_Snr.setObjectName("input_4_Snr")
-        self.gridLayout_8.addWidget(self.input_4_Snr, 0, 1, 1, 1)
-        self.label_8 = QtWidgets.QLabel(parent=self.MagSnrExp)
-        self.label_8.setObjectName("label_8")
-        self.gridLayout_8.addWidget(self.label_8, 1, 0, 1, 1)
-        self.input_4_Exptime = QtWidgets.QLineEdit(parent=self.MagSnrExp)
-        self.input_4_Exptime.setObjectName("input_4_Exptime")
-        self.gridLayout_8.addWidget(self.input_4_Exptime, 1, 1, 1, 1)
-        self.stackedWidget.addWidget(self.MagSnrExp)
-        self.verticalLayout.addWidget(self.stackedWidget)
-        self.computeButton = QtWidgets.QPushButton(parent=self.modeSelector)
-        self.computeButton.setDefault(True)
-        self.computeButton.setObjectName("computeButton")
-        self.verticalLayout.addWidget(self.computeButton)
-        self.gridLayout.addWidget(self.modeSelector, 1, 0, 1, 1)
-        self.tableButtons = QtWidgets.QGroupBox(parent=self.centralwidget)
-        self.tableButtons.setObjectName("tableButtons")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.tableButtons)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.buttonAdd2Table = QtWidgets.QPushButton(parent=self.tableButtons)
-        self.buttonAdd2Table.setObjectName("buttonAdd2Table")
-        self.horizontalLayout.addWidget(self.buttonAdd2Table)
-        self.buttonShowTable = QtWidgets.QPushButton(parent=self.tableButtons)
-        self.buttonShowTable.setObjectName("buttonShowTable")
-        self.horizontalLayout.addWidget(self.buttonShowTable)
-        self.gridLayout.addWidget(self.tableButtons, 3, 0, 1, 1)
         self.keyOutputs = QtWidgets.QGroupBox(parent=self.centralwidget)
         self.keyOutputs.setObjectName("keyOutputs")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.keyOutputs)
@@ -238,95 +93,17 @@ class Ui_MainWindow(object):
         self.label_17.setObjectName("label_17")
         self.gridLayout_2.addWidget(self.label_17, 3, 0, 1, 1)
         self.gridLayout.addWidget(self.keyOutputs, 2, 0, 1, 1)
-        self.otherOutputs = QtWidgets.QGroupBox(parent=self.centralwidget)
-        self.otherOutputs.setObjectName("otherOutputs")
-        self.gridLayout_3 = QtWidgets.QGridLayout(self.otherOutputs)
-        self.gridLayout_3.setObjectName("gridLayout_3")
-        self.label_23 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_23.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_23.setObjectName("label_23")
-        self.gridLayout_3.addWidget(self.label_23, 4, 0, 1, 1)
-        self.label_19 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_19.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_19.setObjectName("label_19")
-        self.gridLayout_3.addWidget(self.label_19, 0, 0, 1, 1)
-        self.label_21 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_21.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_21.setObjectName("label_21")
-        self.gridLayout_3.addWidget(self.label_21, 2, 0, 1, 1)
-        self.label_22 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_22.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_22.setObjectName("label_22")
-        self.gridLayout_3.addWidget(self.label_22, 3, 0, 1, 1)
-        self.outputNpix = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputNpix.setText("")
-        self.outputNpix.setObjectName("outputNpix")
-        self.gridLayout_3.addWidget(self.outputNpix, 0, 1, 1, 1)
-        self.outputSkybright = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputSkybright.setText("")
-        self.outputSkybright.setObjectName("outputSkybright")
-        self.gridLayout_3.addWidget(self.outputSkybright, 1, 1, 1, 1)
-        self.outputPeakestar = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputPeakestar.setText("")
-        self.outputPeakestar.setObjectName("outputPeakestar")
-        self.gridLayout_3.addWidget(self.outputPeakestar, 3, 1, 1, 1)
-        self.label_20 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_20.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_20.setObjectName("label_20")
-        self.gridLayout_3.addWidget(self.label_20, 1, 0, 1, 1)
-        self.outputNestar = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputNestar.setText("")
-        self.outputNestar.setObjectName("outputNestar")
-        self.gridLayout_3.addWidget(self.outputNestar, 2, 1, 1, 1)
-        self.label_24 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_24.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_24.setObjectName("label_24")
-        self.gridLayout_3.addWidget(self.label_24, 5, 0, 1, 1)
-        self.label_25 = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.label_25.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_25.setObjectName("label_25")
-        self.gridLayout_3.addWidget(self.label_25, 6, 0, 1, 1)
-        self.outputNoisestar = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputNoisestar.setText("")
-        self.outputNoisestar.setObjectName("outputNoisestar")
-        self.gridLayout_3.addWidget(self.outputNoisestar, 4, 1, 1, 1)
-        self.outputNoisesky = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputNoisesky.setText("")
-        self.outputNoisesky.setObjectName("outputNoisesky")
-        self.gridLayout_3.addWidget(self.outputNoisesky, 5, 1, 1, 1)
-        self.outputNoiseccd = QtWidgets.QLabel(parent=self.otherOutputs)
-        self.outputNoiseccd.setText("")
-        self.outputNoiseccd.setObjectName("outputNoiseccd")
-        self.gridLayout_3.addWidget(self.outputNoiseccd, 6, 1, 1, 1)
-        self.gridLayout.addWidget(self.otherOutputs, 2, 1, 1, 1)
+        self.tableButtons = QtWidgets.QGroupBox(parent=self.centralwidget)
+        self.tableButtons.setObjectName("tableButtons")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.tableButtons)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.buttonAdd2Table = QtWidgets.QPushButton(parent=self.tableButtons)
+        self.buttonAdd2Table.setObjectName("buttonAdd2Table")
+        self.horizontalLayout.addWidget(self.buttonAdd2Table)
+        self.buttonShowTable = QtWidgets.QPushButton(parent=self.tableButtons)
+        self.buttonShowTable.setObjectName("buttonShowTable")
+        self.horizontalLayout.addWidget(self.buttonShowTable)
+        self.gridLayout.addWidget(self.tableButtons, 3, 0, 1, 1)
         self.inputBox = QtWidgets.QGroupBox(parent=self.centralwidget)
         self.inputBox.setObjectName("inputBox")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.inputBox)
@@ -439,12 +216,229 @@ class Ui_MainWindow(object):
         self.exitButton = QtWidgets.QPushButton(parent=self.centralwidget)
         self.exitButton.setObjectName("exitButton")
         self.gridLayout.addWidget(self.exitButton, 3, 1, 1, 1)
-        self.label_27 = QtWidgets.QLabel(parent=self.centralwidget)
-        font = QtGui.QFont()
-        font.setPointSize(26)
-        self.label_27.setFont(font)
-        self.label_27.setObjectName("label_27")
-        self.gridLayout.addWidget(self.label_27, 0, 1, 1, 1)
+        self.otherOutputs = QtWidgets.QGroupBox(parent=self.centralwidget)
+        self.otherOutputs.setObjectName("otherOutputs")
+        self.gridLayout_3 = QtWidgets.QGridLayout(self.otherOutputs)
+        self.gridLayout_3.setObjectName("gridLayout_3")
+        self.label_23 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_23.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_23.setObjectName("label_23")
+        self.gridLayout_3.addWidget(self.label_23, 4, 0, 1, 1)
+        self.label_19 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_19.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_19.setObjectName("label_19")
+        self.gridLayout_3.addWidget(self.label_19, 0, 0, 1, 1)
+        self.label_21 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_21.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_21.setObjectName("label_21")
+        self.gridLayout_3.addWidget(self.label_21, 2, 0, 1, 1)
+        self.label_22 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_22.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_22.setObjectName("label_22")
+        self.gridLayout_3.addWidget(self.label_22, 3, 0, 1, 1)
+        self.outputNpix = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputNpix.setText("")
+        self.outputNpix.setObjectName("outputNpix")
+        self.gridLayout_3.addWidget(self.outputNpix, 0, 1, 1, 1)
+        self.outputSkybright = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputSkybright.setText("")
+        self.outputSkybright.setObjectName("outputSkybright")
+        self.gridLayout_3.addWidget(self.outputSkybright, 1, 1, 1, 1)
+        self.outputPeakestar = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputPeakestar.setText("")
+        self.outputPeakestar.setObjectName("outputPeakestar")
+        self.gridLayout_3.addWidget(self.outputPeakestar, 3, 1, 1, 1)
+        self.label_20 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_20.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_20.setObjectName("label_20")
+        self.gridLayout_3.addWidget(self.label_20, 1, 0, 1, 1)
+        self.outputNestar = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputNestar.setText("")
+        self.outputNestar.setObjectName("outputNestar")
+        self.gridLayout_3.addWidget(self.outputNestar, 2, 1, 1, 1)
+        self.label_24 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_24.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_24.setObjectName("label_24")
+        self.gridLayout_3.addWidget(self.label_24, 5, 0, 1, 1)
+        self.label_25 = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.label_25.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_25.setObjectName("label_25")
+        self.gridLayout_3.addWidget(self.label_25, 6, 0, 1, 1)
+        self.outputNoisestar = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputNoisestar.setText("")
+        self.outputNoisestar.setObjectName("outputNoisestar")
+        self.gridLayout_3.addWidget(self.outputNoisestar, 4, 1, 1, 1)
+        self.outputNoisesky = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputNoisesky.setText("")
+        self.outputNoisesky.setObjectName("outputNoisesky")
+        self.gridLayout_3.addWidget(self.outputNoisesky, 5, 1, 1, 1)
+        self.outputNoiseccd = QtWidgets.QLabel(parent=self.otherOutputs)
+        self.outputNoiseccd.setText("")
+        self.outputNoiseccd.setObjectName("outputNoiseccd")
+        self.gridLayout_3.addWidget(self.outputNoiseccd, 6, 1, 1, 1)
+        self.gridLayout.addWidget(self.otherOutputs, 2, 1, 1, 1)
+        self.modeSelector = QtWidgets.QGroupBox(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.modeSelector.sizePolicy().hasHeightForWidth())
+        self.modeSelector.setSizePolicy(sizePolicy)
+        self.modeSelector.setObjectName("modeSelector")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.modeSelector)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label_26 = QtWidgets.QLabel(parent=self.modeSelector)
+        self.label_26.setEnabled(True)
+        self.label_26.setObjectName("label_26")
+        self.verticalLayout.addWidget(self.label_26)
+        self.radioExpSnMag = QtWidgets.QRadioButton(parent=self.modeSelector)
+        self.radioExpSnMag.setChecked(True)
+        self.radioExpSnMag.setObjectName("radioExpSnMag")
+        self.verticalLayout.addWidget(self.radioExpSnMag)
+        self.radioExpPkMag = QtWidgets.QRadioButton(parent=self.modeSelector)
+        self.radioExpPkMag.setObjectName("radioExpPkMag")
+        self.verticalLayout.addWidget(self.radioExpPkMag)
+        self.radioSnExpMag = QtWidgets.QRadioButton(parent=self.modeSelector)
+        self.radioSnExpMag.setObjectName("radioSnExpMag")
+        self.verticalLayout.addWidget(self.radioSnExpMag)
+        self.radioMagSnExp = QtWidgets.QRadioButton(parent=self.modeSelector)
+        self.radioMagSnExp.setObjectName("radioMagSnExp")
+        self.verticalLayout.addWidget(self.radioMagSnExp)
+        self.stackedWidget = QtWidgets.QStackedWidget(parent=self.modeSelector)
+        self.stackedWidget.setObjectName("stackedWidget")
+        self.ExpSnMag = QtWidgets.QWidget()
+        self.ExpSnMag.setObjectName("ExpSnMag")
+        self.gridLayout_5 = QtWidgets.QGridLayout(self.ExpSnMag)
+        self.gridLayout_5.setObjectName("gridLayout_5")
+        self.label = QtWidgets.QLabel(parent=self.ExpSnMag)
+        self.label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label.setObjectName("label")
+        self.gridLayout_5.addWidget(self.label, 0, 0, 1, 1)
+        self.input_1_Magnitude = QtWidgets.QLineEdit(parent=self.ExpSnMag)
+        self.input_1_Magnitude.setObjectName("input_1_Magnitude")
+        self.gridLayout_5.addWidget(self.input_1_Magnitude, 0, 1, 1, 1)
+        self.label_2 = QtWidgets.QLabel(parent=self.ExpSnMag)
+        self.label_2.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_2.setObjectName("label_2")
+        self.gridLayout_5.addWidget(self.label_2, 1, 0, 1, 1)
+        self.input_1_Snr = QtWidgets.QLineEdit(parent=self.ExpSnMag)
+        self.input_1_Snr.setObjectName("input_1_Snr")
+        self.gridLayout_5.addWidget(self.input_1_Snr, 1, 1, 1, 1)
+        self.stackedWidget.addWidget(self.ExpSnMag)
+        self.ExpPeakMag = QtWidgets.QWidget()
+        self.ExpPeakMag.setObjectName("ExpPeakMag")
+        self.gridLayout_6 = QtWidgets.QGridLayout(self.ExpPeakMag)
+        self.gridLayout_6.setObjectName("gridLayout_6")
+        self.label_3 = QtWidgets.QLabel(parent=self.ExpPeakMag)
+        self.label_3.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_3.setObjectName("label_3")
+        self.gridLayout_6.addWidget(self.label_3, 0, 0, 1, 1)
+        self.input_2_PkCts = QtWidgets.QLineEdit(parent=self.ExpPeakMag)
+        self.input_2_PkCts.setObjectName("input_2_PkCts")
+        self.gridLayout_6.addWidget(self.input_2_PkCts, 0, 1, 1, 1)
+        self.label_4 = QtWidgets.QLabel(parent=self.ExpPeakMag)
+        self.label_4.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_4.setObjectName("label_4")
+        self.gridLayout_6.addWidget(self.label_4, 1, 0, 1, 1)
+        self.input_2_Magnitude = QtWidgets.QLineEdit(parent=self.ExpPeakMag)
+        self.input_2_Magnitude.setObjectName("input_2_Magnitude")
+        self.gridLayout_6.addWidget(self.input_2_Magnitude, 1, 1, 1, 1)
+        self.stackedWidget.addWidget(self.ExpPeakMag)
+        self.SnrExpMag = QtWidgets.QWidget()
+        self.SnrExpMag.setObjectName("SnrExpMag")
+        self.gridLayout_7 = QtWidgets.QGridLayout(self.SnrExpMag)
+        self.gridLayout_7.setObjectName("gridLayout_7")
+        self.label_5 = QtWidgets.QLabel(parent=self.SnrExpMag)
+        self.label_5.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_5.setObjectName("label_5")
+        self.gridLayout_7.addWidget(self.label_5, 0, 0, 1, 1)
+        self.input_3_Exptime = QtWidgets.QLineEdit(parent=self.SnrExpMag)
+        self.input_3_Exptime.setObjectName("input_3_Exptime")
+        self.gridLayout_7.addWidget(self.input_3_Exptime, 0, 1, 1, 1)
+        self.label_6 = QtWidgets.QLabel(parent=self.SnrExpMag)
+        self.label_6.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_6.setObjectName("label_6")
+        self.gridLayout_7.addWidget(self.label_6, 1, 0, 1, 1)
+        self.input_3_Magnitude = QtWidgets.QLineEdit(parent=self.SnrExpMag)
+        self.input_3_Magnitude.setObjectName("input_3_Magnitude")
+        self.gridLayout_7.addWidget(self.input_3_Magnitude, 1, 1, 1, 1)
+        self.stackedWidget.addWidget(self.SnrExpMag)
+        self.MagSnrExp = QtWidgets.QWidget()
+        self.MagSnrExp.setObjectName("MagSnrExp")
+        self.gridLayout_8 = QtWidgets.QGridLayout(self.MagSnrExp)
+        self.gridLayout_8.setObjectName("gridLayout_8")
+        self.label_7 = QtWidgets.QLabel(parent=self.MagSnrExp)
+        self.label_7.setObjectName("label_7")
+        self.gridLayout_8.addWidget(self.label_7, 0, 0, 1, 1)
+        self.input_4_Snr = QtWidgets.QLineEdit(parent=self.MagSnrExp)
+        self.input_4_Snr.setObjectName("input_4_Snr")
+        self.gridLayout_8.addWidget(self.input_4_Snr, 0, 1, 1, 1)
+        self.label_8 = QtWidgets.QLabel(parent=self.MagSnrExp)
+        self.label_8.setObjectName("label_8")
+        self.gridLayout_8.addWidget(self.label_8, 1, 0, 1, 1)
+        self.input_4_Exptime = QtWidgets.QLineEdit(parent=self.MagSnrExp)
+        self.input_4_Exptime.setObjectName("input_4_Exptime")
+        self.gridLayout_8.addWidget(self.input_4_Exptime, 1, 1, 1, 1)
+        self.stackedWidget.addWidget(self.MagSnrExp)
+        self.verticalLayout.addWidget(self.stackedWidget)
+        self.computeButton = QtWidgets.QPushButton(parent=self.modeSelector)
+        self.computeButton.setDefault(True)
+        self.computeButton.setObjectName("computeButton")
+        self.verticalLayout.addWidget(self.computeButton)
+        self.gridLayout.addWidget(self.modeSelector, 1, 0, 1, 1)
         self.LowellLogo = QtWidgets.QLabel(parent=self.centralwidget)
         self.LowellLogo.setText("")
         self.LowellLogo.setPixmap(
@@ -453,6 +447,12 @@ class Ui_MainWindow(object):
         self.LowellLogo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.LowellLogo.setObjectName("LowellLogo")
         self.gridLayout.addWidget(self.LowellLogo, 0, 0, 1, 1)
+        self.label_28 = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(26)
+        self.label_28.setFont(font)
+        self.label_28.setObjectName("label_28")
+        self.gridLayout.addWidget(self.label_28, 0, 1, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 801, 24))
@@ -463,8 +463,8 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(0)
         self.inputBandpass.setCurrentIndex(2)
+        self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -472,59 +472,18 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(
             _translate("MainWindow", "LMI Exposure Time Calculator")
         )
-        self.modeSelector.setTitle(_translate("MainWindow", "Mode Selector"))
-        self.label_26.setText(
-            _translate("MainWindow", "Exposure Time Calculator Mode:")
-        )
-        self.radioExpSnMag.setText(
-            _translate("MainWindow", "Exposure time for a given S/N and magnitude")
-        )
-        self.radioExpPkMag.setText(
-            _translate(
-                "MainWindow", "Exposure time for a given peak counts and magnitude"
-            )
-        )
-        self.radioSnExpMag.setText(
-            _translate("MainWindow", "S/N for a given exposure time and magnitude")
-        )
-        self.radioMagSnExp.setText(
-            _translate("MainWindow", "Magnitude for a given S/N and exposure time")
-        )
-        self.label_2.setText(_translate("MainWindow", "S/N ratio (>0.1) :"))
-        self.label.setText(_translate("MainWindow", "Magnitude :"))
-        self.label_3.setText(_translate("MainWindow", "Peak Counts [e-]:"))
-        self.label_4.setText(_translate("MainWindow", "Magnitude :"))
-        self.label_5.setText(_translate("MainWindow", "Exposure Time (s) (>0.001) :"))
-        self.label_6.setText(_translate("MainWindow", "Magnitude :"))
-        self.label_7.setText(_translate("MainWindow", "S/N ratio (>0.1) :"))
-        self.label_8.setText(_translate("MainWindow", "Exposure Time (s) (>0.001) :"))
-        self.computeButton.setText(_translate("MainWindow", "Compute"))
-        self.tableButtons.setWhatsThis(
-            _translate("MainWindow", "<html><head/><body><p><br/></p></body></html>")
-        )
-        self.tableButtons.setTitle(_translate("MainWindow", "Save Outputs"))
-        self.buttonAdd2Table.setText(_translate("MainWindow", "Add to Table"))
-        self.buttonShowTable.setText(_translate("MainWindow", "Show Table"))
         self.keyOutputs.setTitle(_translate("MainWindow", "Key Outputs"))
         self.label_18.setText(_translate("MainWindow", "Binning :"))
         self.label_16.setText(_translate("MainWindow", "Magnitude :"))
         self.label_14.setText(_translate("MainWindow", "Exposure Time (s) :"))
         self.label_15.setText(_translate("MainWindow", "Filter :"))
         self.label_17.setText(_translate("MainWindow", "S/N Ratio :"))
-        self.otherOutputs.setTitle(_translate("MainWindow", "Other Outputs"))
-        self.label_23.setText(
-            _translate("MainWindow", "Noise contribution (star) [e-] :")
+        self.tableButtons.setWhatsThis(
+            _translate("MainWindow", "<html><head/><body><p><br/></p></body></html>")
         )
-        self.label_19.setText(_translate("MainWindow", "Num pixels in aperture :"))
-        self.label_21.setText(_translate("MainWindow", "Num e- from star :"))
-        self.label_22.setText(_translate("MainWindow", "Peak e- from star :"))
-        self.label_20.setText(_translate("MainWindow", "Sky brightness (e-/pix) :"))
-        self.label_24.setText(
-            _translate("MainWindow", "Noise contribution (sky) [e-] :")
-        )
-        self.label_25.setText(
-            _translate("MainWindow", "Noise contribution (CCD) [e-]:")
-        )
+        self.tableButtons.setTitle(_translate("MainWindow", "Save Outputs"))
+        self.buttonAdd2Table.setText(_translate("MainWindow", "Add to Table"))
+        self.buttonShowTable.setText(_translate("MainWindow", "Show Table"))
         self.inputBox.setTitle(_translate("MainWindow", "Telescope Setup"))
         self.inputBandpass.setItemText(0, _translate("MainWindow", "U"))
         self.inputBandpass.setItemText(1, _translate("MainWindow", "B"))
@@ -569,4 +528,43 @@ class Ui_MainWindow(object):
         self.label_12.setText(_translate("MainWindow", "Lunar Phase (days) :"))
         self.label_9.setText(_translate("MainWindow", "Filter :"))
         self.exitButton.setText(_translate("MainWindow", "Exit"))
-        self.label_27.setText(_translate("MainWindow", "LDT / Large Monolithic Imager"))
+        self.otherOutputs.setTitle(_translate("MainWindow", "Other Outputs"))
+        self.label_23.setText(
+            _translate("MainWindow", "Noise contribution (star) [e-] :")
+        )
+        self.label_19.setText(_translate("MainWindow", "Num pixels in aperture :"))
+        self.label_21.setText(_translate("MainWindow", "Num e- from star :"))
+        self.label_22.setText(_translate("MainWindow", "Peak e- from star :"))
+        self.label_20.setText(_translate("MainWindow", "Sky brightness (e-/pix) :"))
+        self.label_24.setText(
+            _translate("MainWindow", "Noise contribution (sky) [e-] :")
+        )
+        self.label_25.setText(
+            _translate("MainWindow", "Noise contribution (CCD) [e-]:")
+        )
+        self.modeSelector.setTitle(_translate("MainWindow", "Mode Selector"))
+        self.label_26.setText(_translate("MainWindow", "ETC Mode:"))
+        self.radioExpSnMag.setText(
+            _translate("MainWindow", "Exposure time for a given S/N and magnitude")
+        )
+        self.radioExpPkMag.setText(
+            _translate(
+                "MainWindow", "Exposure time for a given peak counts and magnitude"
+            )
+        )
+        self.radioSnExpMag.setText(
+            _translate("MainWindow", "S/N for a given exposure time and magnitude")
+        )
+        self.radioMagSnExp.setText(
+            _translate("MainWindow", "Magnitude for a given S/N and exposure time")
+        )
+        self.label.setText(_translate("MainWindow", "Magnitude :"))
+        self.label_2.setText(_translate("MainWindow", "S/N ratio (>0.1) :"))
+        self.label_3.setText(_translate("MainWindow", "Peak Counts [e-]:"))
+        self.label_4.setText(_translate("MainWindow", "Magnitude :"))
+        self.label_5.setText(_translate("MainWindow", "Exposure Time (s) (>0.001) :"))
+        self.label_6.setText(_translate("MainWindow", "Magnitude :"))
+        self.label_7.setText(_translate("MainWindow", "S/N ratio (>0.1) :"))
+        self.label_8.setText(_translate("MainWindow", "Exposure Time (s) (>0.001) :"))
+        self.computeButton.setText(_translate("MainWindow", "Compute"))
+        self.label_28.setText(_translate("MainWindow", "LDT / Large Monolithic Imager"))
