@@ -358,7 +358,9 @@ def get_band_values(band: str) -> BandData:
         improperly specified (i.e. is not in the table), raise an error.
     """
     # Read in the table, and index the filter column
-    table = astropy.table.Table.read(utils.DATA / "etc_filter_info.ecsv")
+    table = astropy.table.Table.read(
+        utils.DATA / "etc_filter_info.ecsv", encoding="utf-8"
+    )
     table.add_index("Filter")
 
     band_info = BandData()

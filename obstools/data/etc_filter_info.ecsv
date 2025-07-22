@@ -2,11 +2,11 @@
 # ---
 # datatype:
 # - {name: Filter, datatype: string}
-# - {name: Star20, datatype: float32}
-# - {name: extinction, datatype: float32}
-# - {name: sky0, datatype: float32}
-# - {name: sky1, datatype: float32}
-# - {name: sky2, datatype: float32}
+# - {name: Star20, datatype: float64}
+# - {name: extinction, datatype: float64}
+# - {name: sky0, datatype: float64}
+# - {name: sky1, datatype: float64}
+# - {name: sky2, datatype: float64}
 # schema: astropy-2.0
 Filter Star20 extinction sky0 sky1 sky2
 U 120 0.55 22.0 -0.2666 -0.0760
