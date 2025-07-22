@@ -54,7 +54,7 @@ class FocusParams:
 
     Attributes
     ----------
-    mid_file : :obj:`str`
+    mid_file : :obj:`~pathlib.Path`
         The filename of the middle file in the focus sequence
     nominal : :obj:`float`
         Nominal linewidth in pixels based on slit width and grating
@@ -75,7 +75,7 @@ class FocusParams:
         The plot title for ...
     """
 
-    mid_file: str
+    mid_file: pathlib.Path
     start: float
     end: float
     delta: float
@@ -401,10 +401,10 @@ def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
         raise utils.ObstoolsError("No change in focus over this set of images")
 
     # Examine the middle image
-    mid_file = focus_icl.files[len(focus_icl.files) // 2]
+    mid_file = pathlib.Path(focus_icl.files[len(focus_icl.files) // 2])
 
     find_lines_title = (
-        f"{mid_file}   Grating: {grating}   GRANGLE: "
+        f"{mid_file.name}   Grating: {grating}   GRANGLE: "
         + f"{grangle:.2f}   Lamps: {lampcal}"
     )
 
@@ -729,7 +729,7 @@ def plot_lines(
 
 
 def plot_optimal_focus(
-    focus: dict,
+    focus: FocusParams,
     centers: np.ndarray,
     optimal_focus_values: np.ndarray,
     med_opt_focus: float,
@@ -742,8 +742,8 @@ def plot_optimal_focus(
 
     Parameters
     ----------
-    focus : :obj:`dict`
-        Dictionary of the various focus-related quantities
+    focus : :class:`FocusParams`
+        Dataclass of the various focus-related quantities
     centers : :obj:`~numpy.ndarray`
         Array of the centers of each line
     optimal_focus_values : :obj:`~numpy.ndarray`
@@ -762,11 +762,11 @@ def plot_optimal_focus(
     tsz = 8
     axis.plot(centers, optimal_focus_values, ".")
     axis.set_xlim(0, 2050)
-    axis.set_ylim(focus["start"] - focus["delta"], focus["end"] + focus["delta"])
+    axis.set_ylim(focus.start - focus.delta, focus.end + focus.delta)
     axis.set_title(
         "Optimal focus position vs. line position, median =  "
         + f"{med_opt_focus:.2f} mm  "
-        + f"(Mount Temp: {focus['mnttemp']:.1f}$^\\circ$C)",
+        + f"(Mount Temp: {focus.mnttemp:.1f}$^\\circ$C)",
         fontsize=tsz * 1.2,
     )
     axis.hlines(
@@ -777,7 +777,7 @@ def plot_optimal_focus(
         color="magenta",
         ls="--",
     )
-    axis.set_xlabel(f"CCD Column\n{focus['opt_title']}", fontsize=tsz)
+    axis.set_xlabel(f"CCD Column\n{focus.opt_title}", fontsize=tsz)
     axis.set_ylabel("Optimal Focus (mm)", fontsize=tsz)
     axis.grid(which="both", color="#c0c0c0", linestyle="-", linewidth=0.5)
 
