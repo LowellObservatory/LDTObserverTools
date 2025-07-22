@@ -52,7 +52,9 @@ from obstools import utils
 class FocusParams:
     """Focus Parameters DataClass
 
-    mid_file : :obj:`str`
+    Attributes
+    ----------
+    mid_file : :obj:`~pathlib.Path`
         The filename of the middle file in the focus sequence
     nominal : :obj:`float`
         Nominal linewidth in pixels based on slit width and grating
@@ -73,7 +75,7 @@ class FocusParams:
         The plot title for ...
     """
 
-    mid_file: str
+    mid_file: pathlib.Path
     start: float
     end: float
     delta: float
@@ -88,6 +90,8 @@ class FocusParams:
 class LineInfo:
     """Extracted Line Information DataClass
 
+    Attributes
+    ----------
     spec_1d : :obj:`~numpy.ndarray`
         Extracted 1D spectrum along the ``trace``
     trace : :obj:`~numpy.ndarray`
@@ -108,6 +112,8 @@ class LineInfo:
 class FocusCurves:
     """Focus Curves DataClass
 
+    Attributes
+    ----------
     min_cf_idx_value : :obj:`~numpy.ndarray`
         Best fit focus values
     optimal_cf_idx_value : :obj:`~numpy.ndarray`
@@ -128,6 +134,8 @@ class FocusCurves:
 class PlotParams:
     """Plotting Parameters DataClass
 
+    Attributes
+    ----------
     pdf : :obj:`~matplotlib.backends.backend_pdf.PdfPages`
         The PDF object into which to place plots
     path : :obj:`~pathlib.Path`
@@ -252,13 +260,12 @@ def dfocus(
         plot_pars = PlotParams(pdf=pdf, path=path, docfig=docfig)
 
         #  The plot shown in the IDL0 window: Plot of the found lines
+        # Find the line centers in the image
         plot_lines(
             mid_lines.spec_1d,
-            thresh=thresh,
-            do_plot=True,
+            find_lines(mid_lines.spec_1d, thresh, verbose=False)[0],
             focus_pars=focus_pars,
             plot_pars=plot_pars,
-            verbose=False,
         )
 
         # The plot shown in the IDL2 window: Plot of best-fit fwid vs centers
@@ -394,10 +401,10 @@ def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
         raise utils.ObstoolsError("No change in focus over this set of images")
 
     # Examine the middle image
-    mid_file = focus_icl.files[len(focus_icl.files) // 2]
+    mid_file = pathlib.Path(focus_icl.files[len(focus_icl.files) // 2])
 
     find_lines_title = (
-        f"{mid_file}   Grating: {grating}   GRANGLE: "
+        f"{mid_file.name}   Grating: {grating}   GRANGLE: "
         + f"{grangle:.2f}   Lamps: {lampcal}"
     )
 
@@ -671,73 +678,58 @@ def fit_focus_curves(
 # Plotting Routines ==========================================================#
 def plot_lines(
     spectrum: np.ndarray,
-    thresh: float = 20.0,
-    minsep: int = 11,
-    verbose: bool = True,
-    do_plot: bool = False,
+    centers: np.ndarray,
     focus_pars: FocusParams = None,
     plot_pars: PlotParams = None,
 ):
-    """Automatically find and centroid lines in a 1-row image
-
-    Uses :func:`scipy.signal.find_peaks` for this task
+    """Plot centroid lines in a 1-row image
 
     Parameters
     ----------
-    image : :obj:`~numpy.ndarray`
+    spectrum : :obj:`~numpy.ndarray`
         Extracted spectrum
-    thresh : :obj:`float`, optional
-        Threshold above which to indentify lines [Default: 20 DN above bkgd]
-    minsep : :obj:`int`, optional
-        Minimum line separation for identification [Default: 11 pixels]
-    verbose : :obj:`bool`, optional
-        Produce verbose output?  (Default: False)
-    do_plot : :obj:`bool`, optional
-        Create a plot on the provided axes?  (Default: False)
+    centers : :obj:`~numpy.ndarray`
+        The line centers, as reported by :func:`find_lines`
     focus_pars : :class:`FocusParams`, optional
-        DataClass containing needed variables for plot  (Default: None)
+        DataClass containing needed variables for plot
     plot_pars : :class:`PlotParams`, optional
-        DataClass containing needed parameters for plotting  (Default: None)
+        DataClass containing needed parameters for plotting
     """
-    centers, _ = find_lines(spectrum, thresh, minsep, verbose)
+    # Set up the plot environment
+    _, axis = plt.subplots()
+    tsz = 8
 
-    # Produce a plot for posterity, if directed
-    if do_plot:
-        # Set up the plot environment
-        _, axis = plt.subplots()
-        tsz = 8
+    # Plot the spectrum, mark the peaks, and label them
+    axis.plot(np.arange(len(spectrum)), spectrum)
+    axis.set_ylim(0, (yrange := 1.2 * max(spectrum)))
+    axis.plot(centers, spectrum[centers.astype(int)] + 0.02 * yrange, "k*")
+    for cen in centers:
+        axis.text(
+            cen,
+            spectrum[int(np.round(cen))] + 0.03 * yrange,
+            f"{cen:.0f}",
+            fontsize=tsz,
+        )
 
-        # Plot the spectrum, mark the peaks, and label them
-        axis.plot(np.arange(len(spectrum)), spectrum)
-        axis.set_ylim(0, (yrange := 1.2 * max(spectrum)))
-        axis.plot(centers, spectrum[centers.astype(int)] + 0.02 * yrange, "k*")
-        for cen in centers:
-            axis.text(
-                cen,
-                spectrum[int(np.round(cen))] + 0.03 * yrange,
-                f"{cen:.0f}",
-                fontsize=tsz,
-            )
-
-        # Make pretty & Save
-        axis.set_title(focus_pars.plot_title, fontsize=tsz * 1.2)
-        axis.set_xlabel("CCD Column", fontsize=tsz)
-        axis.set_ylabel("I (DN)", fontsize=tsz)
-        axis.set_xlim(0, len(spectrum) + 2)
-        axis.tick_params("both", labelsize=tsz, direction="in", top=True, right=True)
-        plt.tight_layout()
-        if plot_pars.pdf is None:
-            plt.show()
-        else:
-            plot_pars.pdf.savefig()
-            if plot_pars.docfig:
-                for ext in ["png", "pdf", "svg"]:
-                    plt.savefig(plot_pars.path / f"pyfocus.page1_example.{ext}")
-        plt.close()
+    # Make pretty & Save
+    axis.set_title(focus_pars.plot_title, fontsize=tsz * 1.2)
+    axis.set_xlabel("CCD Column", fontsize=tsz)
+    axis.set_ylabel("I (DN)", fontsize=tsz)
+    axis.set_xlim(0, len(spectrum) + 2)
+    axis.tick_params("both", labelsize=tsz, direction="in", top=True, right=True)
+    plt.tight_layout()
+    if plot_pars.pdf is None:
+        plt.show()
+    else:
+        plot_pars.pdf.savefig()
+        if plot_pars.docfig:
+            for ext in ["png", "pdf", "svg"]:
+                plt.savefig(plot_pars.path / f"pyfocus.page1_example.{ext}")
+    plt.close()
 
 
 def plot_optimal_focus(
-    focus: dict,
+    focus: FocusParams,
     centers: np.ndarray,
     optimal_focus_values: np.ndarray,
     med_opt_focus: float,
@@ -750,8 +742,8 @@ def plot_optimal_focus(
 
     Parameters
     ----------
-    focus : :obj:`dict`
-        Dictionary of the various focus-related quantities
+    focus : :class:`FocusParams`
+        Dataclass of the various focus-related quantities
     centers : :obj:`~numpy.ndarray`
         Array of the centers of each line
     optimal_focus_values : :obj:`~numpy.ndarray`
@@ -770,11 +762,11 @@ def plot_optimal_focus(
     tsz = 8
     axis.plot(centers, optimal_focus_values, ".")
     axis.set_xlim(0, 2050)
-    axis.set_ylim(focus["start"] - focus["delta"], focus["end"] + focus["delta"])
+    axis.set_ylim(focus.start - focus.delta, focus.end + focus.delta)
     axis.set_title(
         "Optimal focus position vs. line position, median =  "
         + f"{med_opt_focus:.2f} mm  "
-        + f"(Mount Temp: {focus['mnttemp']:.1f}$^\\circ$C)",
+        + f"(Mount Temp: {focus.mnttemp:.1f}$^\\circ$C)",
         fontsize=tsz * 1.2,
     )
     axis.hlines(
@@ -785,7 +777,7 @@ def plot_optimal_focus(
         color="magenta",
         ls="--",
     )
-    axis.set_xlabel(f"CCD Column\n{focus['opt_title']}", fontsize=tsz)
+    axis.set_xlabel(f"CCD Column\n{focus.opt_title}", fontsize=tsz)
     axis.set_ylabel("Optimal Focus (mm)", fontsize=tsz)
     axis.grid(which="both", color="#c0c0c0", linestyle="-", linewidth=0.5)
 
