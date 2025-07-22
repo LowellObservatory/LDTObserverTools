@@ -33,6 +33,7 @@ DV_TEST_FILES = TEST_FILES / "deveny"
 
 
 def test_dfocus():
+    # Not rreally sure how to test this one
     pass
 
 
@@ -163,6 +164,11 @@ def test_get_lines_from_ccd():
     ccd = astropy.nddata.CCDData.read(DV_TEST_FILES / "20250203.0025.fits")
     lines = dfocus.get_lines_from_ccd(ccd, 100.0)
     assert isinstance(lines, dfocus.LineInfo)
+    # Test types of all ``LineInfo`` components
+    assert isinstance(lines.spec_1d, np.ndarray)
+    assert isinstance(lines.trace, np.ndarray)
+    assert isinstance(lines.centers, np.ndarray)
+    assert isinstance(lines.fwhm, np.ndarray)
 
 
 @pytest.mark.filterwarnings("ignore::astropy.wcs.FITSFixedWarning")
@@ -194,6 +200,11 @@ def test_fit_focus_curves():
     # Test the fitting of focus curves
     focus_curves = dfocus.fit_focus_curves(line_width_array, focus_pars)
     assert isinstance(focus_curves, dfocus.FocusCurves)
+    assert isinstance(focus_curves.min_focus_values, np.ndarray)
+    assert isinstance(focus_curves.optimal_focus_values, np.ndarray)
+    assert isinstance(focus_curves.min_linewidths, np.ndarray)
+    assert isinstance(focus_curves.fit_pars, np.ndarray)
+
     # We should be finding 42 lines fit with quadratic functions
     n_lines = 42
     n_fitpars = 3
@@ -201,20 +212,29 @@ def test_fit_focus_curves():
     assert focus_curves.optimal_focus_values.shape == (n_lines,)
     assert focus_curves.min_linewidths.shape == (n_lines,)
     assert focus_curves.fit_pars.shape == (n_lines, n_fitpars)
-    # ADD MORE TESTS HERE CHECKING THE OUTPUTS!!!!!
+    # Check the values of the outputs
+    assert np.isclose(np.nanmedian(focus_curves.min_focus_values), 9.477, atol=0.001)
+    assert np.isclose(
+        np.nanmedian(focus_curves.optimal_focus_values), 10.395, atol=0.001
+    )
+    assert np.isclose(np.nanmedian(focus_curves.min_linewidths), 2.38, atol=0.01)
 
 
 def test_plot_lines():
+    # Only contains plotting commands -- test at a later point, if need be
     pass
 
 
 def test_plot_optimal_focus():
+    # Only contains plotting commands -- test at a later point, if need be
     pass
 
 
 def test_plot_focus_curves():
+    # Only contains plotting commands -- test at a later point, if need be
     pass
 
 
 def test_find_lines_in_spectrum():
+    # Functionality is already tested -- maybe consider adding an integration test
     pass
