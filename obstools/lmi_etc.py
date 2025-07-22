@@ -97,15 +97,15 @@ class ETCData:
         Desired peak count level on the CCD (e-)
     """
 
-    exptime: float = 0
+    exptime: float = 0.0
     band: str = "V"
-    mag: float = 0
-    snr: float = 0
+    mag: float = 0.0
+    snr: float = 0.0
     binning: int = 2
     seeing: float = 1.0
     airmass: float = 1.0
-    phase: float = 0
-    peak: float = 0
+    phase: float = 0.0
+    peak: float = 0.0
 
 
 @dataclasses.dataclass
@@ -501,7 +501,7 @@ def star_counts_per_sec(input_data: ETCData) -> float:
     """
     band_info = get_band_values(input_data.band)
     mag_corrected = input_data.mag + band_info.extinction * input_data.airmass
-    return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5))
+    return band_info.star20 * np.power(10, -((mag_corrected - 20) / 2.5), dtype=float)
 
 
 # GUI Classes ================================================================#
@@ -677,7 +677,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         input_data.airmass = np.round(input_data.airmass, 2)
         input_data.exptime = np.round(input_data.exptime, 2)
         input_data.mag = np.round(input_data.mag, 2)
-        input_data.peak = 0 if input_data.peak is None else np.round(input_data.peak, 0)
+        input_data.peak = np.round(input_data.peak, 0)
         return input_data
 
     @staticmethod
