@@ -21,6 +21,7 @@ This file contains FITS Header utility routines.
 """
 
 # Built-In Libraries
+import argparse
 import pathlib
 
 # 3rd-Party Libraries
@@ -72,7 +73,12 @@ class FixLdtHeader(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters

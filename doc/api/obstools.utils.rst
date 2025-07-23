@@ -3,6 +3,7 @@ obstools.utils module
 
 .. automodule:: obstools.utils
    :members:
+   :no-index:
    :private-members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

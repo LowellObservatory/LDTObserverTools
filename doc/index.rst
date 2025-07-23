@@ -32,8 +32,18 @@ Dependencies Table
    Grating Angle Calculator <deveny_grangle>
    Collimator Focus Sequence Estimator <deveny_collfocus>
    Collimator Focus Calculator <dfocus>
+   Exposure Time Calculator <deveny_etc>
    Pickup Noise Scrubber <scrub_deveny_pickup>
    DeVeny Spectrum Quick Look Tool <deveny_ql>
+
+.. toctree::
+   :caption: RIMAS Tools
+   :maxdepth: 1
+   :hidden:
+
+   Exposure Time Calculator <rimas_etc>
+   RIMAS Imaging Quick Look Tool <rimas_image_ql>
+   RIMAS Spectrum Quick Look Tool <rimas_spec_ql>
 
 .. toctree::
    :caption: General LDT Tools

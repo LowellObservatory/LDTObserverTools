@@ -89,6 +89,8 @@ List of Programs
 Tools Contained in this Package:
 --------------------------------
 
+  - LMI exposure time calculator (``lmi_etc``)
+
   - DeVeny Spectrograph grating angle calculator (``deveny_grangle``)
 
   - DeVeny Spectrograph collimator focus sequence estimator (``deveny_collfocus``)
@@ -104,7 +106,15 @@ Tools Contained in this Package:
 Future Tools (planned or in development):
 -----------------------------------------
 
-  - LMI exposure time calculator (``lmi_etc``)
+  - DeVeny Spectrograph exposure time calculator (``deveny_etc``)
+
+  - RIMAS exposure time calculator (``rimas_etc``)
+
+  - DeVeny Spectrograph Quick-Look tool (``deveny_ql``)
+
+  - RIMAS Imaging Quick-Look tool (``rimas_image_ql``)
+
+  - RIMAS Spectroscopic Quick-Look tool (``rimas_spec_ql``)
 
   - NEO Confirmation Page ephemeris generator (``neocp_ephem``)
 
@@ -134,7 +144,7 @@ The recommended method of setting up a new environment is with ``conda``:
 
 .. code-block:: console
 
-    conda create -n obstools python=3.11
+    conda create -n obstools python=3.13
     conda activate obstools
 
 See `Managing Environments with Conda
@@ -149,7 +159,7 @@ Installing LDTObserverTools via ``pip``
 .. note::
   The commands here assume ``pip`` is associated with Python3.  To check, run
   ``pip --version`` from the command line and check that the associated python
-  version is ``>= 3.10``.
+  version is ``>= 3.11``.
 
   Also, you will need ``git`` installed on your system / in your environment.
 

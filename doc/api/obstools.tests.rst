@@ -12,12 +12,14 @@ Submodules
    obstools.tests.test_dfocus
    obstools.tests.test_lmi_etc
    obstools.tests.test_utils
+   obstools.tests.tstutlis
 
 Module contents
 ---------------
 
 .. automodule:: obstools.tests
    :members:
+   :no-index:
    :private-members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
