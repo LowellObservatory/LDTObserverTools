@@ -4,12 +4,12 @@
 # You can set these variables from the command line, and also
 # from the environment for the first two.
 SPHINXAPI     = sphinx-apidoc
-SPHINXAPIOPT  = members,private-members,undoc-members,show-inheritance
+SPHINXAPIOPT  = members,private-members,undoc-members,show-inheritance,no-index
 SPHINXOPTS    = -aE -w ./sphinx_warnings.out
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = _build
-LOCALFILES    = $(BUILDDIR)/* api/*.rst help/*.rst sphinx_warnings.out pypeit_par.rst
+LOCALFILES    = $(BUILDDIR)/* api/*.rst help/*.rst sphinx_warnings.out
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)

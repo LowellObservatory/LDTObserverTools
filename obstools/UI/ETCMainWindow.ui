@@ -587,7 +587,7 @@
           <bool>true</bool>
          </property>
          <property name="text">
-          <string>ETC Mode:</string>
+          <string>Exposure Time Calculator Mode:</string>
          </property>
         </widget>
        </item>

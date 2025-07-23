@@ -3,6 +3,7 @@ obstools.dfocus module
 
 .. automodule:: obstools.dfocus
    :members:
+   :no-index:
    :private-members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

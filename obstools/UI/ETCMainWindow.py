@@ -543,7 +543,9 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Noise contribution (CCD) [e-]:")
         )
         self.modeSelector.setTitle(_translate("MainWindow", "Mode Selector"))
-        self.label_26.setText(_translate("MainWindow", "ETC Mode:"))
+        self.label_26.setText(
+            _translate("MainWindow", "Exposure Time Calculator Mode:")
+        )
         self.radioExpSnMag.setText(
             _translate("MainWindow", "Exposure time for a given S/N and magnitude")
         )
