@@ -129,6 +129,13 @@ Future Tools (planned or in development):
 Installing
 ==========
 
+.. note::
+
+   A note to Linux users:  To use the GUI tools in this package, you may need
+   to install the package ``libxcb-cursor0`` on your system using the
+   distribution-appropriate tool (`e.g.`, ``apt``, ``dnf``, ``pacman``, etc.)
+   **before** proceeding with the following install steps.
+
 .. _environment:
 
 Set up a clean python environment

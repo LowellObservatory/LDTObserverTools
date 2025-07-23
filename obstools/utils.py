@@ -42,6 +42,7 @@ from obstools.version import version as __version__
 # CONSTANTS
 CONFIG = resources.files("obstools") / "config"
 DATA = resources.files("obstools") / "data"
+UI = resources.files("obstools") / "UI"
 # Modify SG theme based on system Light/Dark theme
 SG_THEME = "dark gray 14" if darkdetect.isDark() else "light grey 1"
 

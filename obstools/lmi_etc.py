@@ -44,10 +44,11 @@ import re
 # 3rd-Party Libraries
 import astropy.table
 import numpy as np
+from PyQt6 import QtGui
 from PyQt6 import QtWidgets
 
 # Local Libraries
-from obstools.UI.ETCMainWindow import Ui_MainWindow
+from obstools.UI.ETCMainWindow import Ui_ETCMainWindow
 from obstools.UI.ETCDataWindow import Ui_ETCDataWindow
 from obstools import utils
 
@@ -507,7 +508,7 @@ def star_counts_per_sec(input_data: ETCData) -> float:
 
 
 # GUI Classes ================================================================#
-class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
     """Exposure Time Calculator Main Window Class
 
     The UI is defined in ETCWindow.ui and translated (via pyuic6) into python
@@ -540,6 +541,11 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         self.buttonAdd2Table.clicked.connect(self.add_data_button_clicked)
         self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
+
+        # Corrently point to the Lowell Logo
+        self.LowellLogo.setPixmap(
+            QtGui.QPixmap(str(utils.UI / "lowelllogo_horizontal_web.png"))
+        )
 
         # Set default values
         self.last_input_data = ETCData()
