@@ -22,11 +22,11 @@ setup_cfg = dict(conf.items("metadata"))
 # -- Project information -----------------------------------------------------
 
 project = "LDT Observer Tools"
-copyright = "2023, Lowell Observatory"
+copyright = "2023-2025, Lowell Observatory"
 author = "T. Ellsworth-Bowers"
 
 # The full version, including alpha/beta/rc tags
-release = "2023"
+release = "2025"
 
 
 # -- General configuration ---------------------------------------------------
@@ -136,3 +136,5 @@ intersphinx_mapping = {
     "pypeit": ("https://pypeit.readthedocs.io/en/release/", None),
     "stomp": ("https://jasonrbriggs.github.io/stomp.py/", None),
 }
+
+html_css_files = ["css/custom.css"]

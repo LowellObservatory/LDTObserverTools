@@ -19,6 +19,7 @@ Module contents
 
 .. automodule:: obstools.tests
    :members:
+   :no-index:
    :private-members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
