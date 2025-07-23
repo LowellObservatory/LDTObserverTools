@@ -93,7 +93,6 @@ The output format for LDT TCS is::
 # Built-In Libraries
 import argparse
 import datetime
-import sys
 
 # 3rd-Party Libraries
 import astropy.coordinates
@@ -191,7 +190,12 @@ class NeocpEphem(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters

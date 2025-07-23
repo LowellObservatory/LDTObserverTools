@@ -29,7 +29,9 @@ jobs:
         os:
           - ubuntu-latest
         python:
+          - "3.11"
           - "3.12"
+          - "3.13"
         toxenv:
           - test-numpydev
           - test-astropydev
@@ -42,6 +44,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install base dependencies
         run: |
+          sudo apt-get install -y freeglut3-dev
           python -m pip install --upgrade pip tox
       - name: Test with tox
         run: |
@@ -49,6 +52,7 @@ jobs:
       - name: Upload coverage to codecov
         if: "endsWith(matrix.tox_env, '-cov')"
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24  # v5.4.3
+
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
     permissions:
@@ -61,11 +65,10 @@ jobs:
         os:
           - windows-latest
           - macos-latest
-          - ubuntu-latest
         python:
-          - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
         toxenv:
           - test
           - test-alldeps
@@ -82,6 +85,7 @@ jobs:
       - name: Test with tox
         run: |
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
+
   conda:
     runs-on: ubuntu-latest
     permissions:
@@ -92,13 +96,15 @@ jobs:
       - name: Conda environment check
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install base dependencies
         run: |
+          sudo apt-get install -y freeglut3-dev
           python -m pip install --upgrade pip tox
       - name: Run obstools tests from environment built with conda
         run: |
           tox -e conda
+
   codestyle:
     permissions:
       contents: read
@@ -109,7 +115,7 @@ jobs:
       - name: Python codestyle check
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install base dependencies
         run: |
           python -m pip install --upgrade pip
