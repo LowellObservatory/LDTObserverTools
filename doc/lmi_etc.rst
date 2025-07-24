@@ -178,6 +178,11 @@ The peak number of counts from the star :math:`P` will be (roughly):
    radius.
 
 
+The above text was written by Phil Massey.  The original code for the `LMI
+exposure time calculator <http://www2.lowell.edu/users/massey/LMI/etc_calc.php>`_
+was written and tested by Kathryn Neugent.
+
+
 Usage
 =====
 
