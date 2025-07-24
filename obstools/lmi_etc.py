@@ -40,6 +40,7 @@ import argparse
 import dataclasses
 import pathlib
 import re
+import sys
 
 # 3rd-Party Libraries
 import astropy.table
@@ -546,6 +547,14 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
         self.LowellLogo.setPixmap(
             QtGui.QPixmap(str(utils.UI / "lowelllogo_horizontal_web.png"))
         )
+        # Fix the font sizes
+        if sys.platform.startswith("linux"):
+            # Reset the font size to system
+            font = QtGui.QFont()
+            self.centralwidget.setFont(font)
+            # Make the title label bigger
+            font.setPointSize(int(np.round(font.pointSize() * 13 / 7, 0)))
+            self.labelTitle.setFont(font)
 
         # Set default values
         self.last_input_data = ETCData()
