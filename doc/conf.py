@@ -106,7 +106,11 @@ html_static_path = ["_static"]
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {"logo_only": True, "prev_next_buttons_location": None}
+html_theme_options = {
+    "logo_only": True,
+    "prev_next_buttons_location": None,
+    "display_version": True,
+}
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
