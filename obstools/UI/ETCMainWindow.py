@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_ETCMainWindow(object):
     def setupUi(self, ETCMainWindow):
         ETCMainWindow.setObjectName("ETCMainWindow")
-        ETCMainWindow.resize(801, 681)
+        ETCMainWindow.resize(850, 700)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
         )
@@ -20,7 +20,7 @@ class Ui_ETCMainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(ETCMainWindow.sizePolicy().hasHeightForWidth())
         ETCMainWindow.setSizePolicy(sizePolicy)
-        ETCMainWindow.setMinimumSize(QtCore.QSize(800, 600))
+        ETCMainWindow.setMinimumSize(QtCore.QSize(850, 700))
         self.centralwidget = QtWidgets.QWidget(parent=ETCMainWindow)
         font = QtGui.QFont()
         font.setPointSize(14)
