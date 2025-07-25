@@ -14,24 +14,21 @@
 # Makefile to generate PyQt6 python files from .ui XML-formatted templates
 
 # Define the source UI files
-UI_FILES = $(wildcard UI/*.ui)
-
-# Define the directory for generated Python files
-PY_DIR = UI
+UI_FILES = $(wildcard *.ui)
 
 # Default target: build all UI files to Python
-all: $(patsubst $(PY_DIR)/%.ui,$(PY_DIR)/%.py,$(UI_FILES))
+all: $(patsubst %.ui,%.py,$(UI_FILES))
 
 # Pattern rule for converting a single .ui file to .py
-$(PY_DIR)/%.py: $(PY_DIR)/%.ui
+%.py: %.ui
 	@mkdir -p $(@D) # Create the output directory if it doesn't exist
 	pyuic6 -o $@ $<
 # Remove extra files created by Qt Designer 
-	rm $(PY_DIR)/*_ui.py
+	rm *_ui.py
 # Clean up formatting in the generated Python files
 	black .
 
 # Clean target: remove all generated Python files
 clean:
-	rm -f $(PY_DIR)/*.py
+	rm -f *.py
 	@rmdir $(PY_DIR) 2>/dev/null || true # Remove the directory if it's empty

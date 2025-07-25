@@ -44,6 +44,8 @@ def write_help(script_cls: utils.ScriptBase, opath: pathlib.Path, width: int = 8
     lines += ["    " + l for l in parser.format_help().split("\n")]
     # Remove ".dev....." junk from the version
     lines[-2] = lines[-2].split(".dev")[0]
+    # Make the last line a clean "newline"
+    lines[-1] = ""
     print(f"Writing: {ofile}")
     with open(ofile, "w", encoding="utf-8") as f_obj:
         f_obj.write("\n".join(lines))

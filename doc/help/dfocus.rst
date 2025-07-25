@@ -11,5 +11,4 @@
       --thresh THRESH  threshold for line detection (default: 100.0)
       --nodisplay      DO NOT launch Preview.app to display plots (default: False)
     
-    LDT Observer Tools (obstools) version 0.7.1
-    
+    LDT Observer Tools (obstools) version 0.7.2
