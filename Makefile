@@ -1,4 +1,4 @@
-SUBDIRS = obstools
+SUBDIRS = obstools/UI
 
 .PHONY: all $(SUBDIRS)
 

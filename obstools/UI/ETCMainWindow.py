@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'UI/ETCMainWindow.ui'
+# Form implementation generated from reading ui file 'ETCMainWindow.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -306,13 +306,6 @@ class Ui_ETCMainWindow(object):
         self.gridLayout_3.addWidget(self.outputNoiseccd, 6, 1, 1, 1)
         self.gridLayout.addWidget(self.otherOutputs, 2, 1, 1, 1)
         self.modeSelector = QtWidgets.QGroupBox(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
-        )
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.modeSelector.sizePolicy().hasHeightForWidth())
-        self.modeSelector.setSizePolicy(sizePolicy)
         self.modeSelector.setObjectName("modeSelector")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.modeSelector)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -441,7 +434,7 @@ class Ui_ETCMainWindow(object):
         self.gridLayout.addWidget(self.modeSelector, 1, 0, 1, 1)
         self.LowellLogo = QtWidgets.QLabel(parent=self.centralwidget)
         self.LowellLogo.setText("")
-        self.LowellLogo.setPixmap(QtGui.QPixmap("UI/lowelllogo_horizontal_web.png"))
+        self.LowellLogo.setPixmap(QtGui.QPixmap("lowelllogo_horizontal_web.png"))
         self.LowellLogo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.LowellLogo.setObjectName("LowellLogo")
         self.gridLayout.addWidget(self.LowellLogo, 0, 0, 1, 1)
