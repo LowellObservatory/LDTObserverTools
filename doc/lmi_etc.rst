@@ -17,9 +17,6 @@ Overview
 The Basics of the Exposure Time Calculator
 ------------------------------------------
 
-**This description was written by Phil Massey.  The original code was written
-and tested by Kathryn Neugent.**
-
 The LDT/LMI Exposure Time Calculator (ETC) is based upon the Appendix in the
 Direct Imaging Manual for Kitt Peak (Massey et al. 1992, 2002) [1]_.  The
 signal-to-noise ratio (SNR) is calculated as follows.  First, the signal

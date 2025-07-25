@@ -23,5 +23,4 @@
                            analysis for debugging purposes (default: False)
       -n, --no_refit       Force no refit of 'bad' RMS values (default: False)
     
-    LDT Observer Tools (obstools) version 0.7.1
-    
+    LDT Observer Tools (obstools) version 0.7.2
