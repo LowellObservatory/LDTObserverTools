@@ -6,21 +6,37 @@
 #   License, v. 2.0. If a copy of the MPL was not distributed with this
 #   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-#  Created on 23-Nov-2022
+#  Created on 08-Aug-2025
 #
 #  @author: tbowers
+# pylint: disable=c-extension-no-member
 
-"""NEO Confirmation Page Object Ephemeris Generator Module
+"""Multiple-Source LDT Ephemeris Generator Module
 
 LDTObserverTools contains python ports of various LDT Observer Tools
 
 Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)
 https://lowell.edu
 
-This file contains a tool for querying the JPL Scout database for short-shelf-
-life NEOs that have not yet been assigned a Horizons identifier and turning the
-returned ephemeris into a file that can be ingested into the LDT TCS for
+This file contains a GUI tool for querying various online databases to generate
+ephemerides for non-sidereal objects that can be ingested into the LDT TCS for
 observations.
+
+Possible databse sources include:
+    * JPL Horizons (included in TCS, but also here for completeness)
+    * JPL Scout / NEOCP
+    * NORAD (artifical satellites)
+    * Minor Planet Center
+    * AstOrb (Lowell)
+    * IMCCE (France)
+
+The goal is to use the database-specific API to query ephemeris information and
+produce a TCS-compliant file that can be FTP'd to the TCS computer for
+ingestion.
+
+
+Various gathered information:
+-----------------------------
 
 The NEOCP (NEO Confirmation Page at the Minor Planet Center):
     https://www.minorplanetcenter.net/iau/NEO/toconfirm_tabular.html
@@ -93,14 +109,19 @@ The output format for LDT TCS is::
 # Built-In Libraries
 import argparse
 import datetime
+import sys
 
 # 3rd-Party Libraries
 import astropy.coordinates
 import astropy.units as u
+import numpy as np
+from PyQt6 import QtGui
+from PyQt6 import QtWidgets
 import requests
 
 # Local Libraries
 from obstools import utils
+from obstools.UI.EphemMainWindow import Ui_MainWindow
 
 
 def neocp_ephem(neocp_id):
@@ -182,9 +203,79 @@ def neocp_ephem(neocp_id):
         f_obj.write("FK5 J2000.0 2000.0\n")
 
 
+# GUI Classes ================================================================#
+class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    """Ephemeris Generator Main Window Class
+
+    The UI is defined in EphemMainWindow.ui and translated (via pyuic6) into python
+    in EphemMainWindow.py.  This class inherits the UI and defines the various
+    actions needed to generate ephemerides from the GUI inputs.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.show()
+
+        # # Connect the table view window
+        # self.tableWindow = TableWindow(self.table_colnames)
+
+        # Connect buttons to actions
+        self.exitButton.pressed.connect(self.exit_button_clicked)
+        # self.computeButton.pressed.connect(self.compute_button_clicked)
+        # self.radioExpSnMag.toggled.connect(
+        #     lambda checked: self.set_stacked_page(0, checked)
+        # )
+        # self.radioExpPkMag.clicked.connect(
+        #     lambda checked: self.set_stacked_page(1, checked)
+        # )
+        # self.radioSnExpMag.clicked.connect(
+        #     lambda checked: self.set_stacked_page(2, checked)
+        # )
+        # self.radioMagSnExp.clicked.connect(
+        #     lambda checked: self.set_stacked_page(3, checked)
+        # )
+        # self.buttonAdd2Table.clicked.connect(self.add_data_button_clicked)
+        # self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
+
+        # Corrently point to the Lowell Logo
+        self.LowellLogo.setPixmap(
+            QtGui.QPixmap(str(utils.UI / "lowelllogo_horizontal_web.png"))
+        )
+        # Fix the font sizes
+        if sys.platform.startswith("linux"):
+            # Reset the font size to system
+            font = QtGui.QFont()
+            self.centralwidget.setFont(font)
+            # Make the title label bigger
+            font.setPointSize(int(np.round(font.pointSize() * 13 / 7, 0)))
+            self.labelTitle.setFont(font)
+
+        # # Set default values
+        # self.last_input_data = ETCData()
+        # self.last_aux_data = AuxData()
+        # self.etc_table = astropy.table.Table()
+
+    def exit_button_clicked(self):
+        """The user clicked the "Exit" button
+
+        Display a confirmation dialog, and quit if "Yes"
+        """
+        button = QtWidgets.QMessageBox.question(
+            self,
+            "",
+            "Are you sure you want to quit?",
+            buttons=QtWidgets.QMessageBox.StandardButton.Ok
+            | QtWidgets.QMessageBox.StandardButton.Cancel,
+        )
+
+        if button == QtWidgets.QMessageBox.StandardButton.Ok:
+            QtWidgets.QApplication.quit()
+
+
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
-class NeocpEphem(utils.ScriptBase):
-    """Script class for ``neocp_ephem`` tool
+class EphemerisGenerator(utils.ScriptBase):
+    """Script class for ``ephemeris_generator`` tool
 
     Script structure borrowed from :class:`pypeit.scripts.scriptbase.ScriptBase`.
     """
@@ -217,10 +308,11 @@ class NeocpEphem(utils.ScriptBase):
         """
 
         parser = super().get_parser(
-            description="Generate LDT Ephemeris Files for NEOCP objects", width=width
+            description="Generate LDT Ephemeris Files for non-sidereal objects",
+            width=width,
         )
         parser.add_argument(
-            "obj_id",
+            "--neocp_objid",
             action="store",
             type=str,
             help="The NEOCP temporary designation ID (e.g., 'P10vY9r')",
@@ -231,7 +323,11 @@ class NeocpEphem(utils.ScriptBase):
     def main(args):
         """Main Driver
 
-        Simple function that calls the main driver function.
+        Set up the top-level PyQt6 objects and start the event loop
         """
+        # Create the QApplication object and main Qt window
+        app = QtWidgets.QApplication([])
+        _ = EphemWindow()
+
         # Giddy up!
-        neocp_ephem(args.obj_id)
+        app.exec()
