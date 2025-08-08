@@ -44,6 +44,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install base dependencies
         run: |
+          sudo apt update
           sudo apt-get install -y freeglut3-dev
           python -m pip install --upgrade pip tox
       - name: Test with tox
@@ -99,6 +100,7 @@ jobs:
           python-version: "3.13"
       - name: Install base dependencies
         run: |
+          sudo apt update
           sudo apt-get install -y freeglut3-dev
           python -m pip install --upgrade pip tox
       - name: Run obstools tests from environment built with conda
