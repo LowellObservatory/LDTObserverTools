@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="5" column="0">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Objects</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2" colspan="2">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>LDT Ephemeris Generator</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0">
+     <widget class="QTextEdit" name="textEdit"/>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="LowellLogo">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>lowelllogo_horizontal_web.png</pixmap>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0" rowspan="4" colspan="5">
+     <widget class="QGroupBox" name="sourceAstorb">
+      <property name="title">
+       <string>Database Source</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QRadioButton" name="sourceHorizons">
+         <property name="text">
+          <string>JPL Horizons</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="sourceScout">
+         <property name="text">
+          <string>JPL Scout</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="sourceMPC">
+         <property name="text">
+          <string>Minor Planet Center</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="sourceNORAD">
+         <property name="text">
+          <string>NORAD</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButton_5">
+         <property name="text">
+          <string>Astorb</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="sourceIMCCE">
+         <property name="text">
+          <string>IMCCE</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="7" column="3">
+     <widget class="QPushButton" name="exitButton">
+      <property name="text">
+       <string>Exit</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>24</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

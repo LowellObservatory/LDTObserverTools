@@ -51,7 +51,7 @@ Dependencies Table
    :hidden:
 
    Simple FITS Header Fixer <fix_ldt_header>
-   NEO CP Ephemeris Generator <neocp_ephem>
+   Ephemeris Generator <ephem_generator>
    Input List Validator <input_validator>
    Observer Target List Tool <observer_target>
 

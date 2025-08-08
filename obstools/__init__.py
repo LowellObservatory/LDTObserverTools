@@ -24,9 +24,9 @@ try:
     from obstools import deveny_collfocus
     from obstools import deveny_grangle
     from obstools import dfocus
+    from obstools import ephem_generator
     from obstools import lmi_etc
     from obstools import fix_ldt_header
-    from obstools import neocp_ephem
     from obstools import scrub_deveny_pickup
 except ImportError as err:
     pass
