@@ -11,9 +11,7 @@ on:
 jobs:
   update:
     permissions:
-      contents: 
-        - read
-        - write
+      contents: read
       pages: write
       pull-requests: write
     runs-on: ubuntu-latest
@@ -23,6 +21,7 @@ jobs:
         uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb  # v4.2.2
         with:
           ref: main
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
       - name: Update Changelog
         uses: stefanzweifel/changelog-updater-action@a938690fad7edf25368f37e43a1ed1b34303eb36  # v1.12.0
