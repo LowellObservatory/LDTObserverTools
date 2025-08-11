@@ -14,24 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="5" column="0">
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>Objects</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="2" colspan="2">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>LDT Ephemeris Generator</string>
-      </property>
-     </widget>
-    </item>
-    <item row="6" column="0">
-     <widget class="QTextEdit" name="textEdit"/>
-    </item>
+   <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0" columnminimumwidth="0,0,0,0,0">
     <item row="0" column="0">
      <widget class="QLabel" name="LowellLogo">
       <property name="text">
@@ -52,6 +35,9 @@
         <widget class="QRadioButton" name="sourceHorizons">
          <property name="text">
           <string>JPL Horizons</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -93,10 +79,200 @@
       </layout>
      </widget>
     </item>
-    <item row="7" column="3">
+    <item row="0" column="1" colspan="3">
+     <widget class="QLabel" name="labelTitle">
+      <property name="font">
+       <font>
+        <pointsize>26</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>LDT Ephemeris Generator</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="4">
+     <widget class="QGroupBox" name="optionsBox">
+      <property name="title">
+       <string/>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="1">
+        <widget class="QDateTimeEdit" name="inputUTStart">
+         <property name="dateTime">
+          <datetime>
+           <hour>7</hour>
+           <minute>0</minute>
+           <second>0</second>
+           <year>2015</year>
+           <month>1</month>
+           <day>1</day>
+          </datetime>
+         </property>
+         <property name="maximumDate">
+          <date>
+           <year>2060</year>
+           <month>12</month>
+           <day>31</day>
+          </date>
+         </property>
+         <property name="minimumDate">
+          <date>
+           <year>2015</year>
+           <month>1</month>
+           <day>1</day>
+          </date>
+         </property>
+         <property name="maximumTime">
+          <time>
+           <hour>18</hour>
+           <minute>59</minute>
+           <second>59</second>
+          </time>
+         </property>
+         <property name="currentSection">
+          <enum>QDateTimeEdit::Section::DaySection</enum>
+         </property>
+         <property name="displayFormat">
+          <string>MM/dd/yyyy hh:mm</string>
+         </property>
+         <property name="calendarPopup">
+          <bool>true</bool>
+         </property>
+         <property name="timeSpec">
+          <enum>Qt::TimeSpec::UTC</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="inputStepSize">
+         <property name="decimals">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <double>60.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QPushButton" name="generateButton">
+         <property name="text">
+          <string>Generate Ephemeris</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>UT Start :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDateTimeEdit" name="inputUTEnd">
+         <property name="currentSection">
+          <enum>QDateTimeEdit::Section::DaySection</enum>
+         </property>
+         <property name="displayFormat">
+          <string>MM/dd/yyyy hh:mm</string>
+         </property>
+         <property name="calendarPopup">
+          <bool>true</bool>
+         </property>
+         <property name="timeSpec">
+          <enum>Qt::TimeSpec::UTC</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Step Size (min) :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Reference Frame :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="inputRefFrame">
+         <item>
+          <property name="text">
+           <string>FK5 / J2000</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Apparent</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>UT End :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="6" column="0" colspan="4">
+     <widget class="QTextEdit" name="textEdit"/>
+    </item>
+    <item row="8" column="4">
      <widget class="QPushButton" name="exitButton">
       <property name="text">
        <string>Exit</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="4">
+     <widget class="QLabel" name="label_7">
+      <property name="text">
+       <string>Ephemeris Options :</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0" colspan="5">
+     <widget class="QLabel" name="labelStatus">
+      <property name="text">
+       <string>Idle</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="2" colspan="2">
+     <widget class="QPushButton" name="saveButton">
+      <property name="text">
+       <string>Save Ephemeris to TCS</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0" colspan="2">
+     <widget class="QPushButton" name="viewButton">
+      <property name="text">
+       <string>View Ephemeris</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0" colspan="4">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Objects :</string>
       </property>
      </widget>
     </item>

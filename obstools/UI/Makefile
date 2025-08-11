@@ -15,6 +15,7 @@
 
 # Define the source UI files
 UI_FILES = $(wildcard *.ui)
+XTRA_FILES = $(wildcard *_ui.py)
 
 # Default target: build all UI files to Python
 all: $(patsubst %.ui,%.py,$(UI_FILES))
@@ -24,7 +25,7 @@ all: $(patsubst %.ui,%.py,$(UI_FILES))
 	@mkdir -p $(@D) # Create the output directory if it doesn't exist
 	pyuic6 -o $@ $<
 # Remove extra files created by Qt Designer 
-	rm *_ui.py
+#	rm $(XTRA_FILES)
 # Clean up formatting in the generated Python files
 	black .
 
