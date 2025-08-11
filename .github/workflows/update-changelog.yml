@@ -11,9 +11,7 @@ on:
 jobs:
   update:
     permissions:
-      contents: 
-        - read
-        - write
+      contents: read
       pages: write
       pull-requests: write
     runs-on: ubuntu-latest
