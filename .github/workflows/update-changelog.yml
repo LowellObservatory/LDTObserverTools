@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb  # v4.2.2
         with:
           ref: main
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
       - name: Update Changelog
         uses: stefanzweifel/changelog-updater-action@a938690fad7edf25368f37e43a1ed1b34303eb36  # v1.12.0
@@ -32,15 +33,6 @@ jobs:
       - name: Commit updated CHANGELOG
         uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0  # v6.0.1
         with:
-          branch: update_changelog
+          branch: main
           commit_message: Update CHANGELOG
           file_pattern: CHANGES.md
-
-      - name: Issue PR with updates to CHANGELOG
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Updating CHANGELOG for ${{ github.event.release.name }}"
-          title: "Updating CHANGELOG for ${{ github.event.release.name }}"
-          body: "This PR adds the latest changes to the CHANGELOG."
-          branch: "update_changelog"
