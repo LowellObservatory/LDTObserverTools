@@ -115,8 +115,7 @@ import sys
 import astropy.coordinates
 import astropy.units as u
 import numpy as np
-from PyQt6 import QtGui
-from PyQt6 import QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 import requests
 
 # Local Libraries
@@ -242,6 +241,26 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.LowellLogo.setPixmap(
             QtGui.QPixmap(str(utils.UI / "lowelllogo_horizontal_web.png"))
         )
+        # Set the UT start time to the top of the next hour
+        now = datetime.datetime.now(datetime.UTC)
+        self.inputUTStart.setDateTime(
+            QtCore.QDateTime(
+                QtCore.QDate(now.year, now.month, now.day),
+                QtCore.QTime(now.hour + 1, 0, 0),
+                spec=QtCore.Qt.TimeSpec.UTC,
+            )
+        )
+
+        # Set the UT end time to 24 hours further on
+        now = datetime.datetime.now(datetime.UTC)
+        self.inputUTEnd.setDateTime(
+            QtCore.QDateTime(
+                QtCore.QDate(now.year, now.month, now.day + 1),
+                QtCore.QTime(now.hour + 1, 0, 0),
+                spec=QtCore.Qt.TimeSpec.UTC,
+            )
+        )
+
         # Fix the font sizes
         if sys.platform.startswith("linux"):
             # Reset the font size to system
