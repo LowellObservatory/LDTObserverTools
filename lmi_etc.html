@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LMI Exposure Time Calculator &mdash; LDT Observer Tools 2025 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=beddf052" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=a0fb6060" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=cb975c41"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="LMI Image Quick Look Tool" href="lmi_ql.html" />
+    <link rel="prev" title="LDTObserverTools" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/obstools_logo.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.7.3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">LMI Tools</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Exposure Time Calculator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-basics-of-the-exposure-time-calculator">The Basics of the Exposure Time Calculator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#where-do-the-individual-parameters-come-from">Where do the individual parameters come from?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-we-do-it">How do we do it?</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#case-1-given-a-magnitude-and-a-snr-what-exposure-time-do-we-want">Case 1: Given a magnitude and a SNR, what exposure time do we want?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#case-2-given-a-magnitude-and-exposure-time-what-snr-to-we-achieve">Case 2: Given a magnitude and exposure time, what SNR to we achieve?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#case-3-given-a-snr-and-exposure-time-what-magnitude-do-we-reach">Case 3: Given a SNR and exposure time, what magnitude do we reach?</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lmi_ql.html">LMI Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DeVeny Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="deveny_grangle.html">Grating Angle Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deveny_collfocus.html">Collimator Focus Sequence Estimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dfocus.html">Collimator Focus Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deveny_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scrub_deveny_pickup.html">Pickup Noise Scrubber</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deveny_ql.html">DeVeny Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RIMAS Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="rimas_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rimas_image_ql.html">RIMAS Imaging Quick Look Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rimas_spec_ql.html">RIMAS Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">General LDT Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fix_ldt_header.html">Simple FITS Header Fixer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="neocp_ephem.html">NEO CP Ephemeris Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input_validator.html">Input List Validator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observer_target.html">Observer Target List Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">LDTObserverTools API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LDT Observer Tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">LMI Exposure Time Calculator</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/lmi_etc.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lmi-exposure-time-calculator">
+<span id="lmi-etc"></span><h1>LMI Exposure Time Calculator<a class="headerlink" href="#lmi-exposure-time-calculator" title="Link to this heading"></a></h1>
+<p>Status: Completed 2025-07-22</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<section id="the-basics-of-the-exposure-time-calculator">
+<h3>The Basics of the Exposure Time Calculator<a class="headerlink" href="#the-basics-of-the-exposure-time-calculator" title="Link to this heading"></a></h3>
+<p>The LDT/LMI Exposure Time Calculator (ETC) is based upon the Appendix in the
+Direct Imaging Manual for Kitt Peak (Massey et al. 1992, 2002) <a class="footnote-reference brackets" href="#id3" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.  The
+signal-to-noise ratio (SNR) is calculated as follows.  First, the signal
+is simply the count rate (<span class="math notranslate nohighlight">\(e^-\)</span>/sec) from the star <span class="math notranslate nohighlight">\(N_*\)</span> measured
+through some aperture times the exposure time <span class="math notranslate nohighlight">\(t\)</span>.  The noise is
+make up of three components, which are added in quadrature:</p>
+<ul class="simple">
+<li><p>The photon noise from the star itself, <span class="math notranslate nohighlight">\(\sqrt{N_*\times t}\)</span>.</p></li>
+<li><p>The photon noise from the sky, <span class="math notranslate nohighlight">\(\sqrt{S\times p \times t}\)</span>,
+where S is the count rate per pixel (<span class="math notranslate nohighlight">\(e^-\)</span>/sec/pixel) and <span class="math notranslate nohighlight">\(p\)</span> is
+the number of pixels in the measuring aperture.</p></li>
+<li><p>The read-noise from the device <span class="math notranslate nohighlight">\(\sqrt{p}\times R\)</span> in the
+measuring aperture, where <span class="math notranslate nohighlight">\(R\)</span> is the read-noise per pixel.</p></li>
+</ul>
+<p>Put this all together and we have:</p>
+<div class="math notranslate nohighlight" id="equation-snr-eqn">
+<span class="eqno">(1)<a class="headerlink" href="#equation-snr-eqn" title="Link to this equation"></a></span>\[{\rm SNR}=\frac{N_* \times t}{\sqrt{N_* \times t + S\times p \times t + p \times R^2}}\]</div>
+<p>In doing this, we have ignored dark current (which is usually
+negligible), and flat-fielding errors.</p>
+</section>
+<section id="where-do-the-individual-parameters-come-from">
+<h3>Where do the individual parameters come from?<a class="headerlink" href="#where-do-the-individual-parameters-come-from" title="Link to this heading"></a></h3>
+<p>We assume that the number of pixels <span class="math notranslate nohighlight">\(p\)</span> is dependent on the
+seeing, and that the astronomer will always measure the brightness of a
+star using a near-optimal measuring aperture, <cite>i.e.</cite>, one that has a
+radius that is about <span class="math notranslate nohighlight">\(0.67\times\)</span> the full-width at half-maximum
+(fwhm) <a class="footnote-reference brackets" href="#id4" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>. In that case the number of pixels <span class="math notranslate nohighlight">\(p\)</span> will be
+<span class="math notranslate nohighlight">\(\pi \times (0.67 \times {\rm fwhm})^2 = 1.4 \times {\rm fwhm}^2\)</span>.
+If the number of pixels is less than 9, we impose a minimal value of 9,
+corresponding to a radius of 2.5 pixels.</p>
+<p>With each of the telescope/CCD combinations, we have measured the
+observed count rates (<span class="math notranslate nohighlight">\(e^-\)</span>/sec) and then normalized the values to a
+<span class="math notranslate nohighlight">\(U=B=V=R=I=20\)</span> mag star observed, correcting for extinction to
+outside the earth’s atmosphere (airmass <span class="math notranslate nohighlight">\(X=0.0\)</span>). Let’s call these
+values <span class="math notranslate nohighlight">\(N_{\rm 20}\)</span>. Thus if we want to know <span class="math notranslate nohighlight">\(N_*\)</span> for a
+star of magnitude m that we plan to observe at an airmass of <span class="math notranslate nohighlight">\(X\)</span> we
+compute:</p>
+<div class="math notranslate nohighlight">
+\[m_{\rm corrected} =m + {\rm  extinction} \times  X\]</div>
+<div class="math notranslate nohighlight">
+\[N_*=N_{\rm 20} \times 10^{ -(m_{\rm corrected}-20.)/2.5}\]</div>
+<p>The sky value <span class="math notranslate nohighlight">\(S\)</span> (in <span class="math notranslate nohighlight">\(e^-\)</span>/sec/pixel) is a little tricker to compute.
+First, it clearly is a function of lunar phase, particularly at the
+bluer wavelengths. Massey et al. (1992, 2002) have tabulated the sky
+brightness (in mag/arcsec<span class="math notranslate nohighlight">\(^2\)</span>) at various lunar phases, and
+Frank Valdes performed a simple low order fit to these for use in
+<code class="docutils literal notranslate"><span class="pre">ccdtime</span></code>, and we adopt these values here. Yes, the actual sky brightness
+depends (a lot) on how far away from the moon you are pointing, but we
+are trying to give reasonable ballpark estimates here. So, we know the
+sky brightness <span class="math notranslate nohighlight">\(s\)</span> in mag/arcsec<span class="math notranslate nohighlight">\(^2\)</span>. The counts you
+expect from the sky per arcsec<span class="math notranslate nohighlight">\(^2\)</span> is thus
+<span class="math notranslate nohighlight">\(N_{\rm 20} \times 10^{-(s-20)/2.5}\)</span>. The area of a pixel is the
+scale<span class="math notranslate nohighlight">\(^2 \times\)</span> binining<span class="math notranslate nohighlight">\(^2\)</span> (where the scale is in
+arcsec/pixel) and so</p>
+<div class="math notranslate nohighlight">
+\[S=N_{\rm 20} \times 10^{-(s-20)/2.5} \times {\rm scale}^2 \times {\rm binning}^2.\]</div>
+<p>The read-noise <span class="math notranslate nohighlight">\(R\)</span> is a value you measure in the lab (and at the
+telescope), and is typically <span class="math notranslate nohighlight">\(\sim\)</span>4-7 <span class="math notranslate nohighlight">\(e^-\)</span>.</p>
+</section>
+<section id="how-do-we-do-it">
+<h3>How do we do it?<a class="headerlink" href="#how-do-we-do-it" title="Link to this heading"></a></h3>
+<p>Given any two parameters, we want the third. Here are the equations we
+use, given the above.</p>
+<section id="case-1-given-a-magnitude-and-a-snr-what-exposure-time-do-we-want">
+<h4>Case 1: Given a magnitude and a SNR, what exposure time do we want?<a class="headerlink" href="#case-1-given-a-magnitude-and-a-snr-what-exposure-time-do-we-want" title="Link to this heading"></a></h4>
+<p>This is dealt with explicitly in Massey et al. (1992, 2002). If we solve
+Equation <a class="reference internal" href="#equation-snr-eqn">(1)</a> for <span class="math notranslate nohighlight">\(t\)</span>, we find ourselves with our old friend the quadratic
+equation:</p>
+<div class="math notranslate nohighlight">
+\[t=\frac{-B + \sqrt{B^2 - 4\times A\times C}} {2\times A}\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[A=N_*^2\]</div>
+<div class="math notranslate nohighlight">
+\[B=({\rm SNR})^2 \times (N_*+p\times S)\]</div>
+<div class="math notranslate nohighlight">
+\[C=({\rm SNR})^2 \times p\times R^2\]</div>
+</section>
+<section id="case-2-given-a-magnitude-and-exposure-time-what-snr-to-we-achieve">
+<h4>Case 2: Given a magnitude and exposure time, what SNR to we achieve?<a class="headerlink" href="#case-2-given-a-magnitude-and-exposure-time-what-snr-to-we-achieve" title="Link to this heading"></a></h4>
+<p>This is the easiest case: we just plug our values into Equation <a class="reference internal" href="#equation-snr-eqn">(1)</a>.</p>
+</section>
+<section id="case-3-given-a-snr-and-exposure-time-what-magnitude-do-we-reach">
+<h4>Case 3: Given a SNR and exposure time, what magnitude do we reach?<a class="headerlink" href="#case-3-given-a-snr-and-exposure-time-what-magnitude-do-we-reach" title="Link to this heading"></a></h4>
+<p>This requires first solving Equation <a class="reference internal" href="#equation-snr-eqn">(1)</a> for <span class="math notranslate nohighlight">\(N_*\)</span>, which again
+requires the quadratic equation:</p>
+<div class="math notranslate nohighlight">
+\[N_*=\frac{-B + \sqrt{B^2 - 4\times A\times C}} {2\times A}\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[A=t^2\]</div>
+<div class="math notranslate nohighlight">
+\[B=-t\times{\rm SNR}^2\]</div>
+<div class="math notranslate nohighlight">
+\[C=-{\rm SNR}^2\times S\times p \times t+ p \times R^2\]</div>
+<p>Once we have <span class="math notranslate nohighlight">\(N_*\)</span> we must turn it into a magnitude:</p>
+<div class="math notranslate nohighlight">
+\[m_{\rm raw}=-2.5\times \log{N_*/N_{\rm 20}}+20\]</div>
+<p>That’s the brightness of a star outside the earth’s atmosphere. But we
+aren’t going to go as faint as that, as we are observing at some finite
+airmass <span class="math notranslate nohighlight">\(X\)</span>. So,</p>
+<div class="math notranslate nohighlight">
+\[m_{\rm corrected} = m_{\rm raw} - {\rm extinction}\times X\]</div>
+</section>
+</section>
+<section id="output">
+<h3>Output<a class="headerlink" href="#output" title="Link to this heading"></a></h3>
+<p>We give the bandpass, magnitude, S/N, and exposure time, irrespective of
+which two were input and which one is output. We also include the number
+of pixels in the measuring aperture, the sky brightness (in <span class="math notranslate nohighlight">\(e^-\)</span>/pixel),
+the number of e from the star, the peak number of <span class="math notranslate nohighlight">\(e^-\)</span> from the star (see
+below), and the noise contributions from the three components.</p>
+<p>The peak number of counts from the star <span class="math notranslate nohighlight">\(P\)</span> will be (roughly):</p>
+<div class="math notranslate nohighlight">
+\[P=N_* \times t / (1.13 \times {\rm fwhm}^2),\]</div>
+<p>where the fwhm is in pixels.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Table 1. Count
+Rates Assumed
+<span class="math notranslate nohighlight">\(N_{20}\)</span>
+<span class="math notranslate nohighlight">\(e^-\)</span>
+/sec/image</p></th>
+<th class="head"></th>
+<th class="head"></th>
+<th class="head"></th>
+<th class="head"></th>
+<th class="head"></th>
+<th class="head"></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Tel/Inst</p></td>
+<td><p>U</p></td>
+<td><p>B</p></td>
+<td><p>V</p></td>
+<td><p>R</p></td>
+<td><p>I</p></td>
+<td><p>VR</p></td>
+<td><p>Readnoise</p></td>
+</tr>
+<tr class="row-odd"><td><p>LDT/LMI</p></td>
+<td><p>100</p></td>
+<td><p>730</p></td>
+<td><p>680</p></td>
+<td><p>670</p></td>
+<td><p>450</p></td>
+<td><p>990</p></td>
+<td><p>7.0</p></td>
+</tr>
+<tr class="row-even"><td><p>Hall/NASA42</p></td>
+<td><p>3.1</p></td>
+<td><p>17.1</p></td>
+<td><p>17.5</p></td>
+<td><p>19.7</p></td>
+<td><p>12.8</p></td>
+<td><p>25.0</p></td>
+<td><p>4.6</p></td>
+</tr>
+</tbody>
+</table>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id3" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://noirlab.edu/science/documents/scidoc0110">https://noirlab.edu/science/documents/scidoc0110</a></p>
+</aside>
+<aside class="footnote brackets" id="id4" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>We leave it as an exercise for the student to determine why
+<span class="math notranslate nohighlight">\(r=0.67\times {\rm fwhm}\)</span> is essentially the optimal measuring
+radius.</p>
+</aside>
+</aside>
+<p>The above text was written by Phil Massey.  The original code for the <a class="reference external" href="http://www2.lowell.edu/users/massey/LMI/etc_calc.php">LMI
+exposure time calculator</a>
+was written and tested by Kathryn Neugent.</p>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<p>The script usage can be displayed by calling the script with the
+<code class="docutils literal notranslate"><span class="pre">-h</span></code> option:</p>
+<p>When launched, the GUI presents a window as in <a class="reference internal" href="#lmi-etc-startup"><span class="std std-numref">Fig. 1</span></a>.</p>
+<figure class="align-default" id="id6">
+<span id="lmi-etc-startup"></span><img alt="GUI at startup" class="with-shadow" src="_images/lmi_etc_blank.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 1 </span><span class="caption-text">– The <code class="docutils literal notranslate"><span class="pre">lmi_etc</span></code> GUI at startup.</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Observation options may be set in the box at the top right (filter, seeing,
+etc.).  Basic default values are loaded at startup.  The filter set is the
+one for which basic values (star counts per second at <span class="math notranslate nohighlight">\(m_v=20\)</span>,
+extinction, etc.) have been measured.</p>
+<p>Select one of the four modes in the top-left box for the computation.  The
+input boxes below the radio buttons will display the proper input fields for
+the chosed mode.  Clicking “Compute” will call the proper calculation routine
+based on the mode and will display all of the computed values in the two
+“Output” boxes (see <a class="reference internal" href="#lmi-etc-compute"><span class="std std-numref">Fig. 2</span></a>).</p>
+<figure class="align-default" id="id7">
+<span id="lmi-etc-compute"></span><img alt="GUI after computing values" class="with-shadow" src="_images/lmi_etc_compute.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 2 </span><span class="caption-text">– The <code class="docutils literal notranslate"><span class="pre">lmi_etc</span></code> GUI displaying computed values.</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Because many observers use exposure time calculators to help plan an observing
+run, this tool has the added feature of saving the calculated values for each
+setup to disk.  After performing a calculation, the user may add the presently
+displayed values to a table using the “Add to Table” button.  The table (see
+<a class="reference internal" href="#lmi-etc-table"><span class="std std-numref">Fig. 3</span></a>) may be shown / hidden using the “Show Table” button.</p>
+<figure class="align-default" id="id8">
+<span id="lmi-etc-table"></span><img alt="Data table from the ETC" class="with-shadow" src="_images/lmi_etc_table.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 3 </span><span class="caption-text">– The <code class="docutils literal notranslate"><span class="pre">lmi_etc</span></code> data table after adding several proposed observations.</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Within the data table window, the user may remove lines (<cite>e.g.</cite>, accidentally
+duplicated entries), clear the entire table and start over, or save the
+displayed table to disk.</p>
+<p>At present, the save options are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>AstroPy’s <a class="reference external" href="https://docs.astropy.org/en/latest/io/ascii/ecsv.html">Enhanced Character-Separated Values</a> format (<code class="docutils literal notranslate"><span class="pre">.ecsv</span></code>)</p></li>
+<li><p>standard comma-separated values format (<code class="docutils literal notranslate"><span class="pre">.csv</span></code>)</p></li>
+<li><p>AstroPy’s <a class="reference external" href="https://docs.astropy.org/en/latest/io/ascii/fixed_width_gallery.html">fixed-width text table</a>  (<code class="docutils literal notranslate"><span class="pre">.txt</span></code>)</p></li>
+<li><p>FITS binary table (<code class="docutils literal notranslate"><span class="pre">.fits</span></code>)</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023-2025, Lowell Observatory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

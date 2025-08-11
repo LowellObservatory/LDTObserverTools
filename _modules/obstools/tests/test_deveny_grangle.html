@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>obstools.tests.test_deveny_grangle &mdash; LDT Observer Tools 2025 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=beddf052" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=a0fb6060" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=cb975c41"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/obstools_logo.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.7.3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">LMI Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_ql.html">LMI Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DeVeny Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_grangle.html">Grating Angle Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_collfocus.html">Collimator Focus Sequence Estimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dfocus.html">Collimator Focus Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scrub_deveny_pickup.html">Pickup Noise Scrubber</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_ql.html">DeVeny Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RIMAS Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_image_ql.html">RIMAS Imaging Quick Look Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_spec_ql.html">RIMAS Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">General LDT Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../fix_ldt_header.html">Simple FITS Header Fixer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../neocp_ephem.html">NEO CP Ephemeris Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../input_validator.html">Input List Validator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../observer_target.html">Observer Target List Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">LDTObserverTools API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">LDT Observer Tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../obstools.html">obstools</a></li>
+      <li class="breadcrumb-item active">obstools.tests.test_deveny_grangle</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for obstools.tests.test_deveny_grangle</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1">#</span>
+<span class="c1">#  This file is part of LDTObserverTools.</span>
+<span class="c1">#</span>
+<span class="c1">#   This Source Code Form is subject to the terms of the Mozilla Public</span>
+<span class="c1">#   License, v. 2.0. If a copy of the MPL was not distributed with this</span>
+<span class="c1">#   file, You can obtain one at http://mozilla.org/MPL/2.0/.</span>
+<span class="c1">#</span>
+<span class="c1">#  Created on 04-Nov-2024</span>
+<span class="c1">#</span>
+<span class="c1">#  @author: tbowers</span>
+<span class="c1"># pylint: disable=missing-function-docstring</span>
+
+<span class="sd">&quot;&quot;&quot;DeVeny Grating Angle Calculator TEST Module</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools</span><span class="w"> </span><span class="kn">import</span> <span class="n">deveny_grangle</span>
+
+<span class="c1"># NOTE: No unit tests for deveny_grangle_cli() and deveny_grangle_gui()</span>
+<span class="c1">#       functions.  Need to find another way to test those.</span>
+
+
+<div class="viewcode-block" id="test_compute_grangle">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_deveny_grangle.html#obstools.tests.test_deveny_grangle.test_compute_grangle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_compute_grangle</span><span class="p">():</span>
+    <span class="n">grangle</span><span class="p">,</span> <span class="n">amag</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">compute_grangle</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
+    <span class="c1"># Ensure returns are floats and the correct values</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">grangle</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">amag</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">grangle</span><span class="p">,</span> <span class="mf">27.8919</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">amag</span><span class="p">,</span> <span class="mf">0.8257</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_grangle_eqn">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_deveny_grangle.html#obstools.tests.test_deveny_grangle.test_grangle_eqn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_grangle_eqn</span><span class="p">():</span>
+    <span class="n">zero</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">grangle_eqn</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mf">22.54</span><span class="p">),</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">5195</span><span class="p">)</span>
+    <span class="c1"># Ensure zero is a float and of the correct value</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zero</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">zero</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Check another grating</span>
+    <span class="n">zero</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">grangle_eqn</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mf">21.00</span><span class="p">),</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">7220</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">zero</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_lambda_at_angle">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_deveny_grangle.html#obstools.tests.test_deveny_grangle.test_lambda_at_angle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_lambda_at_angle</span><span class="p">():</span>
+    <span class="n">cenwave</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">lambda_at_angle</span><span class="p">(</span><span class="mf">22.54</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+    <span class="c1"># Ensure cenwave is a float and of the correct value</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cenwave</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">cenwave</span><span class="p">,</span> <span class="mi">5195</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Check another grating</span>
+    <span class="n">cenwave</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">lambda_at_angle</span><span class="p">(</span><span class="mf">25.60</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">cenwave</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Test the radians option</span>
+    <span class="n">cenwave</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">lambda_at_angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mf">40.96</span><span class="p">),</span> <span class="mi">831</span><span class="p">,</span> <span class="n">radians</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">cenwave</span><span class="p">,</span> <span class="mi">8499</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_deveny_amag">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_deveny_grangle.html#obstools.tests.test_deveny_grangle.test_deveny_amag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_deveny_amag</span><span class="p">():</span>
+    <span class="n">amag</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">deveny_amag</span><span class="p">(</span><span class="mf">22.54</span><span class="p">)</span>
+    <span class="c1"># Ensure amag is a float of the correct value</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">amag</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">amag</span><span class="p">,</span> <span class="mf">0.9122</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">)</span>
+    <span class="c1"># Check another value</span>
+    <span class="n">amag</span> <span class="o">=</span> <span class="n">deveny_grangle</span><span class="o">.</span><span class="n">deveny_amag</span><span class="p">(</span><span class="mf">27.04</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">amag</span><span class="p">,</span> <span class="mf">0.8391</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023-2025, Lowell Observatory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

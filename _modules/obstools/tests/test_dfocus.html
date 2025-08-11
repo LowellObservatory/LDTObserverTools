@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>obstools.tests.test_dfocus &mdash; LDT Observer Tools 2025 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=beddf052" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=a0fb6060" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=cb975c41"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/obstools_logo.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.7.3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">LMI Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_ql.html">LMI Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DeVeny Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_grangle.html">Grating Angle Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_collfocus.html">Collimator Focus Sequence Estimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dfocus.html">Collimator Focus Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scrub_deveny_pickup.html">Pickup Noise Scrubber</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_ql.html">DeVeny Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RIMAS Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_image_ql.html">RIMAS Imaging Quick Look Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_spec_ql.html">RIMAS Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">General LDT Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../fix_ldt_header.html">Simple FITS Header Fixer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../neocp_ephem.html">NEO CP Ephemeris Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../input_validator.html">Input List Validator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../observer_target.html">Observer Target List Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">LDTObserverTools API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">LDT Observer Tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../obstools.html">obstools</a></li>
+      <li class="breadcrumb-item active">obstools.tests.test_dfocus</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for obstools.tests.test_dfocus</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1">#</span>
+<span class="c1">#  This file is part of LDTObserverTools.</span>
+<span class="c1">#</span>
+<span class="c1">#   This Source Code Form is subject to the terms of the Mozilla Public</span>
+<span class="c1">#   License, v. 2.0. If a copy of the MPL was not distributed with this</span>
+<span class="c1">#   file, You can obtain one at http://mozilla.org/MPL/2.0/.</span>
+<span class="c1">#</span>
+<span class="c1">#  Created on 18-Nov-2024</span>
+<span class="c1">#</span>
+<span class="c1">#  @author: tbowers</span>
+<span class="c1"># pylint: disable=missing-function-docstring</span>
+
+<span class="sd">&quot;&quot;&quot;DeVeny Collimator Focus Calculator TEST Module</span>
+
+<span class="sd">NOTE: Use unit testing as a guide for rewriting the dfocus module in a more</span>
+<span class="sd">      pythonic, less IDL style.  In particular, think about breaking down the</span>
+<span class="sd">      functions into functionality rather than narrative steps.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">astropy.nddata</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ccdproc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools</span><span class="w"> </span><span class="kn">import</span> <span class="n">dfocus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools.tests.tstutlis</span><span class="w"> </span><span class="kn">import</span> <span class="n">TEST_FILES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ObstoolsError</span>
+
+<span class="n">DV_TEST_FILES</span> <span class="o">=</span> <span class="n">TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;deveny&quot;</span>
+
+
+<div class="viewcode-block" id="test_dfocus">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_dfocus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dfocus</span><span class="p">():</span>
+    <span class="c1"># Not rreally sure how to test this one</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_parse_focus_log">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_parse_focus_log">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_parse_focus_log</span><span class="p">():</span>
+
+    <span class="c1"># Test parsing &quot;last log&quot;, output types, and contents of output</span>
+    <span class="n">retval</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span><span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;focus&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">retval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+    <span class="n">focus_cl</span><span class="p">,</span> <span class="n">focus_id</span> <span class="o">=</span> <span class="n">retval</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_cl</span><span class="p">,</span> <span class="n">ccdproc</span><span class="o">.</span><span class="n">ImageFileCollection</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">focus_id</span> <span class="o">==</span> <span class="s2">&quot;20250203.081131&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">focus_cl</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">9</span>
+
+    <span class="c1"># Test parsing of specifically named log</span>
+    <span class="n">focus_cl</span><span class="p">,</span> <span class="n">focus_id</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span>
+        <span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;focus&quot;</span><span class="p">,</span> <span class="s2">&quot;deveny_focus.20250203.081131&quot;</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_cl</span><span class="p">,</span> <span class="n">ccdproc</span><span class="o">.</span><span class="n">ImageFileCollection</span><span class="p">)</span>
+
+    <span class="c1"># Test when there is no log file using &#39;last&#39;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ObstoolsError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">retval</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">(),</span> <span class="s2">&quot;last&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;No successful focus run completed in this directory&quot;</span>
+
+    <span class="c1"># Test when there is no log file using a specific log file</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ObstoolsError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">retval</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span>
+            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">(),</span> <span class="s2">&quot;deveny_focus.20250203.081131&quot;</span>
+        <span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Specified focus run not in this directory&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="test_parse_focus_headers">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_parse_focus_headers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_parse_focus_headers</span><span class="p">():</span>
+
+    <span class="c1"># Get the testing ImageFileCollection  -- This works if the above test does not fail</span>
+    <span class="n">focus_cl</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span>
+        <span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;focus&quot;</span><span class="p">,</span> <span class="s2">&quot;deveny_focus.20250203.081131&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Test parsing the focus headers</span>
+    <span class="n">focus_pars</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_headers</span><span class="p">(</span><span class="n">focus_cl</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_pars</span><span class="p">,</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">FocusParams</span><span class="p">)</span>
+
+    <span class="c1"># Check outputs versus expected</span>
+    <span class="k">assert</span> <span class="n">focus_pars</span><span class="o">.</span><span class="n">mid_file</span> <span class="o">==</span> <span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;20250203.0025.fits&quot;</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">focus_pars</span><span class="o">.</span><span class="n">nominal</span><span class="p">,</span> <span class="mf">2.76</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">focus_pars</span><span class="o">.</span><span class="n">start</span> <span class="o">==</span> <span class="mf">9.0</span>
+    <span class="k">assert</span> <span class="n">focus_pars</span><span class="o">.</span><span class="n">end</span> <span class="o">==</span> <span class="mf">13.0</span>
+    <span class="k">assert</span> <span class="n">focus_pars</span><span class="o">.</span><span class="n">delta</span> <span class="o">==</span> <span class="mf">0.5</span>
+    <span class="k">assert</span> <span class="n">focus_pars</span><span class="o">.</span><span class="n">mnttemp</span> <span class="o">==</span> <span class="mf">7.45</span>
+    <span class="k">assert</span> <span class="n">focus_pars</span><span class="o">.</span><span class="n">binning</span> <span class="o">==</span> <span class="s2">&quot;1x1&quot;</span>
+
+    <span class="c1"># Use a focus log with all the same input DeVeny frame</span>
+    <span class="n">focus_cl</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span>
+        <span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;focus&quot;</span><span class="p">,</span> <span class="s2">&quot;deveny_focus.20250202.allsame&quot;</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ObstoolsError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">focus_pars</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_headers</span><span class="p">(</span><span class="n">focus_cl</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;No change in focus over this set of images&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="test_centered_trace">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_centered_trace">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore::astropy.wcs.FITSFixedWarning&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_centered_trace</span><span class="p">():</span>
+
+    <span class="c1"># Load in a CCD image</span>
+    <span class="n">spec2d</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">nddata</span><span class="o">.</span><span class="n">CCDData</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;20250203.0025.fits&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+    <span class="c1"># Test building the trace from the data array</span>
+    <span class="n">trace</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">centered_trace</span><span class="p">(</span><span class="n">spec2d</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+    <span class="c1"># Check that the trace is one element &quot;tall&quot; across the array</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">spec2d</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">trace</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nx</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_extract_spectrum">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_extract_spectrum">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore::astropy.wcs.FITSFixedWarning&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_extract_spectrum</span><span class="p">():</span>
+
+    <span class="c1"># Load in a CCD image, and build the trace -- tested above</span>
+    <span class="n">spec2d</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">nddata</span><span class="o">.</span><span class="n">CCDData</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;20250203.0025.fits&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">trace</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">centered_trace</span><span class="p">(</span><span class="n">spec2d</span><span class="p">)</span>
+
+    <span class="c1"># Test extracting the 1D spectrum</span>
+    <span class="n">spec1d</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">extract_spectrum</span><span class="p">(</span><span class="n">spec2d</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">100.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec1d</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+    <span class="c1"># Check that the extracted spectrum is, indeed, one-dimensional</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">spec2d</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">spec1d</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">nx</span><span class="p">,)</span>
+
+    <span class="c1"># Check raised errors</span>
+    <span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">trace</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">trace</span><span class="p">])</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ObstoolsError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">spec1d</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">extract_spectrum</span><span class="p">(</span><span class="n">spec2d</span><span class="p">,</span> <span class="n">traces</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Cannot deal with multiple traces&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="test_find_lines">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_find_lines">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore::astropy.wcs.FITSFixedWarning&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_find_lines</span><span class="p">():</span>
+
+    <span class="c1"># Get the 1d spectrum from the trimmed image -- tested above</span>
+    <span class="n">ccd</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">nddata</span><span class="o">.</span><span class="n">CCDData</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;20250203.0025.fits&quot;</span><span class="p">)</span>
+    <span class="n">spec2d</span> <span class="o">=</span> <span class="n">ccdproc</span><span class="o">.</span><span class="n">trim_image</span><span class="p">(</span><span class="n">ccd</span><span class="p">,</span> <span class="n">ccd</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s2">&quot;TRIMSEC&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">trace</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">centered_trace</span><span class="p">(</span><span class="n">spec2d</span><span class="p">)</span>
+    <span class="n">spec1d</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">extract_spectrum</span><span class="p">(</span><span class="n">spec2d</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">100.0</span><span class="p">)</span>
+
+    <span class="c1"># Test finding the lines and check the return values</span>
+    <span class="n">retval</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">find_lines</span><span class="p">(</span><span class="n">spec1d</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">retval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+    <span class="n">centers</span><span class="p">,</span> <span class="n">fwhm</span> <span class="o">=</span> <span class="n">retval</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">centers</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fwhm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">centers</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">fwhm</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="c1"># Check that the &quot;correct&quot; number of lines were found for this spectrum</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">centers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">42</span>
+
+    <span class="c1"># Check that using a larger threshold produces fewer found lines</span>
+    <span class="n">centers</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">find_lines</span><span class="p">(</span><span class="n">spec1d</span><span class="p">,</span> <span class="mf">1000.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">centers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">29</span></div>
+
+
+
+<div class="viewcode-block" id="test_get_lines_from_ccd">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_get_lines_from_ccd">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore::astropy.wcs.FITSFixedWarning&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_get_lines_from_ccd</span><span class="p">():</span>
+
+    <span class="c1"># Test the wrapper function on the test frame; check return value</span>
+    <span class="n">ccd</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">nddata</span><span class="o">.</span><span class="n">CCDData</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;20250203.0025.fits&quot;</span><span class="p">)</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">get_lines_from_ccd</span><span class="p">(</span><span class="n">ccd</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">LineInfo</span><span class="p">)</span>
+    <span class="c1"># Test types of all ``LineInfo`` components</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">spec_1d</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">trace</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">fwhm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_fit_focus_curves">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_fit_focus_curves">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore::astropy.wcs.FITSFixedWarning&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_fit_focus_curves</span><span class="p">():</span>
+
+    <span class="c1"># Get the focus parameters and middle image</span>
+    <span class="n">focus_cl</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_log</span><span class="p">(</span>
+        <span class="n">DV_TEST_FILES</span> <span class="o">/</span> <span class="s2">&quot;focus&quot;</span><span class="p">,</span> <span class="s2">&quot;deveny_focus.20250203.081131&quot;</span>
+    <span class="p">)</span>
+    <span class="n">focus_pars</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">parse_focus_headers</span><span class="p">(</span><span class="n">focus_cl</span><span class="p">)</span>
+    <span class="n">mid_ccd</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">nddata</span><span class="o">.</span><span class="n">CCDData</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">focus_pars</span><span class="o">.</span><span class="n">mid_file</span><span class="p">)</span>
+    <span class="n">mid_lines</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">get_lines_from_ccd</span><span class="p">(</span><span class="n">mid_ccd</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span>
+
+    <span class="c1"># Run the loop over all files to build the linewidth array</span>
+    <span class="n">line_width_array</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ccd</span> <span class="ow">in</span> <span class="n">focus_cl</span><span class="o">.</span><span class="n">ccds</span><span class="p">():</span>
+        <span class="n">this_lines</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">get_lines_from_ccd</span><span class="p">(</span>
+            <span class="n">ccd</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">trace</span><span class="o">=</span><span class="n">mid_lines</span><span class="o">.</span><span class="n">trace</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">line_dx</span> <span class="o">=</span> <span class="o">-</span><span class="mf">4.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">ccd</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s2">&quot;COLLFOC&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">mid_ccd</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s2">&quot;COLLFOC&quot;</span><span class="p">])</span>
+        <span class="n">line_widths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">cen</span> <span class="ow">in</span> <span class="n">mid_lines</span><span class="o">.</span><span class="n">centers</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">cen</span> <span class="o">+</span> <span class="n">line_dx</span><span class="p">)</span> <span class="o">-</span> <span class="n">this_lines</span><span class="o">.</span><span class="n">centers</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">3.0</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="n">this_lines</span><span class="o">.</span><span class="n">fwhm</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">line_widths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">width</span> <span class="k">if</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mf">2.0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">line_width_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line_widths</span><span class="p">))</span>
+    <span class="n">line_width_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line_width_array</span><span class="p">)</span>
+
+    <span class="c1"># Test the fitting of focus curves</span>
+    <span class="n">focus_curves</span> <span class="o">=</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">fit_focus_curves</span><span class="p">(</span><span class="n">line_width_array</span><span class="p">,</span> <span class="n">focus_pars</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_curves</span><span class="p">,</span> <span class="n">dfocus</span><span class="o">.</span><span class="n">FocusCurves</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">min_focus_values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">optimal_focus_values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">min_linewidths</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">fit_pars</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+    <span class="c1"># We should be finding 42 lines fit with quadratic functions</span>
+    <span class="n">n_lines</span> <span class="o">=</span> <span class="mi">42</span>
+    <span class="n">n_fitpars</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="k">assert</span> <span class="n">focus_curves</span><span class="o">.</span><span class="n">min_focus_values</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">n_lines</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">focus_curves</span><span class="o">.</span><span class="n">optimal_focus_values</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">n_lines</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">focus_curves</span><span class="o">.</span><span class="n">min_linewidths</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">n_lines</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">focus_curves</span><span class="o">.</span><span class="n">fit_pars</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">n_lines</span><span class="p">,</span> <span class="n">n_fitpars</span><span class="p">)</span>
+    <span class="c1"># Check the values of the outputs</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">min_focus_values</span><span class="p">),</span> <span class="mf">9.477</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">optimal_focus_values</span><span class="p">),</span> <span class="mf">10.395</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.001</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">focus_curves</span><span class="o">.</span><span class="n">min_linewidths</span><span class="p">),</span> <span class="mf">2.38</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_plot_lines">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_plot_lines">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_plot_lines</span><span class="p">():</span>
+    <span class="c1"># Only contains plotting commands -- test at a later point, if need be</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_plot_optimal_focus">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_plot_optimal_focus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_plot_optimal_focus</span><span class="p">():</span>
+    <span class="c1"># Only contains plotting commands -- test at a later point, if need be</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_plot_focus_curves">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_plot_focus_curves">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_plot_focus_curves</span><span class="p">():</span>
+    <span class="c1"># Only contains plotting commands -- test at a later point, if need be</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="test_find_lines_in_spectrum">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_dfocus.html#obstools.tests.test_dfocus.test_find_lines_in_spectrum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_find_lines_in_spectrum</span><span class="p">():</span>
+    <span class="c1"># Functionality is already tested -- maybe consider adding an integration test</span>
+    <span class="k">pass</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023-2025, Lowell Observatory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
