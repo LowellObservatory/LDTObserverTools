@@ -1,20 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>EphemMainWindow</class>
+ <widget class="QMainWindow" name="EphemMainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>849</width>
     <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>LDT Ephemeris Generator Main Window</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0" columnminimumwidth="0,0,0,0,0">
+   <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0,0" columnminimumwidth="0,0,0,0,0,0">
+    <item row="5" column="5">
+     <widget class="QLabel" name="label_7">
+      <property name="text">
+       <string>Ephemeris Options :</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Status :</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0" colspan="5">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Objects :</string>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="0">
      <widget class="QLabel" name="LowellLogo">
       <property name="text">
@@ -25,8 +46,18 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="0" rowspan="4" colspan="5">
-     <widget class="QGroupBox" name="sourceAstorb">
+    <item row="9" column="0" colspan="2">
+     <widget class="QPushButton" name="viewButton">
+      <property name="text">
+       <string>View Selected Ephemeris</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0" colspan="5">
+     <widget class="QTextEdit" name="textEdit"/>
+    </item>
+    <item row="1" column="0" rowspan="4" colspan="6">
+     <widget class="QGroupBox" name="sourceGroupbox">
       <property name="title">
        <string>Database Source</string>
       </property>
@@ -63,7 +94,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="radioButton_5">
+        <widget class="QRadioButton" name="sourceAstorb">
          <property name="text">
           <string>Astorb</string>
          </property>
@@ -79,29 +110,61 @@
       </layout>
      </widget>
     </item>
-    <item row="0" column="1" colspan="3">
-     <widget class="QLabel" name="labelTitle">
-      <property name="font">
-       <font>
-        <pointsize>26</pointsize>
-       </font>
-      </property>
+    <item row="9" column="3" colspan="2">
+     <widget class="QPushButton" name="saveAllButton">
       <property name="text">
-       <string>LDT Ephemeris Generator</string>
+       <string>Save All to TCS</string>
       </property>
      </widget>
     </item>
-    <item row="6" column="4">
+    <item row="9" column="5">
+     <widget class="QPushButton" name="exitButton">
+      <property name="text">
+       <string>Exit</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="5">
      <widget class="QGroupBox" name="optionsBox">
       <property name="title">
        <string/>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Step Size (min) :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="inputStepSize">
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+         <property name="decimals">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <double>60.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>UT End :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="1">
         <widget class="QDateTimeEdit" name="inputUTStart">
          <property name="dateTime">
           <datetime>
-           <hour>7</hour>
+           <hour>14</hour>
            <minute>0</minute>
            <second>0</second>
            <year>2015</year>
@@ -111,9 +174,9 @@
          </property>
          <property name="maximumDate">
           <date>
-           <year>2060</year>
-           <month>12</month>
-           <day>31</day>
+           <year>2061</year>
+           <month>1</month>
+           <day>1</day>
           </date>
          </property>
          <property name="minimumDate">
@@ -125,13 +188,13 @@
          </property>
          <property name="maximumTime">
           <time>
-           <hour>18</hour>
+           <hour>1</hour>
            <minute>59</minute>
            <second>59</second>
           </time>
          </property>
          <property name="currentSection">
-          <enum>QDateTimeEdit::Section::DaySection</enum>
+          <enum>QDateTimeEdit::Section::MonthSection</enum>
          </property>
          <property name="displayFormat">
           <string>MM/dd/yyyy hh:mm</string>
@@ -141,23 +204,6 @@
          </property>
          <property name="timeSpec">
           <enum>Qt::TimeSpec::UTC</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QDoubleSpinBox" name="inputStepSize">
-         <property name="decimals">
-          <number>2</number>
-         </property>
-         <property name="maximum">
-          <double>60.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0" colspan="2">
-        <widget class="QPushButton" name="generateButton">
-         <property name="text">
-          <string>Generate Ephemeris</string>
          </property>
         </widget>
        </item>
@@ -168,29 +214,6 @@
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QDateTimeEdit" name="inputUTEnd">
-         <property name="currentSection">
-          <enum>QDateTimeEdit::Section::DaySection</enum>
-         </property>
-         <property name="displayFormat">
-          <string>MM/dd/yyyy hh:mm</string>
-         </property>
-         <property name="calendarPopup">
-          <bool>true</bool>
-         </property>
-         <property name="timeSpec">
-          <enum>Qt::TimeSpec::UTC</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Step Size (min) :</string>
          </property>
         </widget>
        </item>
@@ -213,66 +236,75 @@
          </item>
          <item>
           <property name="text">
+           <string>ICRS / ICRF</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>Apparent</string>
           </property>
          </item>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_5">
+       <item row="4" column="0" colspan="2">
+        <widget class="QPushButton" name="generateSelectedButton">
          <property name="text">
-          <string>UT End :</string>
+          <string>Generate Selected Ephemeris</string>
          </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDateTimeEdit" name="inputUTEnd">
+         <property name="currentSection">
+          <enum>QDateTimeEdit::Section::MonthSection</enum>
+         </property>
+         <property name="displayFormat">
+          <string>MM/dd/yyyy hh:mm</string>
+         </property>
+         <property name="calendarPopup">
+          <bool>true</bool>
+         </property>
+         <property name="timeSpec">
+          <enum>Qt::TimeSpec::UTC</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="2">
+        <widget class="QPushButton" name="generateAllButton">
+         <property name="text">
+          <string>Generate All Ephemerides</string>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
     </item>
-    <item row="6" column="0" colspan="4">
-     <widget class="QTextEdit" name="textEdit"/>
-    </item>
-    <item row="8" column="4">
-     <widget class="QPushButton" name="exitButton">
-      <property name="text">
-       <string>Exit</string>
-      </property>
-     </widget>
-    </item>
-    <item row="5" column="4">
-     <widget class="QLabel" name="label_7">
-      <property name="text">
-       <string>Ephemeris Options :</string>
-      </property>
-     </widget>
-    </item>
-    <item row="7" column="0" colspan="5">
+    <item row="8" column="0" colspan="6">
      <widget class="QLabel" name="labelStatus">
       <property name="text">
        <string>Idle</string>
       </property>
      </widget>
     </item>
-    <item row="8" column="2" colspan="2">
-     <widget class="QPushButton" name="saveButton">
+    <item row="9" column="2">
+     <widget class="QPushButton" name="saveSelectedButton">
       <property name="text">
-       <string>Save Ephemeris to TCS</string>
+       <string>Save Selected to TCS</string>
       </property>
      </widget>
     </item>
-    <item row="8" column="0" colspan="2">
-     <widget class="QPushButton" name="viewButton">
-      <property name="text">
-       <string>View Ephemeris</string>
+    <item row="0" column="1" colspan="5">
+     <widget class="QLabel" name="labelTitle">
+      <property name="font">
+       <font>
+        <pointsize>26</pointsize>
+       </font>
       </property>
-     </widget>
-    </item>
-    <item row="5" column="0" colspan="4">
-     <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Objects :</string>
+       <string>LDT Ephemeris Generator</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignCenter</set>
       </property>
      </widget>
     </item>
@@ -283,13 +315,32 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>849</width>
      <height>24</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>sourceHorizons</tabstop>
+  <tabstop>sourceScout</tabstop>
+  <tabstop>sourceMPC</tabstop>
+  <tabstop>sourceNORAD</tabstop>
+  <tabstop>sourceAstorb</tabstop>
+  <tabstop>sourceIMCCE</tabstop>
+  <tabstop>textEdit</tabstop>
+  <tabstop>inputUTStart</tabstop>
+  <tabstop>inputUTEnd</tabstop>
+  <tabstop>inputStepSize</tabstop>
+  <tabstop>inputRefFrame</tabstop>
+  <tabstop>generateSelectedButton</tabstop>
+  <tabstop>generateAllButton</tabstop>
+  <tabstop>viewButton</tabstop>
+  <tabstop>saveSelectedButton</tabstop>
+  <tabstop>saveAllButton</tabstop>
+  <tabstop>exitButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

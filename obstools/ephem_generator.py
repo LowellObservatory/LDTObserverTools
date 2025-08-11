@@ -34,68 +34,6 @@ The goal is to use the database-specific API to query ephemeris information and
 produce a TCS-compliant file that can be FTP'd to the TCS computer for
 ingestion.
 
-
-Various gathered information:
------------------------------
-
-The NEOCP (NEO Confirmation Page at the Minor Planet Center):
-    https://www.minorplanetcenter.net/iau/NEO/toconfirm_tabular.html
-
-The JPL Scout API Definition:
-    https://ssd-api.jpl.nasa.gov/doc/scout.html
-
-The result from a query of JPL Scout is a dictionary with the following
-structure::
-
-    count: <str>         # Number of ephemeris time points
-    object: <dict>       # Various information about the object
-    signature: <dict>    # Signature of JPL Scout, including the version #
-    eph: <list>          # The list of ephemeris points
-    data-fields: <list>  # List of the data field names for each time point / orbit
-    orbit-count: <int>   # The number of Monte Carlo orbits used to compute medians
-
-The ``eph`` member is a list of ``count`` ephemeris time points.  Each point
-is a dictionary with the following structure::
-
-    sigma-pos: <str>     # The 1-sigma plane-of-sky uncertainty (arcmin)
-    limits: <dict>       # Minimum / Maximum results from the Monte Carlo orbits
-    time: <str>          # Time for this ephemeris position
-    data: <list>         # List of the ``orbit-count`` individual Monte Carlo vals
-    sun-flag: <str>      # Flag of where the sun is (null, a, n, c, *)
-    median: <dict>       # Medial results from the Monte Carlo orbits
-    sigma-limits: <dict> # The 1-sigma minimum/maximum results
-
-It is likely that the pieces of this that we really need are the median values
-for each timestamp to convert into something the LDT TCS can ingest.  The
-format of this dictionary is as follows::
-
-    ra: <str>        # J2000 RA (degrees)
-    dec: <str>       # J2000 Dec (degrees)
-    dra: <str>       # Change in RA (arcsec/min)  (accounts for cos(Dec) factor)
-    ddec: <str>      # Change in Dec (arcsec/min)
-    rate: <str>      # Plane of sky motion (arcsec/min)
-    pa: <str>        # Position angle of motion (computed from dra/ddec)
-    vmag: <str>      # Visual magnitude
-    elong: <str>     # Solar elongation (degrees)
-    moon: <str>      # Lunar separation (degrees)
-    el: <str>        # Elevation above the local horizon
-
-Assuming::
-
-    result = requests.get(f"https://ssd-api.jpl.nasa.gov/scout.api", params=query).json()
-
-then the pieces we need to be concerned about are::
-
-    for point in result['eph']:
-        time = datetime.datetime.fromisoformat(point['time'])
-        coord = astropy.coordinates.SkyCoord(
-            point['median']['ra']*u.deg,
-            point['median']['dec']*u.deg,
-            frame='fk5'
-        )
-
-        <write appropriate versions to the output file>
-
 The output format for LDT TCS is::
 
     yyyy mm dd hh mm ss αh αm αs.sss ±δd δm δs.ss
@@ -108,11 +46,13 @@ The output format for LDT TCS is::
 
 # Built-In Libraries
 import argparse
+import dataclasses
 import datetime
 import sys
 
 # 3rd-Party Libraries
 import astropy.coordinates
+import astropy.table
 import astropy.units as u
 import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
@@ -120,13 +60,204 @@ import requests
 
 # Local Libraries
 from obstools import utils
-from obstools.UI.EphemMainWindow import Ui_MainWindow
+from obstools.UI.EphemMainWindow import Ui_EphemMainWindow
+
+LDT_OBSCODE = "G37"
+
+
+@dataclasses.dataclass
+class EphemObj:
+    """Ephemeris Object
+
+    _extended_summary_
+    """
+
+    epoch: str
+    data: astropy.table.Table
+
+
+# Ephemeris Query Functions for Online Databases =============================#
+def astorb_ephem(
+    astorb_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
+    """astorb_ephem _summary_
+
+    Lowell Observatory AstOrb Database
+
+    Parameters
+    ----------
+    astorb_id : str
+        _description_
+    utstart : datetime.datetime
+        _description_
+    utend : datetime.datetime
+        _description_
+    stepsize : datetime.timedelta
+        _description_
+
+    Returns
+    -------
+    EphemObj
+        _description_
+    """
+
+
+def horizons_ephem(
+    horizons_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
+    """horizons_ephem _summary_
+
+    Use AstroQuery
+
+    JPL Horizons Queries (astroquery.jplhorizons/astroquery.solarsystem.jpl.horizons)
+
+    Parameters
+    ----------
+    horizons_id : :obj:`str`
+        The JPL/Horizons identification of the object for which to generate
+        ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
+
+    Returns
+    -------
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
+    """
+
+
+def imcce_ephem(
+    imcce_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
+    """imcce_ephem _summary_
+
+    Use AstroQuery
+
+    Institut de Mécanique Céleste et de Calcul des Éphémérides (IMCCE) Solar
+    System Services (astroquery.imcce/astroquery.solarsystem.imcce)
+
+    Parameters
+    ----------
+    imcce_id : :obj:`str`
+        The IMCCE identification of the object for which to generate ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
+
+    Returns
+    -------
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
+    """
+
+
+def mpc_ephem(
+    mpc_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
+    """mpc_ephem _summary_
+
+    Use AstroQuery
+
+    Minor Planet Center Queries (astroquery.mpc/astroquery.solarsystem.MPC)
+
+    Parameters
+    ----------
+    mpc_id : :obj:`str`
+        The MPC identification of the object for which to generate ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
+
+    Returns
+    -------
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
+    """
 
 
 def neocp_ephem(neocp_id):
     """NEO Confirmation Page Ephemeris Generator
 
-    _extended_summary_
+    The NEOCP (NEO Confirmation Page at the Minor Planet Center):
+        https://www.minorplanetcenter.net/iau/NEO/toconfirm_tabular.html
+
+    The JPL Scout API Definition:
+        https://ssd-api.jpl.nasa.gov/doc/scout.html
+
+    The result from a query of JPL Scout is a dictionary with the following
+    structure::
+
+        count: <str>         # Number of ephemeris time points
+        object: <dict>       # Various information about the object
+        signature: <dict>    # Signature of JPL Scout, including the version #
+        eph: <list>          # The list of ephemeris points
+        data-fields: <list>  # List of the data field names for each time point / orbit
+        orbit-count: <int>   # The number of Monte Carlo orbits used to compute medians
+
+    The ``eph`` member is a list of ``count`` ephemeris time points.  Each point
+    is a dictionary with the following structure::
+
+        sigma-pos: <str>     # The 1-sigma plane-of-sky uncertainty (arcmin)
+        limits: <dict>       # Minimum / Maximum results from the Monte Carlo orbits
+        time: <str>          # Time for this ephemeris position
+        data: <list>         # List of the ``orbit-count`` individual Monte Carlo vals
+        sun-flag: <str>      # Flag of where the sun is (null, a, n, c, *)
+        median: <dict>       # Medial results from the Monte Carlo orbits
+        sigma-limits: <dict> # The 1-sigma minimum/maximum results
+
+    It is likely that the pieces of this that we really need are the median values
+    for each timestamp to convert into something the LDT TCS can ingest.  The
+    format of this dictionary is as follows::
+
+        ra: <str>        # J2000 RA (degrees)
+        dec: <str>       # J2000 Dec (degrees)
+        dra: <str>       # Change in RA (arcsec/min)  (accounts for cos(Dec) factor)
+        ddec: <str>      # Change in Dec (arcsec/min)
+        rate: <str>      # Plane of sky motion (arcsec/min)
+        pa: <str>        # Position angle of motion (computed from dra/ddec)
+        vmag: <str>      # Visual magnitude
+        elong: <str>     # Solar elongation (degrees)
+        moon: <str>      # Lunar separation (degrees)
+        el: <str>        # Elevation above the local horizon
+
+    Assuming::
+
+        result = requests.get(f"https://ssd-api.jpl.nasa.gov/scout.api", params=query).json()
+
+    then the pieces we need to be concerned about are::
+
+        for point in result['eph']:
+            time = datetime.datetime.fromisoformat(point['time'])
+            coord = astropy.coordinates.SkyCoord(
+                point['median']['ra']*u.deg,
+                point['median']['dec']*u.deg,
+                frame='fk5'
+            )
+
+            <write appropriate versions to the output file>
+
 
     Parameters
     ----------
@@ -202,8 +333,76 @@ def neocp_ephem(neocp_id):
         f_obj.write("FK5 J2000.0 2000.0\n")
 
 
+def norad_ephem(
+    norad_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
+    """norad_ephem _summary_
+
+    FORM METHOD=GET ACTION="https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi"
+
+    https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi?
+    obj_name=43435&
+    time=2025-07-31+00%3A00%3A00&
+    round_step=on&
+    num_steps=24&
+    step_size=1h&
+    obs_code=G37&
+    show_separate_motions=on
+
+    obj_name is the NORAD id #
+    time is UT
+    step_size takes units h, m, s etc.
+    obs_code is MPC code (G37 for LDT)
+
+    Reminder to self about LDT ephem format:
+
+    yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
+    FK5 J2000.0 2000.0
+
+    Data Format
+    The 12 data columns are: Year, Month, Day, Hour, Minute, Seconds, RA
+    (hours min sec), and Dec(deg min sec), with the following format:
+
+    yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
+
+    Note: All dates / times are UT.
+
+    The final line of the ephemeris file may include the reference frame
+    for the ephemeris:
+    For J2000 coordinates:
+    FK5 J2000.0 2000.0
+    For ICRF:
+    ICRS ICRF 2000.0
+    For apparent coordinates:  "APPT J20xx.xx 20xx.xx" where the 'x' must
+    be replaced by the epoch of your observing night.  (e.g. the night of
+    31 October 2020 was J2020.83)
+
+    Note: If this line is not included, you need to inform your TO of the
+    reference frame.
+
+    Parameters
+    ----------
+    norad_id : :obj:`str`
+        The NORAD identification of the object for which to generate ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
+
+    Returns
+    -------
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
+    """
+
+
 # GUI Classes ================================================================#
-class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
     """Ephemeris Generator Main Window Class
 
     The UI is defined in EphemMainWindow.ui and translated (via pyuic6) into python
@@ -221,6 +420,11 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
+        self.generateSelectedButton.pressed.connect(
+            self.generate_selected_button_clicked
+        )
+        self.generateAllButton.pressed.connect(self.generate_all_button_clicked)
+
         # self.computeButton.pressed.connect(self.compute_button_clicked)
         # self.radioExpSnMag.toggled.connect(
         #     lambda checked: self.set_stacked_page(0, checked)
@@ -237,7 +441,7 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.buttonAdd2Table.clicked.connect(self.add_data_button_clicked)
         # self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
 
-        # Corrently point to the Lowell Logo
+        # Correctly point to the Lowell Logo
         self.LowellLogo.setPixmap(
             QtGui.QPixmap(str(utils.UI / "lowelllogo_horizontal_web.png"))
         )
@@ -270,7 +474,14 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             font.setPointSize(int(np.round(font.pointSize() * 13 / 7, 0)))
             self.labelTitle.setFont(font)
 
-        # # Set default values
+        # Disable currently unimplemented data sources
+        self.sourceHorizons.setDisabled(True)
+        self.sourceScout.setDisabled(True)
+        self.sourceMPC.setDisabled(True)
+        self.sourceAstorb.setDisabled(True)
+        self.sourceIMCCE.setDisabled(True)
+
+        # Set default values
         # self.last_input_data = ETCData()
         # self.last_aux_data = AuxData()
         # self.etc_table = astropy.table.Table()
@@ -290,6 +501,22 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if button == QtWidgets.QMessageBox.StandardButton.Ok:
             QtWidgets.QApplication.quit()
+
+    def generate_selected_button_clicked(self):
+        """The user clicked the "Generate Selected Ephemeris" button
+
+        Poll the Databse Source radio button and the Ephemeris Options, and the
+        currently selected item in the Objects list, then pass everything along
+        to the appropriate query function.
+        """
+
+    def generate_all_button_clicked(self):
+        """The user clicked the "Generate All Ephemerides" button
+
+        Poll the Databse Source radio button and the Ephemeris Options, and the
+        entire Objects list, then pass everything along to the appropriate
+        query function.
+        """
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
