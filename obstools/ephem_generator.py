@@ -34,9 +34,7 @@ The goal is to use the database-specific API to query ephemeris information and
 produce a TCS-compliant file that can be FTP'd to the TCS computer for
 ingestion.
 
-The output format for LDT TCS is::
 
-    yyyy mm dd hh mm ss αh αm αs.sss ±δd δm δs.ss
 
 .. warning::
 
@@ -48,11 +46,13 @@ The output format for LDT TCS is::
 import argparse
 import dataclasses
 import datetime
+import enum
 
 # 3rd-Party Libraries
 import astropy.coordinates
 import astropy.table
 import astropy.units as u
+from bs4 import BeautifulSoup
 import numpy as np
 from PyQt6 import QtCore, QtWidgets
 import requests
@@ -63,16 +63,115 @@ from obstools.UI.EphemMainWindow import Ui_EphemMainWindow
 
 LDT_OBSCODE = "G37"
 
+# Define the API as dataclasses, computation routines, and the external script
+__all__ = [
+    "EphemObj",
+    "astorb_ephem",
+    "horizons_ephem",
+    "imcce_ephem",
+    "mpc_ephem",
+    "neocp_ephem",
+    "norad_ephem",
+    "EphemerisGenerator",
+]
+
+
+class EphemError(Exception):
+    """Base Epehemeris Generator Module Exception"""
+
+
+class EphemQueryError(EphemError):
+    """Ephemeris Query Error"""
+
+
+class Epoch(enum.Enum):
+    """Epoch enumeration class
+
+    This class contains the ``enum`` values used for identifying epoch.
+    We do not use the value of the enumerations at the moment, so simply
+    auto-set each value.
+    """
+
+    FK5 = enum.auto()  # J2000.0 FK5 system
+    ICRS = enum.auto()  # International Celestial Reference System
+    APPT = enum.auto()  # Local apparent coordinates
+
 
 @dataclasses.dataclass
 class EphemObj:
-    """Ephemeris Object
+    """Ephemeris Object data class
 
-    _extended_summary_
+    The output format for LDT TCS is::
+
+        yyyy mm dd hh mm ss αh αm αs.sss ±δd δm δs.ss
     """
 
-    epoch: str
-    data: astropy.table.Table
+    source: str
+    obj_id: str
+    utstart: datetime.datetime
+    utend: datetime.datetime
+    stepsize: datetime.timedelta
+    epoch: Epoch
+    data: astropy.table.Table = dataclasses.field(default_factory=astropy.table.Table)
+
+    def __post_init__(self):
+        # Structure of the table with predefined columns
+        if not self.data:
+            self.data.add_column(astropy.table.Column(dtype=int, name="year"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="month"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="day"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="hour"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="minute"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="second"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="ra_h"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="ra_m"))
+            self.data.add_column(astropy.table.Column(dtype=float, name="ra_s"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="dec_d"))
+            self.data.add_column(astropy.table.Column(dtype=int, name="dec_m"))
+            self.data.add_column(astropy.table.Column(dtype=float, name="dec_s"))
+
+    def __str__(self):
+        return (
+            f"{self.source}  ID: {self.obj_id}  UT: {self.utstart}  "
+            f"ΔT: {self.stepsize.total_seconds()/60.:.1f} min  N: {len(self.data)}"
+        )
+
+    @property
+    def tcs_format(self) -> str:
+        """Produce the TCS format, ready to write to disk
+
+        Reminder to self about LDT ephem format:
+
+        yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
+        FK5 J2000.0 2000.0
+
+        Data Format
+        The 12 data columns are: Year, Month, Day, Hour, Minute, Seconds, RA
+        (hours min sec), and Dec(deg min sec), with the following format:
+
+        yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
+
+        Note: All dates / times are UT.
+
+        The final line of the ephemeris file may include the reference frame
+        for the ephemeris:
+        For J2000 coordinates:
+        FK5 J2000.0 2000.0
+        For ICRF:
+        ICRS ICRF 2000.0
+        For apparent coordinates:  "APPT J20xx.xx 20xx.xx" where the 'x' must
+        be replaced by the epoch of your observing night.  (e.g. the night of
+        31 October 2020 was J2020.83)
+
+        Note: If this line is not included, you need to inform your TO of the
+        reference frame.
+
+        Returns
+        -------
+         :obj:`str`
+             The write-ready string ready for sending to the TCS
+        """
+        return ""
 
 
 # Ephemeris Query Functions for Online Databases =============================#
@@ -88,19 +187,19 @@ def astorb_ephem(
 
     Parameters
     ----------
-    astorb_id : str
-        _description_
-    utstart : datetime.datetime
-        _description_
-    utend : datetime.datetime
-        _description_
-    stepsize : datetime.timedelta
-        _description_
+    astorb_id : :obj:`str`
+        The Astorb identification of the object for which to generate ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
 
     Returns
     -------
-    EphemObj
-        _description_
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
     """
 
 
@@ -196,7 +295,12 @@ def mpc_ephem(
     """
 
 
-def neocp_ephem(neocp_id):
+def neocp_ephem(
+    neocp_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
     """NEO Confirmation Page Ephemeris Generator
 
     The NEOCP (NEO Confirmation Page at the Minor Planet Center):
@@ -260,8 +364,19 @@ def neocp_ephem(neocp_id):
 
     Parameters
     ----------
-    neocp_id : :obj:`~typing.Any`
-        The NEOCP ID for the object
+    neocp_id : :obj:`str`
+        The MPC identification of the object for which to generate ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
+
+    Returns
+    -------
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
     """
     now = datetime.datetime.fromisoformat("2022-11-23 22:00:00")
     now_p1d = now + datetime.timedelta(days=1)
@@ -269,9 +384,9 @@ def neocp_ephem(neocp_id):
     # Build the API query
     query = {
         "tdes": neocp_id,
-        "obs-code": "G37",
-        "eph-start": now.isoformat("T", timespec="seconds"),
-        "eph-stop": now_p1d.isoformat("T", timespec="seconds"),
+        "obs-code": LDT_OBSCODE,
+        "eph-start": now.isoformat(timespec="seconds"),
+        "eph-stop": now_p1d.isoformat(timespec="seconds"),
         "eph-step": "1h",
         # "orbits": "true"
     }
@@ -356,31 +471,6 @@ def norad_ephem(
     step_size takes units h, m, s etc.
     obs_code is MPC code (G37 for LDT)
 
-    Reminder to self about LDT ephem format:
-
-    yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
-    FK5 J2000.0 2000.0
-
-    Data Format
-    The 12 data columns are: Year, Month, Day, Hour, Minute, Seconds, RA
-    (hours min sec), and Dec(deg min sec), with the following format:
-
-    yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
-
-    Note: All dates / times are UT.
-
-    The final line of the ephemeris file may include the reference frame
-    for the ephemeris:
-    For J2000 coordinates:
-    FK5 J2000.0 2000.0
-    For ICRF:
-    ICRS ICRF 2000.0
-    For apparent coordinates:  "APPT J20xx.xx 20xx.xx" where the 'x' must
-    be replaced by the epoch of your observing night.  (e.g. the night of
-    31 October 2020 was J2020.83)
-
-    Note: If this line is not included, you need to inform your TO of the
-    reference frame.
 
     Parameters
     ----------
@@ -399,13 +489,13 @@ def norad_ephem(
         The Ephemeris Object class containing the requested data
     """
 
-    step_hms = utils.hms_from_timedelta(stepsize)
+    # Build the ProjectPluto query
     query = {
         "obj_name": norad_id,
-        "time": utstart.strftime("%Y-%m-%d+%H:%M:%S"),
+        "time": utstart.isoformat(timespec="seconds"),
         "round_step": "on",
         "num_steps": f"{(utend - utstart) / stepsize:.0f}",
-        "step_size": f"{step_hms[0]}h{step_hms[1]}m{step_hms[2]:.0f}s",
+        "step_size": f"{stepsize.total_seconds():.0f}s",
         "obs_code": LDT_OBSCODE,
         "show_separate_motions": "on",
     }
@@ -413,9 +503,71 @@ def norad_ephem(
         "https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi", params=query, timeout=10
     )
 
-    print(r.url)
+    # Check if HTTP request was okay
+    if not r.ok:
+        raise EphemQueryError(
+            f"Got code {r.status_code} from https://www.projectpluto.com query"
+        )
 
-    result = r.json()
+    # Parse out the HTML data, which is inside the <pre></pre> tags
+    soup = BeautifulSoup(r.text, "html.parser")
+    body = soup.find("pre").get_text()
+
+    # Remove the preamble and ps, leaving just the table; parse with AstroPy
+    table = astropy.table.Table(
+        np.array([r.split() for r in body.split("\n")[8:-5]]),
+        names=[
+            "Y",
+            "M",
+            "D",
+            "Time",
+            "rah",
+            "ram",
+            "ras",
+            "dd",
+            "dm",
+            "ds",
+            "az",
+            "el",
+            "selo",
+            "lelo",
+            "d_km",
+            "as_sec",
+            "pa",
+            "dra",
+            "ddec",
+            "mag",
+        ],
+    )
+
+    # Parse out the time column into individual columns
+    table["time_h"] = [val.split(":")[0] for val in table["Time"]]
+    table["time_m"] = [val.split(":")[1] for val in table["Time"]]
+    table["time_s"] = [val.split(":")[2] for val in table["Time"]]
+
+    # ProjectPluto data are J2000
+    return EphemObj(
+        obj_id=norad_id,
+        source="NORAD",
+        utstart=utstart,
+        utend=utend,
+        stepsize=stepsize,
+        epoch=Epoch.FK5,
+        data=table[
+            "Y",
+            "M",
+            "D",
+            "time_h",
+            "time_m",
+            "time_s",
+            "rah",
+            "ram",
+            "ras",
+            "dd",
+            "dm",
+            "ds",
+        ],
+    )
 
 
 # GUI Classes ================================================================#
@@ -480,6 +632,21 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             )
         )
 
+        # Set the database source buttons as a `QButtonGroup`
+        self.sourceGroup = QtWidgets.QButtonGroup(self)
+        for i, source in enumerate(
+            [
+                self.sourceHorizons,
+                self.sourceScout,
+                self.sourceMPC,
+                self.sourceNORAD,
+                self.sourceAstorb,
+                self.sourceIMCCE,
+            ],
+            1,
+        ):
+            self.sourceGroup.addButton(source, i)
+
         # Disable currently unimplemented data sources
         self.sourceHorizons.setDisabled(True)
         self.sourceScout.setDisabled(True)
@@ -514,6 +681,53 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         currently selected item in the Objects list, then pass everything along
         to the appropriate query function.
         """
+        # First, check that there are items in the `objectList`, and that at
+        #   least one is selected.
+        if not self.objectList.count() or not self.objectList.selectedIndexes():
+            # Set the `labelStatus` to an error message and return
+            self.labelStatus.setText(
+                "ERROR: No object(s) selected for ephemeris generation!"
+            )
+            return
+
+        # Get inputs and set status
+        selected_ids = [item.text() for item in self.objectList.selectedItems()]
+        selected_source = self.sourceGroup.checkedButton().text()
+        self.labelStatus.setText(
+            f"Running {selected_source} ephemeris for object(s) {selected_ids}"
+        )
+
+        # Assign the ephem method
+        match selected_source:
+            case "JPL Horizons":
+                ephem_method = horizons_ephem
+            case "JPL Scout":
+                ephem_method = neocp_ephem
+            case "Minor Planet Center":
+                ephem_method = mpc_ephem
+            case "NORAD":
+                ephem_method = norad_ephem
+            case "Astorb":
+                ephem_method = astorb_ephem
+            case "IMCCE":
+                ephem_method = imcce_ephem
+            case _:
+                raise ValueError(
+                    f"Unknown database source indicated: {selected_source}"
+                )
+
+        # Loop through selected IDs
+        for sel_id in selected_ids:
+            # Pull the ephemeris from the source
+            ephem = ephem_method(
+                sel_id,
+                utstart=self.inputUTStart.dateTime().toPyDateTime(),
+                utend=self.inputUTEnd.dateTime().toPyDateTime(),
+                stepsize=datetime.timedelta(minutes=self.inputStepSize.value()),
+            )
+
+            # Do something with the ephem object
+            print(ephem)
 
     def generate_all_button_clicked(self):
         """The user clicked the "Generate All Ephemerides" button

@@ -112,10 +112,16 @@
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
          </property>
          <property name="decimals">
-          <number>2</number>
+          <number>1</number>
+         </property>
+         <property name="minimum">
+          <double>0.500000000000000</double>
          </property>
          <property name="maximum">
-          <double>60.000000000000000</double>
+          <double>120.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>30.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -133,12 +139,12 @@
         <widget class="QDateTimeEdit" name="inputUTStart">
          <property name="dateTime">
           <datetime>
-           <hour>21</hour>
+           <hour>4</hour>
            <minute>0</minute>
            <second>0</second>
            <year>2015</year>
            <month>1</month>
-           <day>1</day>
+           <day>2</day>
           </datetime>
          </property>
          <property name="maximumDate">
@@ -157,7 +163,7 @@
          </property>
          <property name="maximumTime">
           <time>
-           <hour>8</hour>
+           <hour>15</hour>
            <minute>59</minute>
            <second>59</second>
           </time>
