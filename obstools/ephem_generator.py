@@ -47,10 +47,13 @@ import argparse
 import dataclasses
 import datetime
 import enum
+import io
 
 # 3rd-Party Libraries
 import astropy.coordinates
+import astropy.io.ascii
 import astropy.table
+import astropy.time
 import astropy.units as u
 from bs4 import BeautifulSoup
 import numpy as np
@@ -171,7 +174,28 @@ class EphemObj:
          :obj:`str`
              The write-ready string ready for sending to the TCS
         """
-        return ""
+        # Create a string buffer to capture the table output
+        output_buffer = io.StringIO()
+
+        # Write the table to the string buffer in a specified ASCII format
+        self.data.write(output_buffer, format="ascii.no_header")
+        # astropy.io.ascii.write(self.data, output_buffer, format="no_header")
+
+        # Get the string content from the buffer
+        ascii_string = output_buffer.getvalue()
+        # Append the epock information
+        match self.epoch:
+            case Epoch.FK5:
+                ascii_string += "FK5 J2000.0 2000.0\n"
+            case Epoch.ICRS:
+                ascii_string += "ICRS ICRF 2000.0\n"
+            case Epoch.APPT:
+                t = astropy.time.Time(self.utstart)
+                t.format = "jyear_str"
+                ascii_string += f"APPT {t.value} {t.value.strip('J')}\n"
+
+        # Return the string object
+        return ascii_string
 
 
 # Ephemeris Query Functions for Online Databases =============================#
@@ -453,24 +477,25 @@ def norad_ephem(
     utend: datetime.datetime,
     stepsize: datetime.timedelta,
 ) -> EphemObj:
-    """norad_ephem _summary_
+    """Get artificial satellite ephemeris from Project Pluto
 
-    FORM METHOD=GET ACTION="https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi"
+    .. code-block::
 
-    https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi?
-    obj_name=43435&
-    time=2025-07-31+00%3A00%3A00&
-    round_step=on&
-    num_steps=24&
-    step_size=1h&
-    obs_code=G37&
-    show_separate_motions=on
+        FORM METHOD=GET ACTION="https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi"
 
-    obj_name is the NORAD id #
-    time is UT
-    step_size takes units h, m, s etc.
-    obs_code is MPC code (G37 for LDT)
+        https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi?
+        obj_name=43435&
+        time=2025-07-31+00%3A00%3A00&
+        round_step=on&
+        num_steps=24&
+        step_size=1h&
+        obs_code=G37&
+        show_separate_motions=on
 
+        obj_name is the NORAD id #
+        time is UT
+        step_size takes units h, m, s etc.
+        obs_code is MPC code (G37 for LDT)
 
     Parameters
     ----------
@@ -594,8 +619,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             self.generate_selected_button_clicked
         )
         self.generateAllButton.pressed.connect(self.generate_all_button_clicked)
+        self.saveGeneratedButton.pressed.connect(self.save_generated_button_clicked)
 
-        # self.computeButton.pressed.connect(self.compute_button_clicked)
         # self.radioExpSnMag.toggled.connect(
         #     lambda checked: self.set_stacked_page(0, checked)
         # )
@@ -656,7 +681,7 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         self.sourceNORAD.setChecked(True)
 
         # Set default values
-        # self.last_input_data = ETCData()
+        self.pulled_ephems = None
         # self.last_aux_data = AuxData()
         # self.etc_table = astropy.table.Table()
 
@@ -690,8 +715,57 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             )
             return
 
-        # Get inputs and set status
+        # Get IDs and Giddy Up!
         selected_ids = [item.text() for item in self.objectList.selectedItems()]
+        self.query_ephems(selected_ids)
+
+    def generate_all_button_clicked(self):
+        """The user clicked the "Generate All Ephemerides" button
+
+        Poll the Databse Source radio button and the Ephemeris Options, and the
+        entire Objects list, then pass everything along to the appropriate
+        query function.
+        """
+        # First, check that there are items in the `objectList`
+        if not self.objectList.count():
+            # Set the `labelStatus` to an error message and return
+            self.labelStatus.setText(
+                "ERROR: No object(s) available for ephemeris generation!"
+            )
+            return
+
+        # Get IDs and Giddy Up!
+        selected_ids = [
+            self.objectList.item(i).text() for i in range(self.objectList.count())
+        ]
+        self.query_ephems(selected_ids)
+
+    def save_generated_button_clicked(self):
+        """The user clicked the "Save Generated to TCS" button
+
+        Save the ephemerides in the ``self.pulled_ephems`` attribute to disk /
+        SFTP them to TCS in some way.
+        """
+        # Loop over the list
+        for ephem in self.pulled_ephems:
+            fn = (
+                utils.EPHEMS
+                / f"{ephem.source}.{ephem.obj_id}.{ephem.utstart.strftime('%Y%m%d')}.txt"
+            )
+            with open(fn, "w", encoding="utf-8") as f_obj:
+                f_obj.write(ephem.tcs_format)
+
+    def query_ephems(self, selected_ids: list[str]):
+        """Query the database source
+
+        Pass everything along to the appropriate query function.
+
+        Parameters
+        ----------
+        selected_ids : :obj:`list`
+            List of selected Object IDs for which to pull ephemerides
+        """
+        # Get the selected source and set the status message
         selected_source = self.sourceGroup.checkedButton().text()
         self.labelStatus.setText(
             f"Running {selected_source} ephemeris for object(s) {selected_ids}"
@@ -717,6 +791,7 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
                 )
 
         # Loop through selected IDs
+        self.pulled_ephems = []
         for sel_id in selected_ids:
             # Pull the ephemeris from the source
             ephem = ephem_method(
@@ -727,15 +802,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             )
 
             # Do something with the ephem object
-            print(ephem)
-
-    def generate_all_button_clicked(self):
-        """The user clicked the "Generate All Ephemerides" button
-
-        Poll the Databse Source radio button and the Ephemeris Options, and the
-        entire Objects list, then pass everything along to the appropriate
-        query function.
-        """
+            self.pulled_ephems.append(ephem)
+            print(ephem.tcs_format)
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#

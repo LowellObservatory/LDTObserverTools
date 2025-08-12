@@ -256,6 +256,18 @@
     </item>
     <item row="4" column="0">
      <widget class="QPushButton" name="addObjectsButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Add Objects</string>
       </property>
@@ -266,6 +278,18 @@
     </item>
     <item row="4" column="1">
      <widget class="QPushButton" name="removeObjectsButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Remove Objects</string>
       </property>
@@ -273,6 +297,18 @@
     </item>
     <item row="4" column="2">
      <widget class="QPushButton" name="sortButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Manual Sort</string>
       </property>
@@ -305,7 +341,7 @@
      </widget>
     </item>
     <item row="7" column="1">
-     <widget class="QPushButton" name="saveSelectedButton">
+     <widget class="QPushButton" name="saveGeneratedButton">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
         <horstretch>0</horstretch>
@@ -319,26 +355,7 @@
        </size>
       </property>
       <property name="text">
-       <string>Save Selected to TCS</string>
-      </property>
-     </widget>
-    </item>
-    <item row="7" column="2">
-     <widget class="QPushButton" name="saveAllButton">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>150</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>Save All to TCS</string>
+       <string>Save Generated to TCS</string>
       </property>
      </widget>
     </item>
@@ -427,8 +444,7 @@
   <tabstop>generateSelectedButton</tabstop>
   <tabstop>generateAllButton</tabstop>
   <tabstop>viewButton</tabstop>
-  <tabstop>saveSelectedButton</tabstop>
-  <tabstop>saveAllButton</tabstop>
+  <tabstop>saveGeneratedButton</tabstop>
   <tabstop>exitButton</tabstop>
  </tabstops>
  <resources/>

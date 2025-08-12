@@ -46,6 +46,7 @@ from obstools.version import version as __version__
 CONFIG = resources.files("obstools") / "config"
 DATA = resources.files("obstools") / "data"
 UI = resources.files("obstools") / "UI"
+EPHEMS = resources.files("obstools") / "ephems"
 # Modify SG theme based on system Light/Dark theme
 SG_THEME = "dark gray 14" if darkdetect.isDark() else "light grey 1"
 
@@ -601,7 +602,7 @@ class ObstoolsGUI(QtWidgets.QMainWindow):
         """Set fonts and logo location
 
         Perform system-specific fontsize fixing and set the logo pixel map
-        location correctly (may not be so in the *.ui files).
+        location correctly (may not be so in the ``*.ui`` files).
         """
         # Correctly point to the Lowell Logo
         self.LowellLogo.setPixmap(
