@@ -9,6 +9,7 @@
 #  Created on 01-Feb-2021
 #
 #  @author: tbowers
+# pylint: disable=c-extension-no-member
 
 """Utility Module
 
@@ -35,6 +36,7 @@ import warnings
 import darkdetect
 import matplotlib.pyplot as plt
 import numpy as np
+from PyQt6 import QtGui, QtWidgets
 import scipy.optimize
 
 # Local Libraries
@@ -561,6 +563,58 @@ def warn_and_return_zeros(
         yfit = [0] * len(x)
         return [0] * (order + 1), yfit, xx, yy
     return [0] * (order + 1)
+
+
+class ObstoolsGUI(QtWidgets.QMainWindow):
+    """LDTObserverTools GUI base class
+
+    This base class provides a uniform look-and-feel for all GUI applications
+    in this package, and reduces the amount of repeated code for such.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        # These are the `obstools`-standard object names for the Lowell logo
+        #   and GUI Window title used in all applications herein
+        self.centralwidget = QtWidgets.QWidget()
+        self.LowellLogo = QtWidgets.QLabel()
+        self.labelTitle = QtWidgets.QLabel()
+
+    def exit_button_clicked(self):
+        """The user clicked the "Exit" button
+
+        Display a confirmation dialog, and quit if "Yes"
+        """
+        button = QtWidgets.QMessageBox.question(
+            self,
+            "",
+            "Are you sure you want to quit?",
+            buttons=QtWidgets.QMessageBox.StandardButton.Ok
+            | QtWidgets.QMessageBox.StandardButton.Cancel,
+        )
+
+        if button == QtWidgets.QMessageBox.StandardButton.Ok:
+            QtWidgets.QApplication.quit()
+
+    def set_fonts_and_logo(self):
+        """Set fonts and logo location
+
+        Perform system-specific fontsize fixing and set the logo pixel map
+        location correctly (may not be so in the *.ui files).
+        """
+        # Correctly point to the Lowell Logo
+        self.LowellLogo.setPixmap(
+            QtGui.QPixmap(str(UI / "lowelllogo_horizontal_web.png"))
+        )
+        # Fix the font sizes
+        if sys.platform.startswith("linux"):
+            # Reset the font size to system
+            font = QtGui.QFont()
+            self.centralwidget.setFont(font)
+            # Make the title label bigger
+            font.setPointSize(int(np.round(font.pointSize() * 13 / 7, 0)))
+            self.labelTitle.setFont(font)
 
 
 class ScriptBase:
