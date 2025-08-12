@@ -130,13 +130,41 @@ class Ui_EphemMainWindow(object):
         self.gridLayout_2.addWidget(self.generateAllButton, 5, 0, 1, 2)
         self.gridLayout.addWidget(self.optionsBox, 3, 3, 2, 1)
         self.addObjectsButton = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(
+            self.addObjectsButton.sizePolicy().hasHeightForWidth()
+        )
+        self.addObjectsButton.setSizePolicy(sizePolicy)
+        self.addObjectsButton.setMinimumSize(QtCore.QSize(150, 0))
         self.addObjectsButton.setCheckable(False)
         self.addObjectsButton.setObjectName("addObjectsButton")
         self.gridLayout.addWidget(self.addObjectsButton, 4, 0, 1, 1)
         self.removeObjectsButton = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(
+            self.removeObjectsButton.sizePolicy().hasHeightForWidth()
+        )
+        self.removeObjectsButton.setSizePolicy(sizePolicy)
+        self.removeObjectsButton.setMinimumSize(QtCore.QSize(150, 0))
         self.removeObjectsButton.setObjectName("removeObjectsButton")
         self.gridLayout.addWidget(self.removeObjectsButton, 4, 1, 1, 1)
         self.sortButton = QtWidgets.QPushButton(parent=self.centralwidget)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.sortButton.sizePolicy().hasHeightForWidth())
+        self.sortButton.setSizePolicy(sizePolicy)
+        self.sortButton.setMinimumSize(QtCore.QSize(150, 0))
         self.sortButton.setObjectName("sortButton")
         self.gridLayout.addWidget(self.sortButton, 4, 2, 1, 1)
         self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
@@ -153,32 +181,19 @@ class Ui_EphemMainWindow(object):
         self.viewButton.setMinimumSize(QtCore.QSize(150, 0))
         self.viewButton.setObjectName("viewButton")
         self.gridLayout.addWidget(self.viewButton, 7, 0, 1, 1)
-        self.saveSelectedButton = QtWidgets.QPushButton(parent=self.centralwidget)
+        self.saveGeneratedButton = QtWidgets.QPushButton(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
         )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.saveSelectedButton.sizePolicy().hasHeightForWidth()
+            self.saveGeneratedButton.sizePolicy().hasHeightForWidth()
         )
-        self.saveSelectedButton.setSizePolicy(sizePolicy)
-        self.saveSelectedButton.setMinimumSize(QtCore.QSize(150, 0))
-        self.saveSelectedButton.setObjectName("saveSelectedButton")
-        self.gridLayout.addWidget(self.saveSelectedButton, 7, 1, 1, 1)
-        self.saveAllButton = QtWidgets.QPushButton(parent=self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed
-        )
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(
-            self.saveAllButton.sizePolicy().hasHeightForWidth()
-        )
-        self.saveAllButton.setSizePolicy(sizePolicy)
-        self.saveAllButton.setMinimumSize(QtCore.QSize(150, 0))
-        self.saveAllButton.setObjectName("saveAllButton")
-        self.gridLayout.addWidget(self.saveAllButton, 7, 2, 1, 1)
+        self.saveGeneratedButton.setSizePolicy(sizePolicy)
+        self.saveGeneratedButton.setMinimumSize(QtCore.QSize(150, 0))
+        self.saveGeneratedButton.setObjectName("saveGeneratedButton")
+        self.gridLayout.addWidget(self.saveGeneratedButton, 7, 1, 1, 1)
         self.exitButton = QtWidgets.QPushButton(parent=self.centralwidget)
         self.exitButton.setObjectName("exitButton")
         self.gridLayout.addWidget(self.exitButton, 7, 3, 1, 1)
@@ -233,9 +248,8 @@ class Ui_EphemMainWindow(object):
         EphemMainWindow.setTabOrder(self.inputRefFrame, self.generateSelectedButton)
         EphemMainWindow.setTabOrder(self.generateSelectedButton, self.generateAllButton)
         EphemMainWindow.setTabOrder(self.generateAllButton, self.viewButton)
-        EphemMainWindow.setTabOrder(self.viewButton, self.saveSelectedButton)
-        EphemMainWindow.setTabOrder(self.saveSelectedButton, self.saveAllButton)
-        EphemMainWindow.setTabOrder(self.saveAllButton, self.exitButton)
+        EphemMainWindow.setTabOrder(self.viewButton, self.saveGeneratedButton)
+        EphemMainWindow.setTabOrder(self.saveGeneratedButton, self.exitButton)
 
     def retranslateUi(self, EphemMainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -277,10 +291,9 @@ class Ui_EphemMainWindow(object):
         self.sortButton.setText(_translate("EphemMainWindow", "Manual Sort"))
         self.label_2.setText(_translate("EphemMainWindow", "Status :"))
         self.viewButton.setText(_translate("EphemMainWindow", "View Selected"))
-        self.saveSelectedButton.setText(
-            _translate("EphemMainWindow", "Save Selected to TCS")
+        self.saveGeneratedButton.setText(
+            _translate("EphemMainWindow", "Save Generated to TCS")
         )
-        self.saveAllButton.setText(_translate("EphemMainWindow", "Save All to TCS"))
         self.exitButton.setText(_translate("EphemMainWindow", "Exit"))
         self.objectList.setSortingEnabled(True)
         self.labelTitle.setText(
