@@ -66,8 +66,10 @@ class Ui_EphemMainWindow(object):
             | QtCore.Qt.AlignmentFlag.AlignTrailing
             | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
-        self.inputStepSize.setDecimals(2)
-        self.inputStepSize.setMaximum(60.0)
+        self.inputStepSize.setDecimals(1)
+        self.inputStepSize.setMinimum(0.5)
+        self.inputStepSize.setMaximum(120.0)
+        self.inputStepSize.setProperty("value", 30.0)
         self.inputStepSize.setObjectName("inputStepSize")
         self.gridLayout_2.addWidget(self.inputStepSize, 2, 1, 1, 1)
         self.label_5 = QtWidgets.QLabel(parent=self.optionsBox)
@@ -80,11 +82,11 @@ class Ui_EphemMainWindow(object):
         self.gridLayout_2.addWidget(self.label_5, 1, 0, 1, 1)
         self.inputUTStart = QtWidgets.QDateTimeEdit(parent=self.optionsBox)
         self.inputUTStart.setDateTime(
-            QtCore.QDateTime(QtCore.QDate(2015, 1, 1), QtCore.QTime(21, 0, 0))
+            QtCore.QDateTime(QtCore.QDate(2015, 1, 2), QtCore.QTime(4, 0, 0))
         )
         self.inputUTStart.setMaximumDate(QtCore.QDate(2061, 1, 1))
         self.inputUTStart.setMinimumDate(QtCore.QDate(2015, 1, 1))
-        self.inputUTStart.setMaximumTime(QtCore.QTime(8, 59, 59))
+        self.inputUTStart.setMaximumTime(QtCore.QTime(15, 59, 59))
         self.inputUTStart.setCurrentSection(
             QtWidgets.QDateTimeEdit.Section.MonthSection
         )
