@@ -23,6 +23,7 @@ package.
 
 # Built-In Libraries
 import argparse
+import datetime
 from functools import reduce
 from importlib import resources
 import pathlib
@@ -392,6 +393,36 @@ def good_poly(
     if return_full:
         return poly.convert().coef, yfit, xx, yy
     return poly.convert().coef
+
+
+def hms_from_timedelta(duration: datetime.timedelta) -> tuple[int, int, float]:
+    """Convert timedelta object to hours, minutes, and seconds
+
+    From Google AI.  Converts a timedelta object into hours, minutes, and
+    seconds.  This makes no check for days, so the downstream functions will
+    need to assess whether there are more than 24 hours in the returned object.
+
+    Parameters
+    ----------
+    duration : :obj:`~datetime.timedelta`
+        The duration to break into hours, minutes, and seconds
+
+    Returns
+    -------
+    hours : :obj:`int`
+        The integer hours contained in the ``duration``
+    minutes : :obj:`int`
+        The integer number of minutes past the ``hours``
+    seconds : :obj:`float`
+        The floating point seconds past the ``minutes``
+    """
+    total_seconds = int(duration.total_seconds())  # Convert to integer
+    hours = total_seconds // 3600
+    remaining_seconds_after_hours = total_seconds % 3600
+    minutes = remaining_seconds_after_hours // 60
+    seconds = remaining_seconds_after_hours % 60
+    # TODO: Make this a dataclass?
+    return hours, minutes, seconds
 
 
 def nearest_odd(x: float) -> int:

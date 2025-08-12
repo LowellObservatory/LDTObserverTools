@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>849</width>
+    <width>837</width>
     <height>600</height>
    </rect>
   </property>
@@ -14,28 +14,7 @@
    <string>LDT Ephemeris Generator Main Window</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0,0" columnminimumwidth="0,0,0,0,0,0">
-    <item row="5" column="5">
-     <widget class="QLabel" name="label_7">
-      <property name="text">
-       <string>Ephemeris Options :</string>
-      </property>
-     </widget>
-    </item>
-    <item row="7" column="0">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>Status :</string>
-      </property>
-     </widget>
-    </item>
-    <item row="5" column="0" colspan="5">
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>Objects :</string>
-      </property>
-     </widget>
-    </item>
+   <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QLabel" name="LowellLogo">
       <property name="text">
@@ -46,17 +25,7 @@
       </property>
      </widget>
     </item>
-    <item row="9" column="0" colspan="2">
-     <widget class="QPushButton" name="viewButton">
-      <property name="text">
-       <string>View Selected Ephemeris</string>
-      </property>
-     </widget>
-    </item>
-    <item row="6" column="0" colspan="5">
-     <widget class="QTextEdit" name="textEdit"/>
-    </item>
-    <item row="1" column="0" rowspan="4" colspan="6">
+    <item row="1" column="0" colspan="4">
      <widget class="QGroupBox" name="sourceGroupbox">
       <property name="title">
        <string>Database Source</string>
@@ -110,21 +79,21 @@
       </layout>
      </widget>
     </item>
-    <item row="9" column="3" colspan="2">
-     <widget class="QPushButton" name="saveAllButton">
+    <item row="2" column="0">
+     <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Save All to TCS</string>
+       <string>Objects :</string>
       </property>
      </widget>
     </item>
-    <item row="9" column="5">
-     <widget class="QPushButton" name="exitButton">
+    <item row="2" column="3">
+     <widget class="QLabel" name="label_7">
       <property name="text">
-       <string>Exit</string>
+       <string>Ephemeris Options :</string>
       </property>
      </widget>
     </item>
-    <item row="6" column="5">
+    <item row="3" column="3" rowspan="2">
      <widget class="QGroupBox" name="optionsBox">
       <property name="title">
        <string/>
@@ -164,7 +133,7 @@
         <widget class="QDateTimeEdit" name="inputUTStart">
          <property name="dateTime">
           <datetime>
-           <hour>14</hour>
+           <hour>21</hour>
            <minute>0</minute>
            <second>0</second>
            <year>2015</year>
@@ -188,7 +157,7 @@
          </property>
          <property name="maximumTime">
           <time>
-           <hour>1</hour>
+           <hour>8</hour>
            <minute>59</minute>
            <second>59</second>
           </time>
@@ -279,21 +248,126 @@
       </layout>
      </widget>
     </item>
-    <item row="8" column="0" colspan="6">
-     <widget class="QLabel" name="labelStatus">
+    <item row="4" column="0">
+     <widget class="QPushButton" name="addObjectsButton">
       <property name="text">
-       <string>Idle</string>
+       <string>Add Objects</string>
+      </property>
+      <property name="checkable">
+       <bool>false</bool>
       </property>
      </widget>
     </item>
-    <item row="9" column="2">
+    <item row="4" column="1">
+     <widget class="QPushButton" name="removeObjectsButton">
+      <property name="text">
+       <string>Remove Objects</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="2">
+     <widget class="QPushButton" name="sortButton">
+      <property name="text">
+       <string>Manual Sort</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Status :</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <widget class="QPushButton" name="viewButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>View Selected</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="1">
      <widget class="QPushButton" name="saveSelectedButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="text">
        <string>Save Selected to TCS</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="1" colspan="5">
+    <item row="7" column="2">
+     <widget class="QPushButton" name="saveAllButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Save All to TCS</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="3">
+     <widget class="QPushButton" name="exitButton">
+      <property name="text">
+       <string>Exit</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0" colspan="3">
+     <widget class="QListWidget" name="objectList">
+      <property name="font">
+       <font>
+        <pointsize>13</pointsize>
+       </font>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+      </property>
+      <property name="itemAlignment">
+       <set>Qt::AlignmentFlag::AlignLeading</set>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1" colspan="3">
      <widget class="QLabel" name="labelTitle">
       <property name="font">
        <font>
@@ -308,6 +382,13 @@
       </property>
      </widget>
     </item>
+    <item row="6" column="0" colspan="4">
+     <widget class="QLabel" name="labelStatus">
+      <property name="text">
+       <string>Idle</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -315,7 +396,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>849</width>
+     <width>837</width>
      <height>24</height>
     </rect>
    </property>
@@ -329,7 +410,10 @@
   <tabstop>sourceNORAD</tabstop>
   <tabstop>sourceAstorb</tabstop>
   <tabstop>sourceIMCCE</tabstop>
-  <tabstop>textEdit</tabstop>
+  <tabstop>objectList</tabstop>
+  <tabstop>addObjectsButton</tabstop>
+  <tabstop>removeObjectsButton</tabstop>
+  <tabstop>sortButton</tabstop>
   <tabstop>inputUTStart</tabstop>
   <tabstop>inputUTEnd</tabstop>
   <tabstop>inputStepSize</tabstop>

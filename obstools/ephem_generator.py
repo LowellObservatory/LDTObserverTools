@@ -400,6 +400,24 @@ def norad_ephem(
         The Ephemeris Object class containing the requested data
     """
 
+    step_hms = utils.hms_from_timedelta(stepsize)
+    query = {
+        "obj_name": norad_id,
+        "time": utstart.strftime("%Y-%m-%d+%H:%M:%S"),
+        "round_step": "on",
+        "num_steps": f"{(utend - utstart) / stepsize:.0f}",
+        "step_size": f"{step_hms[0]}h{step_hms[1]}m{step_hms[2]:.0f}s",
+        "obs_code": LDT_OBSCODE,
+        "show_separate_motions": "on",
+    }
+    r = requests.get(
+        "https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi", params=query, timeout=10
+    )
+
+    print(r.url)
+
+    result = r.json()
+
 
 # GUI Classes ================================================================#
 class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
@@ -420,6 +438,7 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
 
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
+        self.addObjectsButton.pressed.connect(self.add_objects_button_clicked)
         self.generateSelectedButton.pressed.connect(
             self.generate_selected_button_clicked
         )
@@ -480,6 +499,7 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
         self.sourceMPC.setDisabled(True)
         self.sourceAstorb.setDisabled(True)
         self.sourceIMCCE.setDisabled(True)
+        self.sourceNORAD.setChecked(True)
 
         # Set default values
         # self.last_input_data = ETCData()
@@ -501,6 +521,20 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
 
         if button == QtWidgets.QMessageBox.StandardButton.Ok:
             QtWidgets.QApplication.quit()
+
+    def add_objects_button_clicked(self):
+        """The user clicked the "Add Objects" button
+
+        Open a `getMultiLineText` input dialog, then parse the lines input into
+        the QListWidget object for display in the main window.
+        """
+        input_string, ok = QtWidgets.QInputDialog.getMultiLineText(
+            self, "Enter Objects", "Enter object IDs, one per line", ""
+        )
+        object_list = input_string.split("\n")
+
+        if object_list:
+            self.objectList.addItems(object_list)
 
     def generate_selected_button_clicked(self):
         """The user clicked the "Generate Selected Ephemeris" button
