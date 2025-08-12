@@ -48,14 +48,13 @@ The output format for LDT TCS is::
 import argparse
 import dataclasses
 import datetime
-import sys
 
 # 3rd-Party Libraries
 import astropy.coordinates
 import astropy.table
 import astropy.units as u
 import numpy as np
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtWidgets
 import requests
 
 # Local Libraries
@@ -420,7 +419,7 @@ def norad_ephem(
 
 
 # GUI Classes ================================================================#
-class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
+class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
     """Ephemeris Generator Main Window Class
 
     The UI is defined in EphemMainWindow.ui and translated (via pyuic6) into python
@@ -460,10 +459,8 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
         # self.buttonAdd2Table.clicked.connect(self.add_data_button_clicked)
         # self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
 
-        # Correctly point to the Lowell Logo
-        self.LowellLogo.setPixmap(
-            QtGui.QPixmap(str(utils.UI / "lowelllogo_horizontal_web.png"))
-        )
+        self.set_fonts_and_logo()
+
         # Set the UT start time to the top of the next hour
         now = datetime.datetime.now(datetime.UTC)
         self.inputUTStart.setDateTime(
@@ -473,7 +470,6 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
                 spec=QtCore.Qt.TimeSpec.UTC,
             )
         )
-
         # Set the UT end time to 24 hours further on
         now = datetime.datetime.now(datetime.UTC)
         self.inputUTEnd.setDateTime(
@@ -483,15 +479,6 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
                 spec=QtCore.Qt.TimeSpec.UTC,
             )
         )
-
-        # Fix the font sizes
-        if sys.platform.startswith("linux"):
-            # Reset the font size to system
-            font = QtGui.QFont()
-            self.centralwidget.setFont(font)
-            # Make the title label bigger
-            font.setPointSize(int(np.round(font.pointSize() * 13 / 7, 0)))
-            self.labelTitle.setFont(font)
 
         # Disable currently unimplemented data sources
         self.sourceHorizons.setDisabled(True)
@@ -505,22 +492,6 @@ class EphemWindow(QtWidgets.QMainWindow, Ui_EphemMainWindow):
         # self.last_input_data = ETCData()
         # self.last_aux_data = AuxData()
         # self.etc_table = astropy.table.Table()
-
-    def exit_button_clicked(self):
-        """The user clicked the "Exit" button
-
-        Display a confirmation dialog, and quit if "Yes"
-        """
-        button = QtWidgets.QMessageBox.question(
-            self,
-            "",
-            "Are you sure you want to quit?",
-            buttons=QtWidgets.QMessageBox.StandardButton.Ok
-            | QtWidgets.QMessageBox.StandardButton.Cancel,
-        )
-
-        if button == QtWidgets.QMessageBox.StandardButton.Ok:
-            QtWidgets.QApplication.quit()
 
     def add_objects_button_clicked(self):
         """The user clicked the "Add Objects" button
