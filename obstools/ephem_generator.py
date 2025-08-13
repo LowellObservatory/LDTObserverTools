@@ -33,13 +33,6 @@ Possible databse sources include:
 The goal is to use the database-specific API to query ephemeris information and
 produce a TCS-compliant file that can be FTP'd to the TCS computer for
 ingestion.
-
-
-
-.. warning::
-
-    This module is not yet functional!
-    
 """
 
 # Built-In Libraries
@@ -51,7 +44,6 @@ import io
 
 # 3rd-Party Libraries
 import astropy.coordinates
-import astropy.io.ascii
 import astropy.table
 import astropy.time
 import astropy.units as u
@@ -133,7 +125,17 @@ class EphemObj:
             self.data.add_column(astropy.table.Column(dtype=int, name="dec_m"))
             self.data.add_column(astropy.table.Column(dtype=float, name="dec_s"))
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Print a string representation of the object
+
+        Includes database source, object ID, UT start time, ephemeris step
+        size, and total number of points in the table.
+
+        Returns
+        -------
+        :obj:`str`
+            A brief description of the object
+        """
         return (
             f"{self.source}  ID: {self.obj_id}  UT: {self.utstart}  "
             f"ΔT: {self.stepsize.total_seconds()/60.:.1f} min  N: {len(self.data)}"
@@ -183,7 +185,7 @@ class EphemObj:
 
         # Get the string content from the buffer
         ascii_string = output_buffer.getvalue()
-        # Append the epock information
+        # Append the epoch information
         match self.epoch:
             case Epoch.FK5:
                 ascii_string += "FK5 J2000.0 2000.0\n"
@@ -225,6 +227,7 @@ def astorb_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
+    raise NotImplementedError
 
 
 def horizons_ephem(
@@ -256,6 +259,7 @@ def horizons_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
+    raise NotImplementedError
 
 
 def imcce_ephem(
@@ -287,6 +291,7 @@ def imcce_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
+    raise NotImplementedError
 
 
 def mpc_ephem(
@@ -317,6 +322,7 @@ def mpc_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
+    raise NotImplementedError
 
 
 def neocp_ephem(
@@ -402,6 +408,8 @@ def neocp_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
+    raise NotImplementedError
+
     now = datetime.datetime.fromisoformat("2022-11-23 22:00:00")
     now_p1d = now + datetime.timedelta(days=1)
 
@@ -539,31 +547,33 @@ def norad_ephem(
     body = soup.find("pre").get_text()
 
     # Remove the preamble and ps, leaving just the table; parse with AstroPy
-    table = astropy.table.Table(
-        np.array([r.split() for r in body.split("\n")[8:-5]]),
-        names=[
-            "Y",
-            "M",
-            "D",
-            "Time",
-            "rah",
-            "ram",
-            "ras",
-            "dd",
-            "dm",
-            "ds",
-            "az",
-            "el",
-            "selo",
-            "lelo",
-            "d_km",
-            "as_sec",
-            "pa",
-            "dra",
-            "ddec",
-            "mag",
-        ],
-    )
+    colnames = [
+        "Y",
+        "M",
+        "D",
+        "Time",
+        "rah",
+        "ram",
+        "ras",
+        "dd",
+        "dm",
+        "ds",
+        "az",
+        "el",
+        "selo",
+        "lelo",
+        "d_km",
+        "as_sec",
+        "pa",
+        "dra",
+        "ddec",
+        "mag",
+    ]
+
+    # Stuff the thing into an AstroPy table
+    table_array = np.array([r.split() for r in body.split("\n")[8:-5]])
+    _, ncol = table_array.shape
+    table = astropy.table.Table(table_array, names=colnames[:ncol])
 
     # Parse out the time column into individual columns
     table["time_h"] = [val.split(":")[0] for val in table["Time"]]
@@ -615,6 +625,7 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
         self.addObjectsButton.pressed.connect(self.add_objects_button_clicked)
+        self.removeObjectsButton.pressed.connect(self.remove_objects_button_clicked)
         self.generateSelectedButton.pressed.connect(
             self.generate_selected_button_clicked
         )
@@ -694,10 +705,58 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         input_string, ok = QtWidgets.QInputDialog.getMultiLineText(
             self, "Enter Objects", "Enter object IDs, one per line", ""
         )
-        object_list = input_string.split("\n")
+
+        # Once the dialog closes, "uncheck" the button
+        self.addObjectsButton.setChecked(False)
+        if not ok:
+            # User cancelled the input
+            return
+
+        # Otherwise, fill in the `objectList` object with any entries
+        object_list = [
+            item.strip() for item in input_string.split("\n") if item.strip()
+        ]
 
         if object_list:
             self.objectList.addItems(object_list)
+            n_obj = len(object_list)
+            self.labelStatus.setText(
+                f"Added {n_obj} object{'s' if n_obj > 1 else ''} to the list"
+            )
+
+    def remove_objects_button_clicked(self):
+        """The user clicked the "Remove Objects" button
+
+        Check that items are selected, open a "Confirm" dialog, then remove the
+        selected lines from the QListWidget.
+        """
+        if not self.objectList.count() or not self.objectList.selectedIndexes():
+            # Set the `labelStatus` to an error message and return
+            self.labelStatus.setText("ERROR: No object(s) selected for removal")
+            return
+
+        # Ask for confirmation
+        axed_lines = sorted(l.row() for l in self.objectList.selectedIndexes())
+        button = QtWidgets.QMessageBox.question(
+            self,
+            "Remove Lines?",
+            f"Are you sure you want to remove the {len(axed_lines)} "
+            "selected lines from the Objects list?",
+        )
+        # Once the dialog closes, "uncheck" the button
+        self.removeObjectsButton.setChecked(False)
+        if button == QtWidgets.QMessageBox.StandardButton.No:
+            return
+
+        # Remove the selected items from the ``objectList`` from the bottom
+        for line in axed_lines[::-1]:
+            item = self.objectList.takeItem(line)
+            # Delete the item to free memory
+            del item
+        self.labelStatus.setText(
+            f"Removed {len(axed_lines)} object{'s' if len(axed_lines) > 1 else ''}"
+            " from the list"
+        )
 
     def generate_selected_button_clicked(self):
         """The user clicked the "Generate Selected Ephemeris" button
@@ -746,11 +805,16 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         Save the ephemerides in the ``self.pulled_ephems`` attribute to disk /
         SFTP them to TCS in some way.
         """
+        # Write the status
+        sources = sorted({e.source for e in self.pulled_ephems})
+        obj_ids = sorted({e.obj_id for e in self.pulled_ephems})
+        self.labelStatus.setText(f"Writing TCS files for {sources} objects {obj_ids}")
+
         # Loop over the list
         for ephem in self.pulled_ephems:
             fn = (
                 utils.EPHEMS
-                / f"{ephem.source}.{ephem.obj_id}.{ephem.utstart.strftime('%Y%m%d')}.txt"
+                / f"{ephem.source}.{ephem.obj_id}.{ephem.utstart.strftime('%Y%m%d')}.eph"
             )
             with open(fn, "w", encoding="utf-8") as f_obj:
                 f_obj.write(ephem.tcs_format)
