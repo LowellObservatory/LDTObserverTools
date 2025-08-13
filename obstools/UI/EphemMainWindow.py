@@ -69,7 +69,7 @@ class Ui_EphemMainWindow(object):
         self.inputStepSize.setDecimals(1)
         self.inputStepSize.setMinimum(0.5)
         self.inputStepSize.setMaximum(120.0)
-        self.inputStepSize.setProperty("value", 30.0)
+        self.inputStepSize.setProperty("value", 5.0)
         self.inputStepSize.setObjectName("inputStepSize")
         self.gridLayout_2.addWidget(self.inputStepSize, 2, 1, 1, 1)
         self.label_5 = QtWidgets.QLabel(parent=self.optionsBox)
