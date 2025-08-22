@@ -99,16 +99,6 @@ def plot_visibility(
 
 
 # Plotting Utility Functions =================================================#
-def elev2elon(x):
-    """Elevation to elongation converstion"""
-    return x * 2
-
-
-def elon2elev(x):
-    """Elongation to elevation converstion"""
-    return x / 2
-
-
 def set_std_tickparams(axis: plt.axis, tsz: int | float):
     """Set standard tick parameters for a plot
 
