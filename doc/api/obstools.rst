@@ -24,6 +24,7 @@ Submodules
    obstools.ephem_generator
    obstools.fix_ldt_header
    obstools.lmi_etc
+   obstools.plotting_functions
    obstools.scrub_deveny_pickup
    obstools.utils
 
