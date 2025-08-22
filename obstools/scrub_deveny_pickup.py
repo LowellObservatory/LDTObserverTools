@@ -69,6 +69,7 @@ import scipy.signal
 from tqdm import tqdm
 
 # Internal Imports
+from obstools import plotting_functions
 from obstools import utils
 
 # Mean pixel readout time (7.25 µs)
@@ -822,7 +823,7 @@ def fit_lines(
                 "r-",
                 label=make_sine_label(popt, infodict, mesg, ier),
             )
-            utils.set_std_tickparams(axis, tsz)
+            plotting_functions.set_std_tickparams(axis, tsz)
             axis.set_xlabel(f"Pixel Position, Row #{img_row}", fontsize=tsz)
             axis.legend(loc="upper left", fontsize=tsz)
             pidx += 1
@@ -1179,7 +1180,7 @@ def create_fft_plot(
     axis0.plot(flat_array, linewidth=0.1, color="k")
     axis0.set_xlabel("Linear pixel number", fontsize=tsz)
     axis0.set_ylabel("Pixel Value (electron)", fontsize=tsz)
-    utils.set_std_tickparams(axis0, tsz)
+    plotting_functions.set_std_tickparams(axis0, tsz)
 
     # Limits and Labels
     _, med, std = astropy.stats.sigma_clipped_stats(flat_array, sigma=5.0)
@@ -1246,7 +1247,7 @@ def create_fft_plot(
             zorder=0.5,
             linewidth=0.6,
         )
-        utils.set_std_tickparams(ax, tsz)
+        plotting_functions.set_std_tickparams(ax, tsz)
         ylim = ax.get_ylim()
         y_tick_vals = [val for val in ax.get_yticks() if ylim[0] < val < ylim[1]]
         ax.set_yticks(y_tick_vals, [f"{val:7.2g}" for val in y_tick_vals])
@@ -1408,7 +1409,7 @@ def make_sinusoid_fit_plots(
 
         axes[3].set_xlabel("Image Row Number", fontsize=tsz)
 
-        utils.set_std_tickparams(axis, tsz)
+        plotting_functions.set_std_tickparams(axis, tsz)
         axis.legend(loc="lower left" if axis != axes[3] else "upper left", fontsize=tsz)
 
     # When making plots for the documentation, obfuscate the source

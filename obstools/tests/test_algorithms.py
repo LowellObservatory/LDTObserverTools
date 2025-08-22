@@ -23,6 +23,7 @@ from obstools import algorithms
 def test_compute_visibility():
     pass
 
+
 def test_lst_midnight():
     # Test the inputs / outputs
     utdates = ["2020-01-24", "2021-03-02", "2022-04-19", "2023-06-21", "2024-11-29"]

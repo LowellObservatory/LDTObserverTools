@@ -35,7 +35,6 @@ import warnings
 
 # 3rd-Party Libraries
 import darkdetect
-import matplotlib.pyplot as plt
 import numpy as np
 from PyQt6 import QtGui, QtWidgets
 import scipy.optimize
@@ -44,10 +43,12 @@ import scipy.optimize
 from obstools.version import version as __version__
 
 # CONSTANTS
-CONFIG = resources.files("obstools") / "config"
-DATA = resources.files("obstools") / "data"
-UI = resources.files("obstools") / "UI"
-EPHEMS = resources.files("obstools") / "ephems"
+OBSTOOLS = resources.files("obstools")
+CONFIG = OBSTOOLS / "config"
+DATA = OBSTOOLS / "data"
+UI = OBSTOOLS / "UI"
+EPHEMS = OBSTOOLS / "ephems"
+VISIBILITIES = OBSTOOLS / "visibilities"
 # Modify SG theme based on system Light/Dark theme
 SG_THEME = "dark gray 14" if darkdetect.isDark() else "light grey 1"
 
@@ -63,7 +64,7 @@ class Visibility:
     Blah, blah, blah, blah
     """
 
-    obj_id: str
+    objname: str
     ut_time: np.ndarray
     azimuth: np.ndarray
     elevation: np.ndarray
@@ -460,28 +461,6 @@ def nearest_odd(x: float) -> int:
         The nearest odd integer
     """
     return int(2 * np.floor(x / 2) + 1)
-
-
-def set_std_tickparams(axis: plt.axis, tsz: int | float):
-    """Set standard tick parameters for a plot
-
-    These are my own "standards", based on plots I used to make in IDL.
-
-    Parameters
-    ----------
-    axis : :obj:`~matplotlib.pyplot.axis`
-        PyPlot axis for whom the tick parameters must be set
-    tsz : :obj:`int` or :obj:`float`
-        TypeSiZe
-    """
-    axis.tick_params(
-        axis="both",
-        which="both",
-        direction="in",
-        top=True,
-        right=True,
-        labelsize=tsz,
-    )
 
 
 def sinusoid(
