@@ -95,5 +95,6 @@ run*.py
 # Old Versions Directory (containing ILD / PHP / etc. versions)
 old_versions/
 
-# Generated ephemerides
+# Generated ephemerides / visibilities
 obstools/ephems/
+obstools/visibilities/
