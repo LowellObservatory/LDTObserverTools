@@ -102,7 +102,7 @@ def compute_visibility(
     le = np.zeros(ut_times.size, dtype=float)
 
     return utils.Visibility(
-        obj_id=obj_id,
+        objname=obj_id,
         ut_time=ut_times,
         azimuth=az,
         elevation=el,

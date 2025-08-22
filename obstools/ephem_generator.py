@@ -50,10 +50,11 @@ import astropy.time
 import astropy.units as u
 from bs4 import BeautifulSoup
 import numpy as np
-from PyQt6 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 import requests
 
 # Local Libraries
+from obstools import plotting_functions
 from obstools import utils
 from obstools.UI.EphemMainWindow import Ui_EphemMainWindow
 
@@ -103,6 +104,7 @@ class EphemObj:
     """
 
     source: str
+    objname: str
     obj_id: str
     utstart: datetime.datetime
     utend: datetime.datetime
@@ -220,6 +222,27 @@ class EphemObj:
         :obj:`~pathlib.Path`
             The path to the created visibility plot
         """
+        ut_times = [
+            datetime.datetime(
+                year=int(row["year"]),
+                month=int(row["month"]),
+                day=int(row["day"]),
+                hour=int(row["hour"]),
+                minute=int(row["minute"]),
+                second=int(row["second"]),
+            )
+            for row in self.data
+        ]
+        # TODO: Check that the azimuth -> lunar_elon columns have been filled
+        vis = utils.Visibility(
+            objname=f"{self.source}.{self.objname}",
+            ut_time=ut_times,
+            azimuth=self.data["azimuth"].data,
+            elevation=self.data["elevation"].data,
+            solar_elon=self.data["solar_elon"].data,
+            lunar_elon=self.data["lunar_elon"].data,
+        )
+        return plotting_functions.plot_visibility(vis)
 
 
 # Ephemeris Query Functions for Online Databases =============================#
@@ -569,64 +592,112 @@ def norad_ephem(
     body = soup.find("pre").get_text()
 
     # Remove the preamble and ps, leaving just the table; parse with AstroPy
+    # Column names in lowercase match directly those in EphemObj.data, others
+    # require parsing/processing or are not used
     colnames = [
-        "Y",
-        "M",
-        "D",
-        "Time",
-        "rah",
-        "ram",
-        "ras",
-        "dd",
-        "dm",
-        "ds",
-        "az",
-        "el",
-        "selo",
-        "lelo",
-        "d_km",
-        "as_sec",
-        "pa",
-        "dra",
-        "ddec",
-        "mag",
+        "year",
+        "month",
+        "day",
+        "TIME",
+        "ra_h",
+        "ra_m",
+        "ra_s",
+        "dec_d",
+        "dec_m",
+        "dec_s",
+        "azimuth",
+        "elevation",
+        "solar_elon",
+        "lunar_elon",
+        "D_KM",
+        "AS_SEC",
+        "PA",
+        "DRA",
+        "DDEC",
+        "MAG",
     ]
+    dtypes = [
+        int,
+        int,
+        int,
+        str,
+        int,
+        int,
+        float,
+        int,
+        int,
+        float,
+        float,
+        float,
+        float,
+        float,
+        str,
+        str,
+        str,
+        str,
+        str,
+        str,
+    ]
+
+    # Get the names from the top of the table:
+    id_line, name_line = body.split("\n")[5:7]
+    eq_list = name_line.split("=")
+    if (len_list := len(eq_list)) > 1:
+        # Some objects are listed this way
+        for i in reversed(range(len_list)):
+            if "NORAD" in eq_list[i]:
+                eq_list.pop(i)
+                continue
+            if "-" in eq_list[i]:
+                year, idnum = eq_list[i].split("-")
+                if len(year.strip()) == 4 and len(idnum.strip()) == 4:
+                    eq_list.pop(i)
+                    continue
+        common_name = "_".join([thing.strip() for thing in eq_list])
+    else:
+        # Others start with "0 "
+        common_name = name_line[2:].replace(" ", "_")
+    launch_id = id_line.split("=")[-1].strip()
 
     # Stuff the thing into an AstroPy table
     table_array = np.array([r.split() for r in body.split("\n")[8:-5]])
     _, ncol = table_array.shape
-    table = astropy.table.Table(table_array, names=colnames[:ncol])
+    table = astropy.table.Table(table_array, names=colnames[:ncol], dtype=dtypes[:ncol])
 
     # Parse out the time column into individual columns
-    table["time_h"] = [val.split(":")[0] for val in table["Time"]]
-    table["time_m"] = [val.split(":")[1] for val in table["Time"]]
-    table["time_s"] = [val.split(":")[2] for val in table["Time"]]
+    table["hour"] = [val.split(":")[0] for val in table["TIME"]]
+    table["minute"] = [val.split(":")[1] for val in table["TIME"]]
+    table["second"] = [val.split(":")[2] for val in table["TIME"]]
 
     # ProjectPluto data are J2000
     return EphemObj(
+        objname=f"{common_name.strip()}({launch_id.strip()})",
         obj_id=norad_id,
         source="NORAD",
         utstart=utstart,
         utend=utend,
         stepsize=stepsize,
         ref_frame=RefFrame.FK5,
+        # TODO: This overwrites my nicely defined table above, but need to
+        #       figure out a way to insert `table` columns into `EphemObj.data`
+        #       columns.
         data=table[
-            "Y",
-            "M",
-            "D",
-            "time_h",
-            "time_m",
-            "time_s",
-            "rah",
-            "ram",
-            "ras",
-            "dd",
-            "dm",
-            "ds",
-            "az",
-            "el",
-            "selo",
-            "lelo",
+            "year",
+            "month",
+            "day",
+            "hour",
+            "minute",
+            "second",
+            "ra_h",
+            "ra_m",
+            "ra_s",
+            "dec_d",
+            "dec_m",
+            "dec_s",
+            "azimuth",
+            "elevation",
+            "solar_elon",
+            "lunar_elon",
         ],
     )
 
@@ -661,6 +732,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             self.selected_visibility_button_clicked
         )
         self.visibilityAllButton.pressed.connect(self.all_visibility_button_clicked)
+        self.inputUTStart.dateTimeChanged.connect(self.check_legal_time)
+        self.inputUTEnd.dateTimeChanged.connect(self.check_legal_time)
 
         # self.radioExpSnMag.toggled.connect(
         #     lambda checked: self.set_stacked_page(0, checked)
@@ -828,6 +901,12 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
 
         Generate the visibility plot for the selected object(s) and show
         it/them in a separate window with the option to save to disk.
+
+        .. todo::
+
+            Right now, this just saves the selected ones to disk.  Need to
+            spawn a seperate window and show the matplotlib object in it...
+            that necessitates changes to the underlying plotting routine.
         """
         # First, check that there are items in the `objectList`, and that at
         #   least one is selected.
@@ -854,7 +933,12 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
                 "ERROR: No object(s) available for ephemeris visibility!"
             )
             return
-        print("All Visibility!")
+
+        # Get IDs and Giddy Up!
+        selected_ids = [
+            self.objectList.item(i).text() for i in range(self.objectList.count())
+        ]
+        self.build_visibilities(selected_ids)
 
     def save_generated_button_clicked(self):
         """The user clicked the "Save Generated to TCS" button
@@ -871,12 +955,27 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         for ephem in self.pulled_ephems:
             fn = (
                 utils.EPHEMS
-                / f"{ephem.source}.{ephem.obj_id}.{ephem.utstart.strftime('%Y%m%d')}.eph"
+                / f"{ephem.source}.{ephem.objname}.{ephem.utstart.strftime('%Y%m%d')}.eph"
             )
             with open(fn, "w", encoding="utf-8") as f_obj:
                 f_obj.write(ephem.tcs_format)
 
     # GUI Functionality methods ==========================#
+    def check_legal_time(self):
+        # Get the current palette
+        palette = self.inputUTEnd.palette()
+        if (
+            self.inputUTEnd.dateTime().toPyDateTime()
+            <= self.inputUTStart.dateTime().toPyDateTime()
+        ):
+            # Set the text color to red
+            palette.setColor(QtGui.QPalette.ColorRole.Text, QtGui.QColor("red"))
+        else:
+            # Set the text color to default
+            palette.setColor(QtGui.QPalette.ColorRole.Text, QtGui.QColor(""))
+        # Apply the modified palette
+        self.inputUTEnd.setPalette(palette)
+
     def build_visibilities(self, selected_ids: list[str]):
         """Build the visibility plots
 
@@ -903,6 +1002,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             self.query_ephems(get_new_ephems, clear_pulled=False)
 
         # Loop through all pulled ephems and construct the visibility objects
+        for ephem in self.pulled_ephems:
+            self.built_visibilities.append(ephem.visibility)
 
     def query_ephems(self, selected_ids: list[str], clear_pulled: bool = True):
         """Query the database source
@@ -916,6 +1017,14 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         clear_pulled : :obj:`bool`, optional
             Clear the list of pulled ephemerides before requesting more?
         """
+        # Check that the times are legal
+        if (
+            self.inputUTEnd.dateTime().toPyDateTime()
+            <= self.inputUTStart.dateTime().toPyDateTime()
+        ):
+            self.labelStatus.setText("ERROR: End time is NOT LATER THAN start time!")
+            return
+
         # Get the selected source and set the status message
         selected_source = self.sourceGroup.checkedButton().text()
         self.labelStatus.setText(
@@ -955,7 +1064,7 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
 
             # Do something with the ephem object
             self.pulled_ephems.append(ephem)
-            print(ephem.tcs_format)
+            # print(ephem.tcs_format)
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
