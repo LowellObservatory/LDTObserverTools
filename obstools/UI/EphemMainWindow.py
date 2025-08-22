@@ -57,9 +57,14 @@ class Ui_EphemMainWindow(object):
         self.optionsBox.setObjectName("optionsBox")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.optionsBox)
         self.gridLayout_2.setObjectName("gridLayout_2")
-        self.label_6 = QtWidgets.QLabel(parent=self.optionsBox)
-        self.label_6.setObjectName("label_6")
-        self.gridLayout_2.addWidget(self.label_6, 2, 0, 1, 1)
+        self.label_4 = QtWidgets.QLabel(parent=self.optionsBox)
+        self.label_4.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignTrailing
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.label_4.setObjectName("label_4")
+        self.gridLayout_2.addWidget(self.label_4, 0, 0, 1, 1)
         self.inputStepSize = QtWidgets.QDoubleSpinBox(parent=self.optionsBox)
         self.inputStepSize.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight
@@ -72,6 +77,32 @@ class Ui_EphemMainWindow(object):
         self.inputStepSize.setProperty("value", 5.0)
         self.inputStepSize.setObjectName("inputStepSize")
         self.gridLayout_2.addWidget(self.inputStepSize, 2, 1, 1, 1)
+        self.label_6 = QtWidgets.QLabel(parent=self.optionsBox)
+        self.label_6.setObjectName("label_6")
+        self.gridLayout_2.addWidget(self.label_6, 2, 0, 1, 1)
+        self.generateSelectedButton = QtWidgets.QPushButton(parent=self.optionsBox)
+        self.generateSelectedButton.setObjectName("generateSelectedButton")
+        self.gridLayout_2.addWidget(self.generateSelectedButton, 4, 0, 1, 2)
+        self.inputUTEnd = QtWidgets.QDateTimeEdit(parent=self.optionsBox)
+        self.inputUTEnd.setCurrentSection(QtWidgets.QDateTimeEdit.Section.MonthSection)
+        self.inputUTEnd.setCalendarPopup(True)
+        self.inputUTEnd.setTimeSpec(QtCore.Qt.TimeSpec.UTC)
+        self.inputUTEnd.setObjectName("inputUTEnd")
+        self.gridLayout_2.addWidget(self.inputUTEnd, 1, 1, 1, 1)
+        self.inputUTStart = QtWidgets.QDateTimeEdit(parent=self.optionsBox)
+        self.inputUTStart.setDateTime(
+            QtCore.QDateTime(QtCore.QDate(2015, 1, 2), QtCore.QTime(11, 0, 0))
+        )
+        self.inputUTStart.setMaximumDate(QtCore.QDate(2061, 1, 1))
+        self.inputUTStart.setMinimumDate(QtCore.QDate(2015, 1, 1))
+        self.inputUTStart.setMaximumTime(QtCore.QTime(22, 59, 59))
+        self.inputUTStart.setCurrentSection(
+            QtWidgets.QDateTimeEdit.Section.MonthSection
+        )
+        self.inputUTStart.setCalendarPopup(True)
+        self.inputUTStart.setTimeSpec(QtCore.Qt.TimeSpec.UTC)
+        self.inputUTStart.setObjectName("inputUTStart")
+        self.gridLayout_2.addWidget(self.inputUTStart, 0, 1, 1, 1)
         self.label_5 = QtWidgets.QLabel(parent=self.optionsBox)
         self.label_5.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight
@@ -80,28 +111,6 @@ class Ui_EphemMainWindow(object):
         )
         self.label_5.setObjectName("label_5")
         self.gridLayout_2.addWidget(self.label_5, 1, 0, 1, 1)
-        self.inputUTStart = QtWidgets.QDateTimeEdit(parent=self.optionsBox)
-        self.inputUTStart.setDateTime(
-            QtCore.QDateTime(QtCore.QDate(2015, 1, 2), QtCore.QTime(4, 0, 0))
-        )
-        self.inputUTStart.setMaximumDate(QtCore.QDate(2061, 1, 1))
-        self.inputUTStart.setMinimumDate(QtCore.QDate(2015, 1, 1))
-        self.inputUTStart.setMaximumTime(QtCore.QTime(15, 59, 59))
-        self.inputUTStart.setCurrentSection(
-            QtWidgets.QDateTimeEdit.Section.MonthSection
-        )
-        self.inputUTStart.setCalendarPopup(True)
-        self.inputUTStart.setTimeSpec(QtCore.Qt.TimeSpec.UTC)
-        self.inputUTStart.setObjectName("inputUTStart")
-        self.gridLayout_2.addWidget(self.inputUTStart, 0, 1, 1, 1)
-        self.label_4 = QtWidgets.QLabel(parent=self.optionsBox)
-        self.label_4.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignTrailing
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.label_4.setObjectName("label_4")
-        self.gridLayout_2.addWidget(self.label_4, 0, 0, 1, 1)
         self.label = QtWidgets.QLabel(parent=self.optionsBox)
         self.label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight
@@ -116,18 +125,16 @@ class Ui_EphemMainWindow(object):
         self.inputRefFrame.addItem("")
         self.inputRefFrame.addItem("")
         self.gridLayout_2.addWidget(self.inputRefFrame, 3, 1, 1, 1)
-        self.generateSelectedButton = QtWidgets.QPushButton(parent=self.optionsBox)
-        self.generateSelectedButton.setObjectName("generateSelectedButton")
-        self.gridLayout_2.addWidget(self.generateSelectedButton, 4, 0, 1, 2)
-        self.inputUTEnd = QtWidgets.QDateTimeEdit(parent=self.optionsBox)
-        self.inputUTEnd.setCurrentSection(QtWidgets.QDateTimeEdit.Section.MonthSection)
-        self.inputUTEnd.setCalendarPopup(True)
-        self.inputUTEnd.setTimeSpec(QtCore.Qt.TimeSpec.UTC)
-        self.inputUTEnd.setObjectName("inputUTEnd")
-        self.gridLayout_2.addWidget(self.inputUTEnd, 1, 1, 1, 1)
         self.generateAllButton = QtWidgets.QPushButton(parent=self.optionsBox)
         self.generateAllButton.setObjectName("generateAllButton")
         self.gridLayout_2.addWidget(self.generateAllButton, 5, 0, 1, 2)
+        self.visibilitySelectedButton = QtWidgets.QPushButton(parent=self.optionsBox)
+        self.visibilitySelectedButton.setObjectName("visibilitySelectedButton")
+        self.gridLayout_2.addWidget(self.visibilitySelectedButton, 6, 0, 1, 2)
+        self.visibilityAllButton = QtWidgets.QPushButton(parent=self.optionsBox)
+        self.visibilityAllButton.setEnabled(True)
+        self.visibilityAllButton.setObjectName("visibilityAllButton")
+        self.gridLayout_2.addWidget(self.visibilityAllButton, 7, 0, 1, 2)
         self.gridLayout.addWidget(self.optionsBox, 3, 3, 2, 1)
         self.addObjectsButton = QtWidgets.QPushButton(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -247,7 +254,13 @@ class Ui_EphemMainWindow(object):
         EphemMainWindow.setTabOrder(self.inputStepSize, self.inputRefFrame)
         EphemMainWindow.setTabOrder(self.inputRefFrame, self.generateSelectedButton)
         EphemMainWindow.setTabOrder(self.generateSelectedButton, self.generateAllButton)
-        EphemMainWindow.setTabOrder(self.generateAllButton, self.viewButton)
+        EphemMainWindow.setTabOrder(
+            self.generateAllButton, self.visibilitySelectedButton
+        )
+        EphemMainWindow.setTabOrder(
+            self.visibilitySelectedButton, self.visibilityAllButton
+        )
+        EphemMainWindow.setTabOrder(self.visibilityAllButton, self.viewButton)
         EphemMainWindow.setTabOrder(self.viewButton, self.saveGeneratedButton)
         EphemMainWindow.setTabOrder(self.saveGeneratedButton, self.exitButton)
 
@@ -265,24 +278,30 @@ class Ui_EphemMainWindow(object):
         self.sourceIMCCE.setText(_translate("EphemMainWindow", "IMCCE"))
         self.label_3.setText(_translate("EphemMainWindow", "Objects :"))
         self.label_7.setText(_translate("EphemMainWindow", "Ephemeris Options :"))
-        self.label_6.setText(_translate("EphemMainWindow", "Step Size (min) :"))
-        self.label_5.setText(_translate("EphemMainWindow", "UT End :"))
-        self.inputUTStart.setDisplayFormat(
-            _translate("EphemMainWindow", "MM/dd/yyyy hh:mm")
-        )
         self.label_4.setText(_translate("EphemMainWindow", "UT Start :"))
-        self.label.setText(_translate("EphemMainWindow", "Reference Frame :"))
-        self.inputRefFrame.setItemText(0, _translate("EphemMainWindow", "FK5 / J2000"))
-        self.inputRefFrame.setItemText(1, _translate("EphemMainWindow", "ICRS / ICRF"))
-        self.inputRefFrame.setItemText(2, _translate("EphemMainWindow", "Apparent"))
+        self.label_6.setText(_translate("EphemMainWindow", "Step Size (min) :"))
         self.generateSelectedButton.setText(
             _translate("EphemMainWindow", "Generate Selected Ephemeris")
         )
         self.inputUTEnd.setDisplayFormat(
             _translate("EphemMainWindow", "MM/dd/yyyy hh:mm")
         )
+        self.inputUTStart.setDisplayFormat(
+            _translate("EphemMainWindow", "MM/dd/yyyy hh:mm")
+        )
+        self.label_5.setText(_translate("EphemMainWindow", "UT End :"))
+        self.label.setText(_translate("EphemMainWindow", "Reference Frame :"))
+        self.inputRefFrame.setItemText(0, _translate("EphemMainWindow", "FK5 / J2000"))
+        self.inputRefFrame.setItemText(1, _translate("EphemMainWindow", "ICRS / ICRF"))
+        self.inputRefFrame.setItemText(2, _translate("EphemMainWindow", "Apparent"))
         self.generateAllButton.setText(
             _translate("EphemMainWindow", "Generate All Ephemerides")
+        )
+        self.visibilitySelectedButton.setText(
+            _translate("EphemMainWindow", "View Selected Visibility")
+        )
+        self.visibilityAllButton.setText(
+            _translate("EphemMainWindow", "Save All Visibilities")
         )
         self.addObjectsButton.setText(_translate("EphemMainWindow", "Add Objects"))
         self.removeObjectsButton.setText(

@@ -80,8 +80,8 @@ class EphemQueryError(EphemError):
     """Ephemeris Query Error"""
 
 
-class Epoch(enum.Enum):
-    """Epoch enumeration class
+class RefFrame(enum.Enum):
+    """Reference Frame enumeration class
 
     This class contains the ``enum`` values used for identifying epoch.
     We do not use the value of the enumerations at the moment, so simply
@@ -107,7 +107,7 @@ class EphemObj:
     utstart: datetime.datetime
     utend: datetime.datetime
     stepsize: datetime.timedelta
-    epoch: Epoch
+    ref_frame: RefFrame
     data: astropy.table.Table = dataclasses.field(default_factory=astropy.table.Table)
 
     def __post_init__(self):
@@ -194,12 +194,12 @@ class EphemObj:
         # Get the string content from the buffer
         ascii_string = output_buffer.getvalue()
         # Append the epoch information
-        match self.epoch:
-            case Epoch.FK5:
+        match self.ref_frame:
+            case RefFrame.FK5:
                 ascii_string += "FK5 J2000.0 2000.0\n"
-            case Epoch.ICRS:
+            case RefFrame.ICRS:
                 ascii_string += "ICRS ICRF 2000.0\n"
-            case Epoch.APPT:
+            case RefFrame.APPT:
                 t = astropy.time.Time(self.utstart)
                 t.format = "jyear_str"
                 ascii_string += f"APPT {t.value} {t.value.strip('J')}\n"
@@ -609,7 +609,7 @@ def norad_ephem(
         utstart=utstart,
         utend=utend,
         stepsize=stepsize,
-        epoch=Epoch.FK5,
+        ref_frame=RefFrame.FK5,
         data=table[
             "Y",
             "M",
@@ -657,6 +657,10 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         )
         self.generateAllButton.pressed.connect(self.generate_all_button_clicked)
         self.saveGeneratedButton.pressed.connect(self.save_generated_button_clicked)
+        self.visibilitySelectedButton.pressed.connect(
+            self.selected_visibility_button_clicked
+        )
+        self.visibilityAllButton.pressed.connect(self.all_visibility_button_clicked)
 
         # self.radioExpSnMag.toggled.connect(
         #     lambda checked: self.set_stacked_page(0, checked)
@@ -664,14 +668,6 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         # self.radioExpPkMag.clicked.connect(
         #     lambda checked: self.set_stacked_page(1, checked)
         # )
-        # self.radioSnExpMag.clicked.connect(
-        #     lambda checked: self.set_stacked_page(2, checked)
-        # )
-        # self.radioMagSnExp.clicked.connect(
-        #     lambda checked: self.set_stacked_page(3, checked)
-        # )
-        # self.buttonAdd2Table.clicked.connect(self.add_data_button_clicked)
-        # self.buttonShowTable.clicked.connect(self.show_table_button_clicked)
 
         self.set_fonts_and_logo()
 
@@ -718,10 +714,12 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         self.sourceNORAD.setChecked(True)
 
         # Set default values
-        self.pulled_ephems = None
+        self.pulled_ephems = []
+        self.built_visibilities = []
         # self.last_aux_data = AuxData()
         # self.etc_table = astropy.table.Table()
 
+    # Button Click Callbacks =============================#
     def add_objects_button_clicked(self):
         """The user clicked the "Add Objects" button
 
@@ -825,6 +823,39 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         ]
         self.query_ephems(selected_ids)
 
+    def selected_visibility_button_clicked(self):
+        """The user clicked the "View Selected Visibility" button
+
+        Generate the visibility plot for the selected object(s) and show
+        it/them in a separate window with the option to save to disk.
+        """
+        # First, check that there are items in the `objectList`, and that at
+        #   least one is selected.
+        if not self.objectList.count() or not self.objectList.selectedIndexes():
+            # Set the `labelStatus` to an error message and return
+            self.labelStatus.setText(
+                "ERROR: No object(s) selected for ephemeris visibility!"
+            )
+            return
+
+        # Get IDs and Giddy Up!
+        selected_ids = [item.text() for item in self.objectList.selectedItems()]
+        self.build_visibilities(selected_ids)
+
+    def all_visibility_button_clicked(self):
+        """The user clicked the "Save All Visibilities" button
+
+        Generate the visibility plots for all objects and save them to disk.
+        """
+        # First, check that there are items in the `objectList`
+        if not self.objectList.count():
+            # Set the `labelStatus` to an error message and return
+            self.labelStatus.setText(
+                "ERROR: No object(s) available for ephemeris visibility!"
+            )
+            return
+        print("All Visibility!")
+
     def save_generated_button_clicked(self):
         """The user clicked the "Save Generated to TCS" button
 
@@ -845,7 +876,35 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             with open(fn, "w", encoding="utf-8") as f_obj:
                 f_obj.write(ephem.tcs_format)
 
-    def query_ephems(self, selected_ids: list[str]):
+    # GUI Functionality methods ==========================#
+    def build_visibilities(self, selected_ids: list[str]):
+        """Build the visibility plots
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        selected_ids : :obj:`list`
+            List of selected Object IDs for which to pull ephemerides
+        """
+        # Build up the list of previously pulled ephemerides
+        selected_source = self.sourceGroup.checkedButton().text()
+        pulled_eph = [
+            e.obj_id for e in self.pulled_ephems if e.source == selected_source
+        ]
+
+        # Loop through the ID's and make sure ephemerides have been generated
+        get_new_ephems = []
+        for sel_id in selected_ids:
+            # If not already pulled, add it to the list to pull
+            if sel_id not in pulled_eph:
+                get_new_ephems.append(sel_id)
+        if get_new_ephems:
+            self.query_ephems(get_new_ephems, clear_pulled=False)
+
+        # Loop through all pulled ephems and construct the visibility objects
+
+    def query_ephems(self, selected_ids: list[str], clear_pulled: bool = True):
         """Query the database source
 
         Pass everything along to the appropriate query function.
@@ -854,6 +913,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         ----------
         selected_ids : :obj:`list`
             List of selected Object IDs for which to pull ephemerides
+        clear_pulled : :obj:`bool`, optional
+            Clear the list of pulled ephemerides before requesting more?
         """
         # Get the selected source and set the status message
         selected_source = self.sourceGroup.checkedButton().text()
@@ -881,7 +942,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
                 )
 
         # Loop through selected IDs
-        self.pulled_ephems = []
+        if clear_pulled:
+            self.pulled_ephems = []
         for sel_id in selected_ids:
             # Pull the ephemeris from the source
             ephem = ephem_method(

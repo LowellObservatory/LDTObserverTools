@@ -24,6 +24,7 @@ package.
 
 # Built-In Libraries
 import argparse
+import dataclasses
 import datetime
 from functools import reduce
 from importlib import resources
@@ -53,6 +54,21 @@ SG_THEME = "dark gray 14" if darkdetect.isDark() else "light grey 1"
 
 class ObstoolsError(Exception):
     """Base error class for this package"""
+
+
+@dataclasses.dataclass
+class Visibility:
+    """Visibility Object data class
+
+    Blah, blah, blah, blah
+    """
+
+    obj_id: str
+    ut_time: np.ndarray
+    azimuth: np.ndarray
+    elevation: np.ndarray
+    solar_elon: np.ndarray
+    lunar_elon: np.ndarray
 
 
 def all_subclasses(cls):

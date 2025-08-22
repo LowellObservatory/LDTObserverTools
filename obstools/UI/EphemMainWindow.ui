@@ -99,10 +99,13 @@
        <string/>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_6">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Step Size (min) :</string>
+          <string>UT Start :</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -125,13 +128,33 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_5">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>UT End :</string>
+          <string>Step Size (min) :</string>
          </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QPushButton" name="generateSelectedButton">
+         <property name="text">
+          <string>Generate Selected Ephemeris</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDateTimeEdit" name="inputUTEnd">
+         <property name="currentSection">
+          <enum>QDateTimeEdit::Section::MonthSection</enum>
+         </property>
+         <property name="displayFormat">
+          <string>MM/dd/yyyy hh:mm</string>
+         </property>
+         <property name="calendarPopup">
+          <bool>true</bool>
+         </property>
+         <property name="timeSpec">
+          <enum>Qt::TimeSpec::UTC</enum>
          </property>
         </widget>
        </item>
@@ -139,7 +162,7 @@
         <widget class="QDateTimeEdit" name="inputUTStart">
          <property name="dateTime">
           <datetime>
-           <hour>4</hour>
+           <hour>11</hour>
            <minute>0</minute>
            <second>0</second>
            <year>2015</year>
@@ -163,7 +186,7 @@
          </property>
          <property name="maximumTime">
           <time>
-           <hour>15</hour>
+           <hour>22</hour>
            <minute>59</minute>
            <second>59</second>
           </time>
@@ -182,10 +205,10 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_4">
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>UT Start :</string>
+          <string>UT End :</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -221,33 +244,27 @@
          </item>
         </widget>
        </item>
-       <item row="4" column="0" colspan="2">
-        <widget class="QPushButton" name="generateSelectedButton">
-         <property name="text">
-          <string>Generate Selected Ephemeris</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QDateTimeEdit" name="inputUTEnd">
-         <property name="currentSection">
-          <enum>QDateTimeEdit::Section::MonthSection</enum>
-         </property>
-         <property name="displayFormat">
-          <string>MM/dd/yyyy hh:mm</string>
-         </property>
-         <property name="calendarPopup">
-          <bool>true</bool>
-         </property>
-         <property name="timeSpec">
-          <enum>Qt::TimeSpec::UTC</enum>
-         </property>
-        </widget>
-       </item>
        <item row="5" column="0" colspan="2">
         <widget class="QPushButton" name="generateAllButton">
          <property name="text">
           <string>Generate All Ephemerides</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0" colspan="2">
+        <widget class="QPushButton" name="visibilitySelectedButton">
+         <property name="text">
+          <string>View Selected Visibility</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0" colspan="2">
+        <widget class="QPushButton" name="visibilityAllButton">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Save All Visibilities</string>
          </property>
         </widget>
        </item>
@@ -443,6 +460,8 @@
   <tabstop>inputRefFrame</tabstop>
   <tabstop>generateSelectedButton</tabstop>
   <tabstop>generateAllButton</tabstop>
+  <tabstop>visibilitySelectedButton</tabstop>
+  <tabstop>visibilityAllButton</tabstop>
   <tabstop>viewButton</tabstop>
   <tabstop>saveGeneratedButton</tabstop>
   <tabstop>exitButton</tabstop>
