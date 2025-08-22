@@ -41,6 +41,7 @@ import dataclasses
 import datetime
 import enum
 import io
+import pathlib
 
 # 3rd-Party Libraries
 import astropy.coordinates
@@ -112,6 +113,7 @@ class EphemObj:
     def __post_init__(self):
         # Structure of the table with predefined columns
         if not self.data:
+            # Basic Columns for the LDT Ephemeris Format
             self.data.add_column(astropy.table.Column(dtype=int, name="year"))
             self.data.add_column(astropy.table.Column(dtype=int, name="month"))
             self.data.add_column(astropy.table.Column(dtype=int, name="day"))
@@ -124,6 +126,11 @@ class EphemObj:
             self.data.add_column(astropy.table.Column(dtype=int, name="dec_d"))
             self.data.add_column(astropy.table.Column(dtype=int, name="dec_m"))
             self.data.add_column(astropy.table.Column(dtype=float, name="dec_s"))
+            # Extra Columns for Visibility Plots
+            self.data.add_column(astropy.table.Column(dtype=float, name="azimuth"))
+            self.data.add_column(astropy.table.Column(dtype=float, name="elevation"))
+            self.data.add_column(astropy.table.Column(dtype=float, name="solar_elon"))
+            self.data.add_column(astropy.table.Column(dtype=float, name="lunar_elon"))
 
     def __str__(self) -> str:
         """Print a string representation of the object
@@ -180,8 +187,9 @@ class EphemObj:
         output_buffer = io.StringIO()
 
         # Write the table to the string buffer in a specified ASCII format
-        self.data.write(output_buffer, format="ascii.no_header")
-        # astropy.io.ascii.write(self.data, output_buffer, format="no_header")
+        tcs_ephem = self.data.copy()
+        tcs_ephem.remove_columns(["azimuth", "elevation", "solar_elon", "lunar_elon"])
+        tcs_ephem.write(output_buffer, format="ascii.no_header")
 
         # Get the string content from the buffer
         ascii_string = output_buffer.getvalue()
@@ -198,6 +206,20 @@ class EphemObj:
 
         # Return the string object
         return ascii_string
+
+    @property
+    def visibility(self) -> pathlib.Path:
+        """Creates a visibility plot and returns the pathname thereto
+
+        Visibility plots allow for planning of when to optimally observe
+        objects.  This is even more crucial with the moving targets that
+        require ephemerides.
+
+        Returns
+        -------
+        :obj:`~pathlib.Path`
+            The path to the created visibility plot
+        """
 
 
 # Ephemeris Query Functions for Online Databases =============================#
@@ -601,6 +623,10 @@ def norad_ephem(
             "dd",
             "dm",
             "ds",
+            "az",
+            "el",
+            "selo",
+            "lelo",
         ],
     )
 

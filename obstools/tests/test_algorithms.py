@@ -11,19 +11,19 @@
 #  @author: tbowers
 # pylint: disable=missing-function-docstring
 
-"""Celestial Time Utilities TEST Module
+"""Algorithms TEST Module
 """
 
 import numpy as np
 import pytest
 
-from obstools import celestial_time
+from obstools import algorithms
 
 
 def test_lst_midnight():
     # Test the inputs / outputs
     utdates = ["2020-01-24", "2021-03-02", "2022-04-19", "2023-06-21", "2024-11-29"]
-    lsts = celestial_time.lst_midnight(utdates)
+    lsts = algorithms.lst_midnight(utdates)
     assert isinstance(lsts, np.ndarray)
     assert isinstance(lsts[0], str)
     assert len(lsts) == len(utdates)
@@ -33,13 +33,13 @@ def test_lst_midnight():
     # Make sure the routine handles errors properly...
     # Bad Month
     with pytest.raises(ValueError):
-        _ = celestial_time.lst_midnight(["2022-13-17"])
+        _ = algorithms.lst_midnight(["2022-13-17"])
     # Bad Day
     with pytest.raises(ValueError):
-        _ = celestial_time.lst_midnight(["2022-03-83"])
+        _ = algorithms.lst_midnight(["2022-03-83"])
     # No "-" separator
     with pytest.raises(ValueError):
-        _ = celestial_time.lst_midnight(["20210409"])
+        _ = algorithms.lst_midnight(["20210409"])
     # Bad inputs (not list)
     with pytest.raises(ValueError):
-        _ = celestial_time.lst_midnight("2024-11-07")
+        _ = algorithms.lst_midnight("2024-11-07")
