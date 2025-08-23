@@ -453,75 +453,136 @@ def neocp_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
-    raise NotImplementedError
-
-    now = datetime.datetime.fromisoformat("2022-11-23 22:00:00")
-    now_p1d = now + datetime.timedelta(days=1)
+    # Note that the API limits the number of ephemeris output records to 500.
+    # Specify appropriate values for eph-start, eph-stop, and eph-step to
+    # ensure this limit is not exceeded.
+    if (n_steps := (utend - utstart) / stepsize) > 500:
+        raise EphemQueryError(
+            f"Requesting too many steps ({n_steps}); "
+            "max = 500 -- adjust start/stop/step!"
+        )
 
     # Build the API query
     query = {
         "tdes": neocp_id,
         "obs-code": LDT_OBSCODE,
-        "eph-start": now.isoformat(timespec="seconds"),
-        "eph-stop": now_p1d.isoformat(timespec="seconds"),
-        "eph-step": "1h",
+        "eph-start": utstart.isoformat(timespec="seconds"),
+        "eph-stop": utend.isoformat(timespec="seconds"),
+        "eph-step": f"{np.round(stepsize.total_seconds()/60,0):.0f}m",
+        "fov-diam": 13.5,  # LMI FOV
         # "orbits": "true"
     }
 
-    r = requests.get("https://ssd-api.jpl.nasa.gov/scout.api", params=query, timeout=10)
+    try:
+        # This service can take a while...
+        r = requests.get(
+            "https://ssd-api.jpl.nasa.gov/scout.api", params=query, timeout=60
+        )
+    except requests.exceptions.ReadTimeout as err:
+        raise EphemQueryError(
+            "Timeout while waiting for https://ssd-api.jpl.nasa.gov query"
+        ) from err
 
-    print(r.url)
+    # Check if HTTP request was okay
+    if not r.ok:
+        raise EphemQueryError(
+            f"Got code {r.status_code} from https://ssd-api.jpl.nasa.gov query"
+        )
 
+    # The results from this source are in JSON format
     result = r.json()
 
-    # Playing with the output data
-    print(f"Count = {result['count']}")
+    # Check that the API version has not changed since development
+    #   Version: 1.3 (2021 September)
+    if result["signature"]["version"] != "1.3":
+        raise EphemQueryError(
+            "Server API version different from this client!  "
+            f"Expecting 1.3, got {result['signature']['version']}"
+        )
 
-    for k, v in result.items():
-        print(f"{k}: {type(v)}")
+    # Parse the returned object into an AstroPy Table
+    table = []
+    for row in result["eph"]:
+        row_dict = {"time": row["time"]}
+        row_dict.update(row["median"])
+        # Ensure things are floats
+        for col in ["elong", "moon", "el"]:
+            row_dict[col] = float(row_dict[col])
+        table.append(row_dict)
 
-    print(f"eph: {len(result['eph'])}")
+    table = astropy.table.Table(table)
+    # Just grab the columns I want, in the order I want them (bad JSON...)
+    table = table["time", "ra", "dec", "elong", "moon", "el"]
+    table.rename_columns(
+        table.colnames,
+        ["DATETIME", "RA", "DEC", "solar_elon", "lunar_elon", "elevation"],
+    )
+    # JPL Scout doesn't provide azimuith directly.
+    table["azimuth"] = np.zeros_like(table["elevation"].data, dtype=float)
 
-    print("Type and length of each element in eph:")
-    for thing in result["eph"]:
-        print(f"{thing['time']}  {len(thing['data'])}")
-        print(f"{type(thing)}  {list(thing.keys())}")
+    # Stuff the information into python data structures for parsing
+    coords = astropy.coordinates.SkyCoord(
+        table["RA"], table["DEC"], unit=u.deg, frame="fk5"
+    )
+    ut_time = [datetime.datetime.fromisoformat(t) for t in table["DATETIME"]]
 
-        for k, v in thing.items():
-            print(f"  {k}: {type(v)}")
+    # Add table columns
+    table["year"] = [dt.year for dt in ut_time]
+    table["month"] = [dt.month for dt in ut_time]
+    table["day"] = [dt.day for dt in ut_time]
+    table["hour"] = [dt.hour for dt in ut_time]
+    table["minute"] = [dt.minute for dt in ut_time]
+    table["second"] = [dt.second for dt in ut_time]
+    table["ra_h"] = [
+        int(c.ra.to_string(unit=u.hour, sep=":").split(":")[0]) for c in coords
+    ]
+    table["ra_m"] = [
+        int(c.ra.to_string(unit=u.hour, sep=":").split(":")[1]) for c in coords
+    ]
+    table["ra_s"] = [
+        float(c.ra.to_string(unit=u.hour, sep=":").split(":")[2]) for c in coords
+    ]
+    table["dec_d"] = [
+        int(c.dec.to_string(unit=u.deg, sep=":").split(":")[0]) for c in coords
+    ]
+    table["dec_m"] = [
+        int(c.dec.to_string(unit=u.deg, sep=":").split(":")[1]) for c in coords
+    ]
+    table["dec_s"] = [
+        float(c.dec.to_string(unit=u.deg, sep=":").split(":")[2]) for c in coords
+    ]
 
-        for k, v in thing["median"].items():
-            print(f"    {k}: {type(v)}")
-
-    with open(f"{neocp_id}_LDT.eph", "w", encoding="utf-8") as f_obj:
-        for point in result["eph"]:
-            time = datetime.datetime.fromisoformat(point["time"])
-            coord = astropy.coordinates.SkyCoord(
-                float(point["median"]["ra"]) * u.deg,
-                float(point["median"]["dec"]) * u.deg,
-                frame="fk5",
-            )
-
-            timestamp = time.strftime("%Y %m %d %H %M %S")
-            c_str = (
-                coord.to_string("hmsdms")
-                .replace("h", " ")
-                .replace("m", " ")
-                .replace("s", " ")
-                .replace("d", " ")
-                .replace("  ", " ")
-                .replace("  ", " ")
-            )
-            c = c_str.split(" ")
-            c_str = (
-                f"{int(c[0]):02d} {int(c[1]):02d} "
-                f"{float(c[2]):04.1f} {int(c[3]):+02d} "
-                f"{int(c[4]):02d} {float(c[5]):02.0f}"
-            )
-
-            f_obj.write(f"{timestamp} {c_str}\n")
-
-        f_obj.write("FK5 J2000.0 2000.0\n")
+    # JPL Scout data are J2000
+    return EphemObj(
+        objname=neocp_id,
+        obj_id=neocp_id,
+        source="JPLScout",
+        utstart=utstart,
+        utend=utend,
+        stepsize=stepsize,
+        ref_frame=RefFrame.FK5,
+        # TODO: This overwrites my nicely defined table above, but need to
+        #       figure out a way to insert `table` columns into `EphemObj.data`
+        #       columns.
+        data=table[
+            "year",
+            "month",
+            "day",
+            "hour",
+            "minute",
+            "second",
+            "ra_h",
+            "ra_m",
+            "ra_s",
+            "dec_d",
+            "dec_m",
+            "dec_s",
+            "azimuth",
+            "elevation",
+            "solar_elon",
+            "lunar_elon",
+        ],
+    )
 
 
 def norad_ephem(
@@ -577,9 +638,16 @@ def norad_ephem(
         "obs_code": LDT_OBSCODE,
         "show_separate_motions": "on",
     }
-    r = requests.get(
-        "https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi", params=query, timeout=10
-    )
+    try:
+        r = requests.get(
+            "https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi",
+            params=query,
+            timeout=10,
+        )
+    except requests.exceptions.ReadTimeout as err:
+        raise EphemQueryError(
+            "Timeout while waiting for https://www.projectpluto.com query"
+        ) from err
 
     # Check if HTTP request was okay
     if not r.ok:
@@ -780,10 +848,12 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
 
         # Disable currently unimplemented data sources
         self.sourceHorizons.setDisabled(True)
-        self.sourceScout.setDisabled(True)
+        self.sourceScout.setDisabled(False)
         self.sourceMPC.setDisabled(True)
+        self.sourceNORAD.setDisabled(False)
         self.sourceAstorb.setDisabled(True)
         self.sourceIMCCE.setDisabled(True)
+        # Set the default source
         self.sourceNORAD.setChecked(True)
 
         # Set default values
@@ -962,6 +1032,10 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
 
     # GUI Functionality methods ==========================#
     def check_legal_time(self):
+        """Check if the start/end times are legal
+
+        Show the end time in RED if it is NOT LATER THAN the start time.
+        """
         # Get the current palette
         palette = self.inputUTEnd.palette()
         if (
@@ -1055,12 +1129,16 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             self.pulled_ephems = []
         for sel_id in selected_ids:
             # Pull the ephemeris from the source
-            ephem = ephem_method(
-                sel_id,
-                utstart=self.inputUTStart.dateTime().toPyDateTime(),
-                utend=self.inputUTEnd.dateTime().toPyDateTime(),
-                stepsize=datetime.timedelta(minutes=self.inputStepSize.value()),
-            )
+            try:
+                ephem = ephem_method(
+                    sel_id,
+                    utstart=self.inputUTStart.dateTime().toPyDateTime(),
+                    utend=self.inputUTEnd.dateTime().toPyDateTime(),
+                    stepsize=datetime.timedelta(minutes=self.inputStepSize.value()),
+                )
+            except EphemQueryError as err:
+                self.labelStatus.setText(f"ERROR: Query error ({err})")
+                return
 
             # Do something with the ephem object
             self.pulled_ephems.append(ephem)
