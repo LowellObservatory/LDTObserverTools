@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb  # v4.2.2
+        uses: actions/checkout@v5
         with:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}

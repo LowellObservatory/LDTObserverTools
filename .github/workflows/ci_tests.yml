@@ -37,7 +37,7 @@ jobs:
           - test-astropydev
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
         with:
@@ -52,7 +52,7 @@ jobs:
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
       - name: Upload coverage to codecov
         if: "endsWith(matrix.tox_env, '-cov')"
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24  # v5.4.3
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00  # v5.5.0
 
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
@@ -75,7 +75,7 @@ jobs:
           - test-alldeps
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
         with:
@@ -93,7 +93,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Conda environment check
         uses: actions/setup-python@v5
         with:
@@ -113,7 +113,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Python codestyle check
         uses: actions/setup-python@v5
         with:
