@@ -11,8 +11,7 @@
 #  @author: tbowers
 # pylint: disable=missing-function-docstring
 
-"""Utility TEST Module
-"""
+"""Utility TEST Module"""
 
 from obstools import utils
 
