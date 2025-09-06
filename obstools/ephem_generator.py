@@ -50,6 +50,7 @@ import astropy.time
 import astropy.units as u
 from bs4 import BeautifulSoup
 import numpy as np
+import paramiko
 from PyQt6 import QtCore, QtGui, QtWidgets
 import requests
 

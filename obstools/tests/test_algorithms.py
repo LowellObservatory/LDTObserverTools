@@ -11,8 +11,7 @@
 #  @author: tbowers
 # pylint: disable=missing-function-docstring
 
-"""Algorithms TEST Module
-"""
+"""Algorithms TEST Module"""
 
 import numpy as np
 import pytest
