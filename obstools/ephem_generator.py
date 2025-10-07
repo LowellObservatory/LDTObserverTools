@@ -116,19 +116,13 @@ class EphemObj:
     def __post_init__(self):
         # Structure of the table with predefined columns
         if not self.data:
-            # Basic Columns for the LDT Ephemeris Format
-            self.data.add_column(astropy.table.Column(dtype=int, name="year"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="month"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="day"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="hour"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="minute"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="second"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="ra_h"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="ra_m"))
-            self.data.add_column(astropy.table.Column(dtype=float, name="ra_s"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="dec_d"))
-            self.data.add_column(astropy.table.Column(dtype=int, name="dec_m"))
-            self.data.add_column(astropy.table.Column(dtype=float, name="dec_s"))
+            # Input Columns from the ephemeris-query methods
+            self.data.add_column(
+                astropy.table.Column(dtype=datetime.datetime, name="datetime")
+            )
+            self.data.add_column(
+                astropy.table.Column(dtype=astropy.coordinates.SkyCoord, name="coords")
+            )
             # Extra Columns for Visibility Plots
             self.data.add_column(astropy.table.Column(dtype=float, name="azimuth"))
             self.data.add_column(astropy.table.Column(dtype=float, name="elevation"))
@@ -190,7 +184,7 @@ class EphemObj:
         output_buffer = io.StringIO()
 
         # Write the table to the string buffer in a specified ASCII format
-        tcs_ephem = self.data.copy()
+        tcs_ephem = self.parse_datetime_coords()
         tcs_ephem.remove_columns(["azimuth", "elevation", "solar_elon", "lunar_elon"])
         tcs_ephem.write(output_buffer, format="ascii.no_header")
 
@@ -223,27 +217,69 @@ class EphemObj:
         :obj:`~pathlib.Path`
             The path to the created visibility plot
         """
-        ut_times = [
-            datetime.datetime(
-                year=int(row["year"]),
-                month=int(row["month"]),
-                day=int(row["day"]),
-                hour=int(row["hour"]),
-                minute=int(row["minute"]),
-                second=int(row["second"]),
-            )
-            for row in self.data
-        ]
         # TODO: Check that the azimuth -> lunar_elon columns have been filled
         vis = utils.Visibility(
             objname=f"{self.source}.{self.objname}",
-            ut_time=ut_times,
+            ut_time=self.data["datetime"].data,
             azimuth=self.data["azimuth"].data,
             elevation=self.data["elevation"].data,
             solar_elon=self.data["solar_elon"].data,
             lunar_elon=self.data["lunar_elon"].data,
         )
         return plotting_functions.plot_visibility(vis)
+
+    def parse_datetime_coords(self) -> astropy.table.Table:
+        """Parse the datetime and SkyCoord into columns
+
+        This class takes complex objects (:obj:`~datetime.datetime` and
+        :obj:`~astropy.coordinates.SkyCoord`) as input, but must return
+        simple text for the TCS ephemeris.  This method parses out those
+        objects into the needed columns so that the individual ephemeris
+        source routines don't have to.
+
+        Returns
+        -------
+        :obj:`~astropy.table.Table`
+            The parsed table ready for printing as a TCS ephemeris
+        """
+        # Make a copy of the data table
+        table = self.data.copy()
+
+        # Add table columns
+        table["year"] = [dt.year for dt in table["datetime"]]
+        table["month"] = [dt.month for dt in table["datetime"]]
+        table["day"] = [dt.day for dt in table["datetime"]]
+        table["hour"] = [dt.hour for dt in table["datetime"]]
+        table["minute"] = [dt.minute for dt in table["datetime"]]
+        table["second"] = [dt.second for dt in table["datetime"]]
+        table["ra_h"] = [
+            int(c.ra.to_string(unit=u.hour, sep=":").split(":")[0])
+            for c in table["coords"]
+        ]
+        table["ra_m"] = [
+            int(c.ra.to_string(unit=u.hour, sep=":").split(":")[1])
+            for c in table["coords"]
+        ]
+        table["ra_s"] = [
+            float(c.ra.to_string(unit=u.hour, sep=":").split(":")[2])
+            for c in table["coords"]
+        ]
+        table["dec_d"] = [
+            int(c.dec.to_string(unit=u.deg, sep=":").split(":")[0])
+            for c in table["coords"]
+        ]
+        table["dec_m"] = [
+            int(c.dec.to_string(unit=u.deg, sep=":").split(":")[1])
+            for c in table["coords"]
+        ]
+        table["dec_s"] = [
+            float(c.dec.to_string(unit=u.deg, sep=":").split(":")[2])
+            for c in table["coords"]
+        ]
+
+        # Remove the object columns and return
+        table.remove_columns(["datetime", "coords"])
+        return table
 
 
 # Ephemeris Query Functions for Online Databases =============================#
@@ -305,7 +341,124 @@ def horizons_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
-    raise NotImplementedError
+    # Build the Horizons query
+    query = {
+        "format": "text",
+        "MAKE_EPHEM": "'YES'",
+        "COMMAND": horizons_id,
+        "EPHEM_TYPE": "'OBSERVER'",
+        "CENTER": f"'{LDT_OBSCODE}@399'",
+        "START_TIME": utstart.isoformat(timespec="seconds"),
+        "STOP_TIME": utend.isoformat(timespec="seconds"),
+        "STEP_SIZE": f"'{stepsize.total_seconds()/60.:.0f} MINUTES'",
+        "QUANTITIES": "'1,4,9,23,25'",
+        "REF_SYSTEM": "'ICRF'",
+        "CAL_FORMAT": "'CAL'",
+        "CAL_TYPE": "'M'",
+        "TIME_DIGITS": "'SECONDS'",
+        "ANG_FORMAT": "'HMS'",
+        "APPARENT": "'REFRACTED'",
+        "RANGE_UNITS": "'KM'",
+        "SUPPRESS_RANGE_RATE": "'NO'",
+        "SKIP_DAYLT": "'NO'",
+        "SOLAR_ELONG": "'0,180'",
+        "EXTRA_PREC": "'NO'",
+        "R_T_S_ONLY": "'NO'",
+        "CSV_FORMAT": "'YES'",
+        "OBJ_DATA": "'YES'",
+    }
+    try:
+        r = requests.get(
+            "https://ssd.jpl.nasa.gov/api/horizons.api",
+            params=query,
+            timeout=10,
+        )
+    except requests.exceptions.ReadTimeout as err:
+        raise EphemQueryError(
+            "Timeout while waiting for https://www.projectpluto.com query"
+        ) from err
+
+    # Check if HTTP request was okay
+    if not r.ok:
+        raise EphemQueryError(
+            f"Got code {r.status_code} from https://www.projectpluto.com query"
+        )
+
+    print(r.url)
+    # Parse out the return text
+    lines = r.text.split("\n")
+
+    api_version = lines[0]
+    api_source = lines[1]
+    about = lines[4]
+
+    # Loop through the lines and get the ephemeris section
+    hephem = []
+    soe = False
+    objname = ""
+    for line in lines:
+        # Find the Start of Ephemeris
+        if not soe:
+            if "$$SOE" in line:
+                soe = True
+            if "Target body name:" in line:
+                objname = line.replace("Target body name:", "").replace("  ", " ")
+            continue
+        # Stop when we get to the End of Ephemeris
+        if "$$EOE" in line:
+            break
+        # Oherwise, place the line in the hephem list
+        hephem.append(line)
+
+    # Break apart each line into columns
+    table = []
+    for line in hephem:
+        cols = line.split(",")
+
+        table.append(
+            {
+                "UT_TIME": cols[0],
+                "RA": cols[3],
+                "DEC": cols[4],
+                "azimuth": float(cols[5]),
+                "elevation": float(cols[6]),
+                "MAGNITUDE": cols[7],
+                "solar_elon": float(cols[9]),
+                "lunar_elon": float(cols[11]),
+            }
+        )
+    table = astropy.table.Table(table)
+
+    # Stuff the information into python data structures for parsing
+    table["coords"] = astropy.coordinates.SkyCoord(
+        table["RA"], table["DEC"], unit=(u.hour, u.deg), frame="fk5"
+    )
+    table["datetime"] = [
+        datetime.datetime.strptime(t.strip(), "%Y-%b-%d %H:%M:%S")
+        for t in table["UT_TIME"]
+    ]
+
+    # JPL Scout data are J2000
+    return EphemObj(
+        objname=objname,
+        obj_id=horizons_id,
+        source="JPLHorizons",
+        utstart=utstart,
+        utend=utend,
+        stepsize=stepsize,
+        ref_frame=RefFrame.FK5,
+        # TODO: This overwrites my nicely defined table above, but need to
+        #       figure out a way to insert `table` columns into `EphemObj.data`
+        #       columns.
+        data=table[
+            "datetime",
+            "coords",
+            "azimuth",
+            "elevation",
+            "solar_elon",
+            "lunar_elon",
+        ],
+    )
 
 
 def imcce_ephem(
@@ -516,42 +669,16 @@ def neocp_ephem(
     table = table["time", "ra", "dec", "elong", "moon", "el"]
     table.rename_columns(
         table.colnames,
-        ["DATETIME", "RA", "DEC", "solar_elon", "lunar_elon", "elevation"],
+        ["UT_TIME", "RA", "DEC", "solar_elon", "lunar_elon", "elevation"],
     )
     # JPL Scout doesn't provide azimuith directly.
     table["azimuth"] = np.zeros_like(table["elevation"].data, dtype=float)
 
     # Stuff the information into python data structures for parsing
-    coords = astropy.coordinates.SkyCoord(
+    table["coords"] = astropy.coordinates.SkyCoord(
         table["RA"], table["DEC"], unit=u.deg, frame="fk5"
     )
-    ut_time = [datetime.datetime.fromisoformat(t) for t in table["DATETIME"]]
-
-    # Add table columns
-    table["year"] = [dt.year for dt in ut_time]
-    table["month"] = [dt.month for dt in ut_time]
-    table["day"] = [dt.day for dt in ut_time]
-    table["hour"] = [dt.hour for dt in ut_time]
-    table["minute"] = [dt.minute for dt in ut_time]
-    table["second"] = [dt.second for dt in ut_time]
-    table["ra_h"] = [
-        int(c.ra.to_string(unit=u.hour, sep=":").split(":")[0]) for c in coords
-    ]
-    table["ra_m"] = [
-        int(c.ra.to_string(unit=u.hour, sep=":").split(":")[1]) for c in coords
-    ]
-    table["ra_s"] = [
-        float(c.ra.to_string(unit=u.hour, sep=":").split(":")[2]) for c in coords
-    ]
-    table["dec_d"] = [
-        int(c.dec.to_string(unit=u.deg, sep=":").split(":")[0]) for c in coords
-    ]
-    table["dec_m"] = [
-        int(c.dec.to_string(unit=u.deg, sep=":").split(":")[1]) for c in coords
-    ]
-    table["dec_s"] = [
-        float(c.dec.to_string(unit=u.deg, sep=":").split(":")[2]) for c in coords
-    ]
+    table["datetime"] = [datetime.datetime.fromisoformat(t) for t in table["UT_TIME"]]
 
     # JPL Scout data are J2000
     return EphemObj(
@@ -566,18 +693,8 @@ def neocp_ephem(
         #       figure out a way to insert `table` columns into `EphemObj.data`
         #       columns.
         data=table[
-            "year",
-            "month",
-            "day",
-            "hour",
-            "minute",
-            "second",
-            "ra_h",
-            "ra_m",
-            "ra_s",
-            "dec_d",
-            "dec_m",
-            "dec_s",
+            "datetime",
+            "coords",
             "azimuth",
             "elevation",
             "solar_elon",
@@ -656,6 +773,8 @@ def norad_ephem(
             f"Got code {r.status_code} from https://www.projectpluto.com query"
         )
 
+    print(r.url)
+
     # Parse out the HTML data, which is inside the <pre></pre> tags
     soup = BeautifulSoup(r.text, "html.parser")
     body = soup.find("pre").get_text()
@@ -726,21 +845,39 @@ def norad_ephem(
     else:
         # Others start with "0 "
         common_name = name_line[2:].replace(" ", "_")
-    launch_id = id_line.split("=")[-1].strip()
+    cospar_id = id_line.split("=")[-1].strip()
 
     # Stuff the thing into an AstroPy table
-    table_array = np.array([r.split() for r in body.split("\n")[8:-5]])
+    try:
+        table_array = np.array([r.split() for r in body.split("\n")[8:-5]])
+    except ValueError as err:
+        raise EphemQueryError(
+            "Check that you are requesting valid NORAD / ProjectPluto Objects"
+        ) from err
+
     _, ncol = table_array.shape
     table = astropy.table.Table(table_array, names=colnames[:ncol], dtype=dtypes[:ncol])
 
-    # Parse out the time column into individual columns
-    table["hour"] = [val.split(":")[0] for val in table["TIME"]]
-    table["minute"] = [val.split(":")[1] for val in table["TIME"]]
-    table["second"] = [val.split(":")[2] for val in table["TIME"]]
+    # Merge info into object columns
+    table["datetime"] = [
+        datetime.datetime.fromisoformat(
+            f"{row['year']}-{row['month']}-{row['day']}T{row['TIME']}"
+        )
+        for row in table
+    ]
+    table["coords"] = [
+        astropy.coordinates.SkyCoord(
+            ra=f"{row['ra_h']}:{row['ra_m']}:{row['ra_s']}",
+            dec=f"{row['dec_d']}:{row['dec_m']}:{row['dec_s']}",
+            unit=(u.hour, u.deg),
+            frame="fk5",
+        )
+        for row in table
+    ]
 
     # ProjectPluto data are J2000
     return EphemObj(
-        objname=f"{common_name.strip()}({launch_id.strip()})",
+        objname=f"{common_name.strip()}({cospar_id.strip()})",
         obj_id=norad_id,
         source="NORAD",
         utstart=utstart,
@@ -751,18 +888,8 @@ def norad_ephem(
         #       figure out a way to insert `table` columns into `EphemObj.data`
         #       columns.
         data=table[
-            "year",
-            "month",
-            "day",
-            "hour",
-            "minute",
-            "second",
-            "ra_h",
-            "ra_m",
-            "ra_s",
-            "dec_d",
-            "dec_m",
-            "dec_s",
+            "datetime",
+            "coords",
             "azimuth",
             "elevation",
             "solar_elon",
@@ -848,7 +975,7 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             self.sourceGroup.addButton(source, i)
 
         # Disable currently unimplemented data sources
-        self.sourceHorizons.setDisabled(True)
+        self.sourceHorizons.setDisabled(False)
         self.sourceScout.setDisabled(False)
         self.sourceMPC.setDisabled(True)
         self.sourceNORAD.setDisabled(False)
