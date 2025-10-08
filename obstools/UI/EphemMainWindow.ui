@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>837</width>
-    <height>600</height>
+    <height>613</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,14 +51,21 @@
        <item>
         <widget class="QRadioButton" name="sourceMPC">
          <property name="text">
-          <string>Minor Planet Center</string>
+          <string>MPC</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="sourceNORAD">
+        <widget class="QRadioButton" name="sourceProjPluto">
          <property name="text">
-          <string>NORAD</string>
+          <string>NORAD / PP</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="sourceCelestrak">
+         <property name="text">
+          <string>NORAD / CT+H</string>
          </property>
         </widget>
        </item>
@@ -162,7 +169,7 @@
         <widget class="QDateTimeEdit" name="inputUTStart">
          <property name="dateTime">
           <datetime>
-           <hour>11</hour>
+           <hour>18</hour>
            <minute>0</minute>
            <second>0</second>
            <year>2015</year>
@@ -174,7 +181,7 @@
           <date>
            <year>2061</year>
            <month>1</month>
-           <day>1</day>
+           <day>2</day>
           </date>
          </property>
          <property name="minimumDate">
@@ -186,7 +193,7 @@
          </property>
          <property name="maximumTime">
           <time>
-           <hour>22</hour>
+           <hour>5</hour>
            <minute>59</minute>
            <second>59</second>
           </time>
@@ -447,7 +454,8 @@
   <tabstop>sourceHorizons</tabstop>
   <tabstop>sourceScout</tabstop>
   <tabstop>sourceMPC</tabstop>
-  <tabstop>sourceNORAD</tabstop>
+  <tabstop>sourceProjPluto</tabstop>
+  <tabstop>sourceCelestrak</tabstop>
   <tabstop>sourceAstorb</tabstop>
   <tabstop>sourceIMCCE</tabstop>
   <tabstop>objectList</tabstop>
