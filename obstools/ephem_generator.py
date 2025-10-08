@@ -42,6 +42,7 @@ import datetime
 import enum
 import io
 import pathlib
+import re
 
 # 3rd-Party Libraries
 import astropy.coordinates
@@ -65,11 +66,12 @@ LDT_OBSCODE = "G37"
 __all__ = [
     "EphemObj",
     "astorb_ephem",
+    "celestrak_ephem",
     "horizons_ephem",
     "imcce_ephem",
     "mpc_ephem",
     "neocp_ephem",
-    "norad_ephem",
+    "projpluto_ephem",
     "EphemerisGenerator",
 ]
 
@@ -190,16 +192,16 @@ class EphemObj:
 
         # Get the string content from the buffer
         ascii_string = output_buffer.getvalue()
-        # Append the epoch information
+        # Append the epoch information -- NO NEWLINE (TCS chokes on it)
         match self.ref_frame:
             case RefFrame.FK5:
-                ascii_string += "FK5 J2000.0 2000.0\n"
+                ascii_string += "FK5 J2000.0 2000.0"
             case RefFrame.ICRS:
-                ascii_string += "ICRS ICRF 2000.0\n"
+                ascii_string += "ICRS ICRF 2000.0"
             case RefFrame.APPT:
                 t = astropy.time.Time(self.utstart)
                 t.format = "jyear_str"
-                ascii_string += f"APPT {t.value} {t.value.strip('J')}\n"
+                ascii_string += f"APPT {t.value} {t.value.strip('J')}"
 
         # Return the string object
         return ascii_string
@@ -217,6 +219,10 @@ class EphemObj:
         :obj:`~pathlib.Path`
             The path to the created visibility plot
         """
+        # If ``self.data`` is empty, do not try to plot visibility
+        if not self.data:
+            return None
+
         # TODO: Check that the azimuth -> lunar_elon columns have been filled
         vis = utils.Visibility(
             objname=f"{self.source}.{self.objname}",
@@ -312,23 +318,36 @@ def astorb_ephem(
     raise NotImplementedError
 
 
-def horizons_ephem(
-    horizons_id: str,
+def celestrak_ephem(
+    norad_id: str,
     utstart: datetime.datetime,
     utend: datetime.datetime,
     stepsize: datetime.timedelta,
 ) -> EphemObj:
-    """horizons_ephem _summary_
+    """Get artificial satellite ephemeris from Project Pluto
 
-    Use AstroQuery
+    .. code-block::
 
-    JPL Horizons Queries (astroquery.jplhorizons/astroquery.solarsystem.jpl.horizons)
+        FORM METHOD=GET ACTION="https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi"
+
+        https://www.projectpluto.com/cgi-bin/sat_id/sat_cgi?
+        obj_name=43435&
+        time=2025-07-31+00%3A00%3A00&
+        round_step=on&
+        num_steps=24&
+        step_size=1h&
+        obs_code=G37&
+        show_separate_motions=on
+
+        obj_name is the NORAD id #
+        time is UT
+        step_size takes units h, m, s etc.
+        obs_code is MPC code (G37 for LDT)
 
     Parameters
     ----------
-    horizons_id : :obj:`str`
-        The JPL/Horizons identification of the object for which to generate
-        ephemeris
+    norad_id : :obj:`str`
+        The NORAD identification of the object for which to generate ephemeris
     utstart : :obj:`~datetime.datetime`
         The starting UT time for the ephemeris
     utend : :obj:`~datetime.datetime`
@@ -341,13 +360,55 @@ def horizons_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
-    # Build the Horizons query
+    # Get the object name and COSPAR-ID from the input ``norad_id``
+    common_name, cospar_id = get_name_from_norad(norad_id)
+
+    # Get the TLE via a query to CelesTrak
+    query = {"CATNR": norad_id}
+    try:
+        r = requests.get(
+            "https://celestrak.org/NORAD/elements/gp.php",
+            params=query,
+            timeout=10,
+        )
+    except requests.exceptions.ReadTimeout as err:
+        raise EphemQueryError(
+            "Timeout while waiting for https://celestrak.org query"
+        ) from err
+
+    # Check if HTTP request was okay
+    if not r.ok:
+        raise EphemQueryError(
+            f"Got code {r.status_code} from https://celestrak.org query"
+        )
+
+    # Parse out the return text
+    lines = [l.strip() for l in r.text.split("\n")]
+
+    # If no General Perturbations data found for this object, return empty
+    if "No GP data found" in lines[0]:
+        print(
+            f"No TLE found at CelesTrak for {common_name.strip()}({cospar_id.strip()})\n"
+        )
+        return EphemObj(
+            objname=f"{common_name.strip()}({cospar_id.strip()})",
+            obj_id=norad_id,
+            source="CelesTrak",
+            utstart=utstart,
+            utend=utend,
+            stepsize=stepsize,
+            ref_frame=RefFrame.FK5,
+        )
+
+    print(f"This is the TLE:\n{"\n".join(lines)}")
+
     query = {
         "format": "text",
         "MAKE_EPHEM": "'YES'",
-        "COMMAND": horizons_id,
+        "COMMAND": "'TLE'",
         "EPHEM_TYPE": "'OBSERVER'",
         "CENTER": f"'{LDT_OBSCODE}@399'",
+        "TLE": "\n".join(lines),
         "START_TIME": utstart.isoformat(timespec="seconds"),
         "STOP_TIME": utend.isoformat(timespec="seconds"),
         "STEP_SIZE": f"'{stepsize.total_seconds()/60.:.0f} MINUTES'",
@@ -367,6 +428,7 @@ def horizons_ephem(
         "CSV_FORMAT": "'YES'",
         "OBJ_DATA": "'YES'",
     }
+
     try:
         r = requests.get(
             "https://ssd.jpl.nasa.gov/api/horizons.api",
@@ -375,16 +437,15 @@ def horizons_ephem(
         )
     except requests.exceptions.ReadTimeout as err:
         raise EphemQueryError(
-            "Timeout while waiting for https://www.projectpluto.com query"
+            "Timeout while waiting for https://ssd.jpl.nasa.gov query"
         ) from err
 
     # Check if HTTP request was okay
     if not r.ok:
         raise EphemQueryError(
-            f"Got code {r.status_code} from https://www.projectpluto.com query"
+            f"Got code {r.status_code} from https://ssd.jpl.nasa.gov query"
         )
 
-    print(r.url)
     # Parse out the return text
     lines = r.text.split("\n")
 
@@ -395,14 +456,11 @@ def horizons_ephem(
     # Loop through the lines and get the ephemeris section
     hephem = []
     soe = False
-    objname = ""
     for line in lines:
         # Find the Start of Ephemeris
         if not soe:
             if "$$SOE" in line:
                 soe = True
-            if "Target body name:" in line:
-                objname = line.replace("Target body name:", "").replace("  ", " ")
             continue
         # Stop when we get to the End of Ephemeris
         if "$$EOE" in line:
@@ -433,14 +491,189 @@ def horizons_ephem(
     table["coords"] = astropy.coordinates.SkyCoord(
         table["RA"], table["DEC"], unit=(u.hour, u.deg), frame="fk5"
     )
-    table["datetime"] = [
-        datetime.datetime.strptime(t.strip(), "%Y-%b-%d %H:%M:%S")
-        for t in table["UT_TIME"]
-    ]
+    try:
+        table["datetime"] = [
+            datetime.datetime.strptime(t.strip(), "%Y-%b-%d %H:%M:%S")
+            for t in table["UT_TIME"]
+        ]
+    except ValueError as err:
+        # Sometimes JPL just wants to send minutes...
+        table["datetime"] = [
+            datetime.datetime.strptime(t.strip(), "%Y-%b-%d %H:%M")
+            for t in table["UT_TIME"]
+        ]
 
-    # JPL Scout data are J2000
+    # JPL Horizons data are J2000
     return EphemObj(
-        objname=objname,
+        objname=f"{common_name.strip()}({cospar_id.strip()})",
+        obj_id=norad_id,
+        source="CelesTrak",
+        utstart=utstart,
+        utend=utend,
+        stepsize=stepsize,
+        ref_frame=RefFrame.FK5,
+        # TODO: This overwrites my nicely defined table above, but need to
+        #       figure out a way to insert `table` columns into `EphemObj.data`
+        #       columns.
+        data=table[
+            "datetime",
+            "coords",
+            "azimuth",
+            "elevation",
+            "solar_elon",
+            "lunar_elon",
+        ],
+    )
+
+
+def horizons_ephem(
+    horizons_id: str,
+    utstart: datetime.datetime,
+    utend: datetime.datetime,
+    stepsize: datetime.timedelta,
+) -> EphemObj:
+    """horizons_ephem _summary_
+
+    Use AstroQuery
+
+    JPL Horizons Queries (astroquery.jplhorizons/astroquery.solarsystem.jpl.horizons)
+
+    Parameters
+    ----------
+    horizons_id : :obj:`str`
+        The JPL/Horizons identification of the object for which to generate
+        ephemeris
+    utstart : :obj:`~datetime.datetime`
+        The starting UT time for the ephemeris
+    utend : :obj:`~datetime.datetime`
+        The ending UT time for the ephemeris
+    stepsize : :obj:`~datetime.timedelta`
+        The stepsize of ephemeris points
+
+    Returns
+    -------
+    :class:`EphemObj`
+        The Ephemeris Object class containing the requested data
+    """
+    common_name, cospar_id = get_name_from_norad(horizons_id)
+
+    # Build the Horizons query
+    query = {
+        "format": "text",
+        "MAKE_EPHEM": "'YES'",
+        "COMMAND": f"'{cospar_id}'",
+        "EPHEM_TYPE": "'OBSERVER'",
+        "CENTER": f"'{LDT_OBSCODE}@399'",
+        "START_TIME": utstart.isoformat(timespec="seconds"),
+        "STOP_TIME": utend.isoformat(timespec="seconds"),
+        "STEP_SIZE": f"'{stepsize.total_seconds()/60.:.0f} MINUTES'",
+        "QUANTITIES": "'1,4,9,23,25'",
+        "REF_SYSTEM": "'ICRF'",
+        "CAL_FORMAT": "'CAL'",
+        "CAL_TYPE": "'M'",
+        "TIME_DIGITS": "'SECONDS'",
+        "ANG_FORMAT": "'HMS'",
+        "APPARENT": "'REFRACTED'",
+        "RANGE_UNITS": "'KM'",
+        "SUPPRESS_RANGE_RATE": "'NO'",
+        "SKIP_DAYLT": "'NO'",
+        "SOLAR_ELONG": "'0,180'",
+        "EXTRA_PREC": "'NO'",
+        "R_T_S_ONLY": "'NO'",
+        "CSV_FORMAT": "'YES'",
+        "OBJ_DATA": "'YES'",
+    }
+    try:
+        r = requests.get(
+            "https://ssd.jpl.nasa.gov/api/horizons.api",
+            params=query,
+            timeout=10,
+        )
+    except requests.exceptions.ReadTimeout as err:
+        raise EphemQueryError(
+            "Timeout while waiting for https://ssd.jpl.nasa.gov query"
+        ) from err
+
+    # Check if HTTP request was okay
+    if not r.ok:
+        raise EphemQueryError(
+            f"Got code {r.status_code} from https://ssd.jpl.nasa.gov query"
+        )
+
+    # Parse out the return text
+    lines = r.text.split("\n")
+
+    # api_version = lines[0]
+    # api_source = lines[1]
+    # about = lines[4]
+
+    # Loop through the lines and get the ephemeris section
+    hephem = []
+    soe = False
+    objname = ""
+    for line in lines:
+        # Find the Start of Ephemeris
+        if not soe:
+            if "$$SOE" in line:
+                soe = True
+            continue
+        # Stop when we get to the End of Ephemeris
+        if "$$EOE" in line:
+            break
+        # Oherwise, place the line in the hephem list
+        hephem.append(line)
+
+    if not hephem:
+        print(f"Nothing returned from JPL/Horizons for {common_name}({cospar_id})\n")
+        return EphemObj(
+            objname=f"{common_name.strip()}({cospar_id.strip()})",
+            obj_id=horizons_id,
+            source="JPLHorizons",
+            utstart=utstart,
+            utend=utend,
+            stepsize=stepsize,
+            ref_frame=RefFrame.FK5,
+        )
+    print(f"Building ephemeris for {common_name}({cospar_id})...")
+
+    # Break apart each line into columns
+    table = []
+    for line in hephem:
+        cols = line.split(",")
+
+        table.append(
+            {
+                "UT_TIME": cols[0],
+                "RA": cols[3],
+                "DEC": cols[4],
+                "azimuth": float(cols[5]),
+                "elevation": float(cols[6]),
+                "MAGNITUDE": cols[7],
+                "solar_elon": float(cols[9]),
+                "lunar_elon": float(cols[11]),
+            }
+        )
+    table = astropy.table.Table(table)
+
+    # Stuff the information into python data structures for parsing
+    table["coords"] = astropy.coordinates.SkyCoord(
+        table["RA"], table["DEC"], unit=(u.hour, u.deg), frame="fk5"
+    )
+    try:
+        table["datetime"] = [
+            datetime.datetime.strptime(t.strip(), "%Y-%b-%d %H:%M:%S")
+            for t in table["UT_TIME"]
+        ]
+    except ValueError as err:
+        # Sometimes JPL just wants to send minutes...
+        table["datetime"] = [
+            datetime.datetime.strptime(t.strip(), "%Y-%b-%d %H:%M")
+            for t in table["UT_TIME"]
+        ]
+
+    # JPL Horizons data are J2000
+    return EphemObj(
+        objname=f"{common_name.strip()}({cospar_id.strip()})",
         obj_id=horizons_id,
         source="JPLHorizons",
         utstart=utstart,
@@ -703,7 +936,7 @@ def neocp_ephem(
     )
 
 
-def norad_ephem(
+def projpluto_ephem(
     norad_id: str,
     utstart: datetime.datetime,
     utend: datetime.datetime,
@@ -745,6 +978,8 @@ def norad_ephem(
     :class:`EphemObj`
         The Ephemeris Object class containing the requested data
     """
+    # Get the object name and COSPAR-ID from the input ``norad_id``
+    common_name, cospar_id = get_name_from_norad(norad_id)
 
     # Build the ProjectPluto query
     query = {
@@ -827,26 +1062,6 @@ def norad_ephem(
         str,
     ]
 
-    # Get the names from the top of the table:
-    id_line, name_line = body.split("\n")[5:7]
-    eq_list = name_line.split("=")
-    if (len_list := len(eq_list)) > 1:
-        # Some objects are listed this way
-        for i in reversed(range(len_list)):
-            if "NORAD" in eq_list[i]:
-                eq_list.pop(i)
-                continue
-            if "-" in eq_list[i]:
-                year, idnum = eq_list[i].split("-")
-                if len(year.strip()) == 4 and len(idnum.strip()) == 4:
-                    eq_list.pop(i)
-                    continue
-        common_name = "_".join([thing.strip() for thing in eq_list])
-    else:
-        # Others start with "0 "
-        common_name = name_line[2:].replace(" ", "_")
-    cospar_id = id_line.split("=")[-1].strip()
-
     # Stuff the thing into an AstroPy table
     try:
         table_array = np.array([r.split() for r in body.split("\n")[8:-5]])
@@ -855,13 +1070,27 @@ def norad_ephem(
             "Check that you are requesting valid NORAD / ProjectPluto Objects"
         ) from err
 
-    _, ncol = table_array.shape
+    try:
+        _, ncol = table_array.shape
+    except ValueError as err:
+        print(
+            f"Table array from ProjectPluto appears empty for object {common_name}({cospar_id})\n"
+        )
+        return EphemObj(
+            objname=f"{common_name.strip()}({cospar_id.strip()})",
+            obj_id=norad_id,
+            source="PP",
+            utstart=utstart,
+            utend=utend,
+            stepsize=stepsize,
+            ref_frame=RefFrame.FK5,
+        )
     table = astropy.table.Table(table_array, names=colnames[:ncol], dtype=dtypes[:ncol])
 
     # Merge info into object columns
     table["datetime"] = [
         datetime.datetime.fromisoformat(
-            f"{row['year']}-{row['month']}-{row['day']}T{row['TIME']}"
+            f"{row['year']:04d}-{row['month']:02d}-{row['day']:02d}T{row['TIME']}"
         )
         for row in table
     ]
@@ -879,7 +1108,7 @@ def norad_ephem(
     return EphemObj(
         objname=f"{common_name.strip()}({cospar_id.strip()})",
         obj_id=norad_id,
-        source="NORAD",
+        source="PP",
         utstart=utstart,
         utend=utend,
         stepsize=stepsize,
@@ -896,6 +1125,58 @@ def norad_ephem(
             "lunar_elon",
         ],
     )
+
+
+# Utility Functions ==========================================================#
+def get_name_from_norad(norad_id: str) -> tuple[str, str]:
+    """Pull the name and COSPAR ID based on the NORAD ID
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    norad_id : :obj:`str`
+        The input NORAD ID
+
+    Returns
+    -------
+    objname : :obj:`str`
+        The satellite's common name
+    cospar_id : :obj:`str`
+        The COSPAR ID for the satellite
+    """
+    table = astropy.table.Table.read(utils.DATA / "satcat.csv", format="ascii.csv")
+    print(f"Looking up NORAD ID: {norad_id}")
+    idx = table["NORAD_CAT_ID"] == int(norad_id)
+    objname = table["OBJECT_NAME"][idx].value[0]
+    cospar_id = table["OBJECT_ID"][idx].value[0]
+    print(f"Found {objname} = {cospar_id}")
+    return (
+        remove_parentheses_and_contents(objname).replace(" R/B", "").replace(" ", "_"),
+        cospar_id,
+    )
+
+
+def remove_parentheses_and_contents(text: str) -> str:
+    """Removes parentheses and their contents from a string.
+
+    Parameters
+    ----------
+    text : :obj:`str`
+        The input string
+
+    Returns
+    -------
+    :obj:`str`
+        The string with parentheses and their contents removed
+    """
+    # The regex r"\s*\(.*?\)\s*" matches:
+    # \s*: zero or more whitespace characters (optional, for cleaning up spaces around parentheses)
+    # \( : the literal opening parenthesis (escaped because '(' is a special regex character)
+    # .*?: any character (except newline) zero or more times, non-greedily
+    # \) : the literal closing parenthesis (escaped)
+    # \s*: zero or more whitespace characters (optional)
+    return re.sub(r"\s*\(.*?\)\s*", "", text)
 
 
 # GUI Classes ================================================================#
@@ -966,7 +1247,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
                 self.sourceHorizons,
                 self.sourceScout,
                 self.sourceMPC,
-                self.sourceNORAD,
+                self.sourceProjPluto,
+                self.sourceCelestrak,
                 self.sourceAstorb,
                 self.sourceIMCCE,
             ],
@@ -978,11 +1260,12 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         self.sourceHorizons.setDisabled(False)
         self.sourceScout.setDisabled(False)
         self.sourceMPC.setDisabled(True)
-        self.sourceNORAD.setDisabled(False)
+        self.sourceProjPluto.setDisabled(False)
+        self.sourceCelestrak.setDisabled(False)
         self.sourceAstorb.setDisabled(True)
         self.sourceIMCCE.setDisabled(True)
         # Set the default source
-        self.sourceNORAD.setChecked(True)
+        self.sourceCelestrak.setChecked(True)
 
         # Set default values
         self.pulled_ephems = []
@@ -1239,10 +1522,12 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
                 ephem_method = horizons_ephem
             case "JPL Scout":
                 ephem_method = neocp_ephem
-            case "Minor Planet Center":
+            case "MPC":
                 ephem_method = mpc_ephem
-            case "NORAD":
-                ephem_method = norad_ephem
+            case "NORAD / PP":
+                ephem_method = projpluto_ephem
+            case "NORAD / CT+H":
+                ephem_method = celestrak_ephem
             case "Astorb":
                 ephem_method = astorb_ephem
             case "IMCCE":
