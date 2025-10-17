@@ -257,7 +257,7 @@ class TargetList:
         # Load the remainder of the file into a table-like object (2nd line is blank comment)
         table_array = []
         for line in lines[2:]:
-            parts = split_preserving_quotes(line)
+            parts = utils.split_preserving_quotes(line)
             table_array.append({c: p.replace('"', "") for c, p in zip(cols, parts)})
 
         table = astropy.table.Table(table_array)
@@ -273,41 +273,6 @@ class TargetList:
         )
 
         return cls(source="user file", orig_format=".tls file", data=table)
-
-
-def split_preserving_quotes(line: str, delimiter: str = " ") -> list[str]:
-    """Split a line, preserving quotes
-
-    From Google AI
-
-    Parameters
-    ----------
-    line : :obj:`str`
-        Input line to be split
-    delimiter : :obj:`str`, optional
-        Delimiter between parts, which will be ignored within quotes
-
-    Returns
-    -------
-    :obj:`list`
-        List of split line
-    """
-    parts = []
-    current_part = []
-    in_quote = False
-
-    for char in line:
-        if char == '"':
-            in_quote = not in_quote
-            current_part.append(char)
-        elif char == delimiter and not in_quote:
-            parts.append("".join(current_part).strip())
-            current_part = []
-        else:
-            current_part.append(char)
-
-    parts.append("".join(current_part).strip())  # Add the last part
-    return parts
 
 
 def convert_tls_to_rimas(filename: str | pathlib.Path):

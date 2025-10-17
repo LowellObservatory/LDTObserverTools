@@ -11,8 +11,7 @@
 #  @author: tbowers
 # pylint: disable=missing-function-docstring
 
-"""LMI Exposure Time Calculator TEST Module
-"""
+"""LMI Exposure Time Calculator TEST Module"""
 
 import numpy as np
 import pytest

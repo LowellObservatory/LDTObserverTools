@@ -491,6 +491,41 @@ def sinusoid(
     )
 
 
+def split_preserving_quotes(line: str, delimiter: str = " ") -> list[str]:
+    """Split a line, preserving quotes
+
+    From Google AI
+
+    Parameters
+    ----------
+    line : :obj:`str`
+        Input line to be split
+    delimiter : :obj:`str`, optional
+        Delimiter between parts, which will be ignored within quotes
+
+    Returns
+    -------
+    :obj:`list`
+        List of split line
+    """
+    parts = []
+    current_part = []
+    in_quote = False
+
+    for char in line:
+        if char == '"':
+            in_quote = not in_quote
+            current_part.append(char)
+        elif char == delimiter and not in_quote:
+            parts.append("".join(current_part).strip())
+            current_part = []
+        else:
+            current_part.append(char)
+
+    parts.append("".join(current_part).strip())  # Add the last part
+    return parts
+
+
 def warn_and_return_zeros(
     return_full: bool,
     x: np.ndarray,
