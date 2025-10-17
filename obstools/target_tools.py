@@ -38,6 +38,7 @@ import typing
 import astropy.coordinates
 import astropy.table
 import astropy.units as u
+import numpy as np
 
 # Local Libraries
 from obstools import utils
@@ -205,13 +206,63 @@ class TargetList:
             unit=u.deg, sep=":", precision=2, alwayssign=True
         )
 
+        # Add blank-ish columns
+        n_rows = len(rimas_csv)
+        fzeros = ["RAoffset", "DECoffset", "ROToffset", "xi", "eta", "DitherY"]
+        izeros = ["Priority"]
+        for col in fzeros:
+            rimas_csv[col] = np.zeros(n_rows, dtype=float)
+        for col in izeros:
+            rimas_csv[col] = np.zeros(n_rows, dtype=int)
+        # Set the filters
+        rimas_csv["Filter1"] = np.full(n_rows, "J")
+        rimas_csv["Filter2"] = np.full(n_rows, "H")
+        rimas_csv["Filter3"] = np.full(n_rows, "open")
+        rimas_csv["Filter4"] = np.full(n_rows, "open")
+        # Set the dithers
+        rimas_csv["DitherType"] = np.full(n_rows, "Random")
+        rimas_csv["DitherX"] = np.full(n_rows, 20.0, dtype=float)
+        rimas_csv["DitherTotal"] = np.ones(n_rows, dtype=int)
+        # Remaining columns
+        rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(7000, 7000 + n_rows)]
+        rimas_csv["Observer"] = np.full(n_rows, "P. Muirhead (BU)")
+        rimas_csv["ObjectType"] = np.full(n_rows, "Science")
+        rimas_csv["Images"] = np.full(n_rows, 1, dtype=int)
+        rimas_csv["IntegrationTime"] = np.full(n_rows, 15.0, dtype=float)
+        rimas_csv["Comment2"] = np.full(n_rows, "")
+
         # Surround the following columns with quotes
         quote_cols = ["Observer", "ObjectName", "ObjectType", "Comment1", "Comment2"]
         for qc in quote_cols:
             if qc in rimas_csv.colnames:
                 rimas_csv[qc] = [f'"{v}"' for v in rimas_csv[qc]]
 
-        rimas_csv.pprint()
+        rimas_csv = rimas_csv[
+            "Priority",
+            "BlockID",
+            "Observer",
+            "ObjectName",
+            "ObjectType",
+            "RA",
+            "DEC",
+            "RAoffset",
+            "DECoffset",
+            "ROToffset",
+            "Filter1",
+            "Filter2",
+            "Filter3",
+            "Filter4",
+            "DitherType",
+            "DitherX",
+            "DitherY",
+            "DitherTotal",
+            "Images",
+            "IntegrationTime",
+            "Comment1",
+            "Comment2",
+            "xi",
+            "eta",
+        ]
 
         # Get the string content from the buffer
         rimas_csv.write(output_buffer, format="ascii.csv", quotechar="'")
@@ -290,8 +341,6 @@ def convert_tls_to_rimas(filename: str | pathlib.Path):
 
     # Get the RIMAS ``.csv`` format
     rimas_csv = TargetList.read_from_tls(filename).rimas_format
-
-    print(rimas_csv)
 
     ofile = filename.with_suffix(".rimas.csv")
     with open(ofile, "w", encoding="utf-8") as f_obj:
