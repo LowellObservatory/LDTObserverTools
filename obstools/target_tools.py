@@ -37,6 +37,7 @@ import typing
 # 3rd-Party Libraries
 import astropy.coordinates
 import astropy.table
+import astropy.time
 import astropy.units as u
 import numpy as np
 
@@ -50,6 +51,7 @@ class TargetList:
 
     source: str
     orig_format: str
+    tls_collist: list = None
     data: astropy.table.Table = dataclasses.field(default_factory=astropy.table.Table)
 
     def __post_init__(self):
@@ -130,15 +132,14 @@ class TargetList:
          :obj:`str`
              The write-ready string ready for saving to disk
         """
+        # Write the table to the string buffer in a specified ASCII format
+        tls_table = self.data.copy()
+        tls_table.remove_columns(["azimuth", "elevation", "solar_elon", "lunar_elon"])
+
         # Create a string buffer to capture the table output
         output_buffer = io.StringIO()
-
-        # Write the table to the string buffer in a specified ASCII format
-        tcs_ephem = self.data.copy()
-        tcs_ephem.remove_columns(["azimuth", "elevation", "solar_elon", "lunar_elon"])
-        tcs_ephem.write(output_buffer, format="ascii.no_header")
-
         # Get the string content from the buffer
+        tls_table.write(output_buffer, format="ascii.no_header")
         ascii_string = output_buffer.getvalue()
 
         # Return the string object
@@ -190,19 +191,21 @@ class TargetList:
          :obj:`str`
              The write-ready string ready for saving to disk
         """
-        # Create a string buffer to capture the table output
-        output_buffer = io.StringIO()
-
-        # Write the table to the string buffer in a specified ASCII format
+        # Create a copy of the table to re-organize
         rimas_csv = self.data.copy()
 
         # Do the work of organizing the output
         rimas_csv.rename_columns(["objname", "comment1"], ["ObjectName", "Comment1"])
 
-        rimas_csv["RA"] = rimas_csv["coords"].ra.to_string(
-            unit=u.hour, sep=":", precision=2
-        )
-        rimas_csv["DEC"] = rimas_csv["coords"].dec.to_string(
+        # now = astropy.time.Time.now()
+        # d_lon = rimas_csv['mu_ra']
+
+        # present_coords = rimas_csv["coords"].spherical_offsets_by(d_lon, d_lat)
+
+        present_coords = rimas_csv["coords"]
+
+        rimas_csv["RA"] = present_coords.ra.to_string(unit=u.hour, sep=":", precision=2)
+        rimas_csv["DEC"] = present_coords.dec.to_string(
             unit=u.deg, sep=":", precision=2, alwayssign=True
         )
 
@@ -220,14 +223,14 @@ class TargetList:
         rimas_csv["Filter3"] = np.full(n_rows, "open")
         rimas_csv["Filter4"] = np.full(n_rows, "open")
         # Set the dithers
-        rimas_csv["DitherType"] = np.full(n_rows, "Random")
+        rimas_csv["DitherType"] = np.full(n_rows, "None")
         rimas_csv["DitherX"] = np.full(n_rows, 20.0, dtype=float)
         rimas_csv["DitherTotal"] = np.ones(n_rows, dtype=int)
         # Remaining columns
         rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(7000, 7000 + n_rows)]
-        rimas_csv["Observer"] = np.full(n_rows, "P. Muirhead (BU)")
+        rimas_csv["Observer"] = np.full(n_rows, "P. Muirhead / F. Fatmasiefa (BU)")
         rimas_csv["ObjectType"] = np.full(n_rows, "Science")
-        rimas_csv["Images"] = np.full(n_rows, 1, dtype=int)
+        rimas_csv["Images"] = np.full(n_rows, 10, dtype=int)
         rimas_csv["IntegrationTime"] = np.full(n_rows, 15.0, dtype=float)
         rimas_csv["Comment2"] = np.full(n_rows, "")
 
@@ -264,6 +267,8 @@ class TargetList:
             "eta",
         ]
 
+        # Create a string buffer to capture the table output
+        output_buffer = io.StringIO()
         # Get the string content from the buffer
         rimas_csv.write(output_buffer, format="ascii.csv", quotechar="'")
         ascii_string = output_buffer.getvalue()
@@ -294,6 +299,7 @@ class TargetList:
 
         # First line is the format
         formats = lines[0][1:].split()
+        print(formats)
         if (n_lab := len(formats)) != 12:
             raise ValueError(
                 "TLS file does not match TLS format!  "
@@ -313,17 +319,32 @@ class TargetList:
 
         table = astropy.table.Table(table_array)
 
+        # If proper motions not in table, add them as zeros
+        if "muRA" not in table.colnames:
+            table["muRA"] = np.zeros(len(table))
+            table["muDec"] = np.zeros(len(table))
+
         # Massage the table to conform to class specification
         table["coords"] = astropy.coordinates.SkyCoord(
-            ra=table["ra"], dec=table["dec"], frame="fk5", unit=[u.hour, u.deg]
+            ra=table["ra"],
+            dec=table["dec"],
+            frame="fk5",
+            unit=[u.hour, u.deg],
+            pm_ra_cosdec=table["muRA"] * u.mas / u.yr,
+            pm_dec=table["muDec"] * u.mas / u.yr,
+            distance=10 * u.pc,
+            obstime=astropy.time.Time("J2000"),
         )
+
         table.remove_columns(["ra", "dec"])
         table.rename_columns(
             ["title", "comment", "rotatorpa", "rotatorframe"],
             ["objname", "comment1", "rotator_pa", "rotator_frame"],
         )
 
-        return cls(source="user file", orig_format=".tls file", data=table)
+        return cls(
+            source="user file", orig_format=".tls file", tls_collist=cols, data=table
+        )
 
 
 def convert_tls_to_rimas(filename: str | pathlib.Path):
