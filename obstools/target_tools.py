@@ -32,10 +32,13 @@ import argparse
 import dataclasses
 import io
 import pathlib
+import re
+import sys
 import typing
 
 # 3rd-Party Libraries
 import astropy.coordinates
+import astropy.io.votable
 import astropy.table
 import astropy.time
 import astropy.units as u
@@ -134,16 +137,82 @@ class TargetList:
         """
         # Write the table to the string buffer in a specified ASCII format
         tls_table = self.data.copy()
-        tls_table.remove_columns(["azimuth", "elevation", "solar_elon", "lunar_elon"])
+        tls_cols = [
+            "objname",
+            "ra",
+            "dec",
+            "mu_ra",
+            "mu_dec",
+            "magnitude",
+            "dra",
+            "ddec",
+            "rotator_pa",
+            "rotator_frame",
+            "comment1",
+        ]
+
+        # Convert 'coords' to string RA/Dec
+        present_coords = tls_table["coords"]
+        tls_table["ra"] = present_coords.ra.to_string(
+            unit=u.hour, sep=":", precision=2, pad=True
+        )
+        tls_table["dec"] = present_coords.dec.to_string(
+            unit=u.deg, sep=":", precision=2, alwayssign=True, pad=True
+        )
+
+        # Make blank columns for missing data
+        n_rows = len(tls_table)
+        for col in tls_cols:
+            if col not in tls_table.colnames:
+                # Float zeros
+                if col in ["mu_ra", "mu_dec", "dra", "ddec", "rotator_pa"]:
+                    tls_table[col] = np.zeros(n_rows, dtype=float)
+                # Strings
+                if col == "rotator_frame":
+                    tls_table[col] = np.full(n_rows, "TARGET")
+                if col == "comment1":
+                    tls_table[col] = np.full(n_rows, "")
+                # Magnitude
+                if col == "magnitude":
+                    tls_table[col] = np.full(n_rows, 100, dtype=float)
+
+        tls_table = tls_table[tls_cols]
+
+        # Surround the following columns with quotes and remove multiple spaces
+        quote_cols = ["objname", "comment1"]
+        for qc in quote_cols:
+            if qc in tls_table.colnames:
+                tls_table[qc] = [f'"{re.sub(r'\s+', ' ', v)}"' for v in tls_table[qc]]
+
+        # Set output formats for columns
+        for col in ["mu_ra", "mu_dec", "dra", "ddec", "magnitude"]:
+            tls_table[col].info.format = ".1f"
+        tls_table["rotator_pa"].info.format = ".0f"
+        tls_table.sort("ra")
+        longest_name = np.amax([len(name) for name in tls_table["objname"]])
+        tls_table["objname"].info.format = f"<{longest_name}"
+        # Replace blank comments
+        tls_table["comment1"][tls_table["comment1"] == '""'] = '"---"'
 
         # Create a string buffer to capture the table output
         output_buffer = io.StringIO()
         # Get the string content from the buffer
-        tls_table.write(output_buffer, format="ascii.no_header")
+        tls_table.write(
+            output_buffer,
+            format="ascii.fixed_width_no_header",
+            quotechar="'",
+            bookend=False,
+            delimiter=None,
+        )
         ascii_string = output_buffer.getvalue()
 
-        # Return the string object
-        return ascii_string
+        # Add the TLS header and return the string object
+        hdr = (
+            "#title=true ra=true dec=true epoch=false muRA=true muDec=true "
+            "magnitude=true dRA=true dDec=true rotatorPA=true "
+            "rotatorFrame=true comment=true\n#\n"
+        )
+        return hdr + ascii_string
 
     @property
     def slewdither_format(self) -> str:
@@ -346,7 +415,101 @@ class TargetList:
             source="user file", orig_format=".tls file", tls_collist=cols, data=table
         )
 
+    @classmethod
+    def read_from_rimas(cls, filename: pathlib.Path) -> typing.Self:
+        """Return a :class:`TargetList` object read from a RIMAS CSV file
 
+        Read in a RIMAS Observation File (``.csv``) file and return an instance
+        of this class with the proper data columns filled in.
+
+        Parameters
+        ----------
+        filename : :obj:`~pathlib.Path`
+            RIMAS ``.csv`` file to read
+
+        Returns
+        -------
+        :obj:`~typing.Self`
+            Returns an instance of the class
+        """
+
+    @classmethod
+    def read_from_simbad(cls, filename: pathlib.Path) -> typing.Self:
+        """Return a :class:`TargetList` object read from a Simbad file
+
+        Read in a Simbad catalog file and return an instance of this class with
+        the proper data columns filled in.
+
+        Parameters
+        ----------
+        filename : :obj:`~pathlib.Path`
+            Simbad file to read
+
+        Returns
+        -------
+        :obj:`~typing.Self`
+            Returns an instance of the class
+        """
+
+    @classmethod
+    def read_from_votable(cls, filename: pathlib.Path) -> typing.Self:
+        """Return a :class:`TargetList` object read from a VOTable file
+
+        Read in a Virtual Observatory Table catalog file and return an instance
+        of this class with the proper data columns filled in.
+
+        Parameters
+        ----------
+        filename : :obj:`~pathlib.Path`
+            VOTable file to read
+
+        Returns
+        -------
+        :obj:`~typing.Self`
+            Returns an instance of the class
+        """
+        # Read in the VOTable and extract the columns we want
+        table = astropy.io.votable.parse_single_table(filename).to_table()
+        table = table[
+            "MAIN_ID",
+            "RA_d",
+            "DEC_d",
+            "PMRA",
+            "PMDEC",
+            "FLUX_V",
+            "SP_TYPE",
+        ]
+
+        # Check for missing values -- set appropriately
+        for col in ["PMRA", "PMDEC"]:
+            if isinstance(table[col], astropy.table.MaskedColumn):
+                table[col] = table[col].filled(0.0)
+        if isinstance(table["FLUX_V"], astropy.table.MaskedColumn):
+            table["FLUX_V"] = table["FLUX_V"].filled(100.0)
+        if isinstance(table["SP_TYPE"], astropy.table.MaskedColumn):
+            table["SP_TYPE"] = table["SP_TYPE"].filled("---")
+
+        # Massage the table to conform to class specification
+        table["coords"] = astropy.coordinates.SkyCoord(
+            ra=table["RA_d"],
+            dec=table["DEC_d"],
+            frame="fk5",
+            unit=[u.deg, u.deg],
+            pm_ra_cosdec=table["PMRA"],
+            pm_dec=table["PMDEC"],
+            obstime=astropy.time.Time("J2000"),
+        )
+        table.rename_columns(
+            ["MAIN_ID", "PMRA", "PMDEC", "FLUX_V", "SP_TYPE"],
+            ["objname", "mu_ra", "mu_dec", "magnitude", "comment1"],
+        )
+        table.remove_columns(["RA_d", "DEC_d"])
+
+        # Return the class instance
+        return cls(source="user file", orig_format="VOTable file", data=table)
+
+
+# Directly callable functions ================================================#
 def convert_tls_to_rimas(filename: str | pathlib.Path):
     """Convert an LDT ``.tls`` file to RIMAS Observation List ``.csv``
 
@@ -366,6 +529,27 @@ def convert_tls_to_rimas(filename: str | pathlib.Path):
     ofile = filename.with_suffix(".rimas.csv")
     with open(ofile, "w", encoding="utf-8") as f_obj:
         f_obj.writelines(rimas_csv)
+
+
+def convert_votable_to_tls(filename: str | pathlib.Path):
+    """Convert a VOTable file to an LDT ``.tls`` file
+
+    Read in the VOTable file and write out the corresponding ``.tls`` file
+
+    Parameters
+    ----------
+    filename : :obj:`str` or :obj:`~pathlib.Path`
+        Name of the VOTable file to convert
+    """
+    if not isinstance(filename, pathlib.Path):
+        filename = pathlib.Path(filename)
+
+    # Get the LDT ``.tls`` format
+    ldt_tls = TargetList.read_from_votable(filename).tls_format
+
+    ofile = filename.with_suffix(".tls")
+    with open(ofile, "w", encoding="utf-8") as f_obj:
+        f_obj.writelines(ldt_tls)
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
@@ -412,9 +596,19 @@ class TargetTools(utils.ScriptBase):
             type=str,
             help="File(s) on which to operate",
         )
+        parser.add_argument(
+            "--votable",
+            action="store_true",
+            help="The input is a VOTable to be converted to .tls",
+        )
         return parser
 
     @staticmethod
     def main(args):
         """Main Driver"""
-        convert_tls_to_rimas(args.file)
+
+        # Giddy up!
+        if args.votable:
+            sys.exit(convert_votable_to_tls(args.file))
+
+        sys.exit(convert_tls_to_rimas(args.file))
