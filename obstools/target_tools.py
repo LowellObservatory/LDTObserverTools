@@ -185,8 +185,9 @@ class TargetList:
                 tls_table[qc] = [f'"{re.sub(r'\s+', ' ', v)}"' for v in tls_table[qc]]
 
         # Set output formats for columns
-        for col in ["mu_ra", "mu_dec", "dra", "ddec", "magnitude"]:
+        for col in ["mu_ra", "mu_dec", "dra", "ddec"]:
             tls_table[col].info.format = ".1f"
+        tls_table["magnitude"].info.format = ".2f"
         tls_table["rotator_pa"].info.format = ".0f"
         tls_table.sort("ra")
         longest_name = np.amax([len(name) for name in tls_table["objname"]])
