@@ -523,7 +523,8 @@ def split_preserving_quotes(line: str, delimiter: str = " ") -> list[str]:
             current_part.append(char)
 
     parts.append("".join(current_part).strip())  # Add the last part
-    return parts
+    # Do not return blank parts
+    return [p for p in parts if p]
 
 
 def warn_and_return_zeros(

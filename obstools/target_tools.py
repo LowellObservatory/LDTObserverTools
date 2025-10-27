@@ -293,12 +293,12 @@ class TargetList:
         rimas_csv["Filter3"] = np.full(n_rows, "open")
         rimas_csv["Filter4"] = np.full(n_rows, "open")
         # Set the dithers
-        rimas_csv["DitherType"] = np.full(n_rows, "None")
+        rimas_csv["DitherType"] = np.full(n_rows, "Random")
         rimas_csv["DitherX"] = np.full(n_rows, 20.0, dtype=float)
         rimas_csv["DitherTotal"] = np.ones(n_rows, dtype=int)
         # Remaining columns
         rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(7000, 7000 + n_rows)]
-        rimas_csv["Observer"] = np.full(n_rows, "P. Muirhead / F. Fatmasiefa (BU)")
+        rimas_csv["Observer"] = np.full(n_rows, "T. Megeath and students (UTol)")
         rimas_csv["ObjectType"] = np.full(n_rows, "Science")
         rimas_csv["Images"] = np.full(n_rows, 10, dtype=int)
         rimas_csv["IntegrationTime"] = np.full(n_rows, 15.0, dtype=float)
@@ -369,7 +369,6 @@ class TargetList:
 
         # First line is the format
         formats = lines[0][1:].split()
-        print(formats)
         if (n_lab := len(formats)) != 12:
             raise ValueError(
                 "TLS file does not match TLS format!  "
