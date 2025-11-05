@@ -127,7 +127,7 @@ def iterative_pypeit_clean(
 
     try:
         # Look for the spec2d file
-        spec2d_file = utils.flatten_comprehension(
+        spec2d_file = utils.flatten_itertools(
             [
                 sorted(d.joinpath("Science").glob(f"spec2d_{filename.stem}-*.fits"))
                 for d in pyp_dir
@@ -1012,7 +1012,7 @@ def package_into_fits(
         suffix  (Default: False)
     """
     # Add a little history
-    time_str = datetime.datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+    time_str = datetime.datetime.now(datetime.UTC).isoformat(sep=" ", timespec="seconds")
     history_str = f"Written by package obstools: {time_str} UTC"
     # For the image HDUs, include a basic header
     img_hdr = astropy.io.fits.Header({"BUNIT": "ADU", "HISTORY": history_str})
