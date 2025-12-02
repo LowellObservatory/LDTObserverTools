@@ -36,6 +36,44 @@ from PyQt6 import QtWidgets
 from obstools.UI.RIMAS2SlitMainWindow import Ui_MainWindow
 from obstools import utils
 
+
+def compute_rimas_offset(
+    desired: tuple[int, int], current: tuple[int, int], pixscl: float = 0.19
+) -> tuple[float, float]:
+    r"""compute_rimas_offset _summary_
+
+    Computes the (xi,eta) TPLANE offsets needed to place the ``current``
+    position at the ``desired`` position.
+
+    North is up, East is left, so the xi value is the opposite of the usual
+    cartesian directions.
+
+    Parameters
+    ----------
+    desired : :obj:`tuple`
+        The ``x,y`` integer position where the object is to end up
+    current : :obj:`tuple`
+        The ``x,y`` integer position where the object currently is
+    pixscl : :obj:`float`, optional
+        The RIMAS pixel scale
+
+    Returns
+    -------
+    xi : obj:`float`
+        The TPLANE :math:`\xi` offset needed to place the ``current`` position
+        at the ``desired`` position.
+    eta : obj:`float`
+        The TPLANE :math:`\eta` offset needed to place the ``current`` position
+        at the ``desired`` position.
+    """
+    dx, dy = desired
+    cx, cy = current
+    deltax = cx - dx
+    deltay = cy - dy
+
+    return -pixscl * deltax, pixscl * deltay
+
+
 # GUI Classes ================================================================#
 class RIMASWindow(utils.ObstoolsGUI, Ui_MainWindow):
     """Exposure Time Calculator Main Window Class
@@ -50,11 +88,21 @@ class RIMASWindow(utils.ObstoolsGUI, Ui_MainWindow):
         self.setupUi(self)
         self.show()
 
-
         # Connect buttons to actions
         self.exitButton.pressed.connect(self.exit_button_clicked)
+        self.calculateButton.pressed.connect(self.calculate_button_clicked)
+        self.currentXInput.setFocus()
 
         self.set_fonts_and_logo()
+
+    # GUI Click Callbacks ==========================================#
+    def calculate_button_clicked(self):
+        desired = (self.centerXInput.value(), self.centerYInput.value())
+        current = (self.currentXInput.value(), self.currentYInput.value())
+        xi, eta = compute_rimas_offset(desired, current)
+        self.xiOutput.setText(f"{xi:+.1f}\"")
+        self.etaOutput.setText(f"{eta:+.1f}\"")
+
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class RimasSlitoffset(utils.ScriptBase):

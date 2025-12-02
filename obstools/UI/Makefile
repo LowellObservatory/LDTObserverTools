@@ -55,7 +55,7 @@ cleanup:
 	@mkdir -p $(@D) # Create the output directory if it doesn't exist
 	pyuic6 -o $@ $<
 # Remove extra files created by Qt Designer 
-#	rm $(XTRA_FILES)
+	rm $(XTRA_FILES)
 # Clean up formatting in the generated Python files
 	black .
 >>>>>>> eca9007 (Add new RIMAS slit offset tool)
