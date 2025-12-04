@@ -157,7 +157,7 @@ class TargetList:
             unit=u.hour, sep=":", precision=2, pad=True
         )
         tls_table["dec"] = present_coords.dec.to_string(
-            unit=u.deg, sep=":", precision=2, alwayssign=True, pad=True
+            unit=u.degree, sep=":", precision=2, alwayssign=True, pad=True
         )
 
         # Make blank columns for missing data
@@ -249,34 +249,35 @@ class TargetList:
         # Return the string object
         return ascii_string
 
-    @property
-    def rimas_format(self) -> str:
+    def rimas_format(self, observer: str) -> str:
         """Produce the RIMAS CSV format, ready to write to disk
 
         Priority,BlockID,Observer,ObjectName,ObjectType,RA,DEC,RAoffset,DECoffset,ROToffset,Filter1,Filter2,Filter3,Filter4,DitherType,DitherX,DitherY,DitherTotal,Images,IntegrationTime,Comment1,Comment2,xi,eta
         0,P05315,"joe","test","Science",19:47:29.2,+64:29:12.4,0.00,0.00,0.00,J,H,open,open,Random,20.0,0.0,10,1,15.00,"","",0.000000,0.000000
+
+        Parameters
+        ----------
+        observer : :obj:`str`
+            Value to use for the observer column
 
         Returns
         -------
          :obj:`str`
              The write-ready string ready for saving to disk
         """
+        if observer is None:
+            observer = "RIMAS Observer"
+
         # Create a copy of the table to re-organize
         rimas_csv = self.data.copy()
 
         # Do the work of organizing the output
         rimas_csv.rename_columns(["objname", "comment1"], ["ObjectName", "Comment1"])
 
-        # now = astropy.time.Time.now()
-        # d_lon = rimas_csv['mu_ra']
-
-        # present_coords = rimas_csv["coords"].spherical_offsets_by(d_lon, d_lat)
-
         present_coords = rimas_csv["coords"]
-
         rimas_csv["RA"] = present_coords.ra.to_string(unit=u.hour, sep=":", precision=2)
         rimas_csv["DEC"] = present_coords.dec.to_string(
-            unit=u.deg, sep=":", precision=2, alwayssign=True
+            unit=u.degree, sep=":", precision=2, alwayssign=True
         )
 
         # Add blank-ish columns
@@ -297,8 +298,8 @@ class TargetList:
         rimas_csv["DitherX"] = np.full(n_rows, 20.0, dtype=float)
         rimas_csv["DitherTotal"] = np.ones(n_rows, dtype=int)
         # Remaining columns
-        rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(7000, 7000 + n_rows)]
-        rimas_csv["Observer"] = np.full(n_rows, "T. Megeath and students (UTol)")
+        rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(1, n_rows)]
+        rimas_csv["Observer"] = np.full(n_rows, observer)
         rimas_csv["ObjectType"] = np.full(n_rows, "Science")
         rimas_csv["Images"] = np.full(n_rows, 10, dtype=int)
         rimas_csv["IntegrationTime"] = np.full(n_rows, 15.0, dtype=float)
@@ -398,9 +399,9 @@ class TargetList:
             ra=table["ra"],
             dec=table["dec"],
             frame="fk5",
-            unit=[u.hour, u.deg],
-            pm_ra_cosdec=table["muRA"] * u.mas / u.yr,
-            pm_dec=table["muDec"] * u.mas / u.yr,
+            unit=[u.hour, u.degree],
+            pm_ra_cosdec=table["muRA"] * u.mas / u.year,
+            pm_dec=table["muDec"] * u.mas / u.year,
             distance=10 * u.pc,
             obstime=astropy.time.Time("J2000"),
         )
@@ -494,7 +495,7 @@ class TargetList:
             ra=table["RA_d"],
             dec=table["DEC_d"],
             frame="fk5",
-            unit=[u.deg, u.deg],
+            unit=[u.degree, u.degree],
             pm_ra_cosdec=table["PMRA"],
             pm_dec=table["PMDEC"],
             obstime=astropy.time.Time("J2000"),
@@ -510,7 +511,7 @@ class TargetList:
 
 
 # Directly callable functions ================================================#
-def convert_tls_to_rimas(filename: str | pathlib.Path):
+def convert_tls_to_rimas(filename: str | pathlib.Path, observer: str | None = None):
     """Convert an LDT ``.tls`` file to RIMAS Observation List ``.csv``
 
     Read in the ``.tls`` file and write out the corresponding ``.csv`` file.
@@ -519,12 +520,16 @@ def convert_tls_to_rimas(filename: str | pathlib.Path):
     ----------
     filename : :obj:`str` or :obj:`~pathlib.Path`
         Name of the ``.tls`` file to convert
+    observer : :obj:`str`, optional
+        The string to be included in the observer column of the output table
     """
     if not isinstance(filename, pathlib.Path):
         filename = pathlib.Path(filename)
+    if observer is None:
+        observer = "RIMAS Observer"
 
     # Get the RIMAS ``.csv`` format
-    rimas_csv = TargetList.read_from_tls(filename).rimas_format
+    rimas_csv = TargetList.read_from_tls(filename).rimas_format(observer)
 
     ofile = filename.with_suffix(".rimas.csv")
     with open(ofile, "w", encoding="utf-8") as f_obj:
@@ -601,6 +606,9 @@ class TargetTools(utils.ScriptBase):
             action="store_true",
             help="The input is a VOTable to be converted to .tls",
         )
+        parser.add_argument(
+            "--observer", type=str, help="String to be included in the RIMAS output"
+        )
         return parser
 
     @staticmethod
@@ -611,4 +619,4 @@ class TargetTools(utils.ScriptBase):
         if args.votable:
             sys.exit(convert_votable_to_tls(args.file))
 
-        sys.exit(convert_tls_to_rimas(args.file))
+        sys.exit(convert_tls_to_rimas(args.file, observer=args.observer))
