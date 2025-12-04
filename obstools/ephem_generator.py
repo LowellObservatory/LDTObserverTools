@@ -400,7 +400,8 @@ def celestrak_ephem(
             ref_frame=RefFrame.FK5,
         )
 
-    print(f"This is the TLE:\n{"\n".join(lines)}")
+    tle_str = "\n".join(lines)
+    print(f"This is the TLE:\n{tle_str}")
 
     query = {
         "format": "text",
