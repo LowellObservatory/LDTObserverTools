@@ -37,7 +37,7 @@ jobs:
           - test-astropydev
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
         with:
@@ -75,7 +75,7 @@ jobs:
           - test-alldeps
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
         with:
@@ -93,7 +93,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Conda environment check
         uses: actions/setup-python@v6
         with:
@@ -113,7 +113,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Python codestyle check
         uses: actions/setup-python@v6
         with:
