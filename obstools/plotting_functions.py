@@ -77,8 +77,8 @@ def plot_visibility(
 
     # Create secondary axis
     axis2 = axis.twinx()  # Create a secondary y-axis sharing the x-axis
-    axis2.plot(vis.ut_time, vis.solar_elon, "r--", label="Solar Elongation")
-    axis2.plot(vis.ut_time, vis.lunar_elon, "g:", label="Lunar Elongation")
+    axis2.plot(vis.ut_time, vis.solar_elon, "r--", label="Solar Elongation", alpha=0.5)
+    axis2.plot(vis.ut_time, vis.lunar_elon, "g:", label="Lunar Elongation", alpha=0.5)
     axis2.set_ylabel("Elongation (deg)", color="C0", fontsize=tsz)
     axis2.tick_params(
         which="both", direction="in", labelsize=tsz, axis="y", labelcolor="C0"

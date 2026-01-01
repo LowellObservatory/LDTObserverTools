@@ -146,6 +146,16 @@ class EphemObj:
             f"{self.source}  ID: {self.obj_id}  UT: {self.utstart}  "
             f"ΔT: {self.stepsize.total_seconds()/60.:.1f} min  N: {len(self.data)}"
         )
+    @property
+    def is_empty(self) -> bool:
+        """Is the EphemObj empty?
+
+        Returns
+        -------
+        :obj:`bool`
+            True if the data table is empty
+        """
+        return not self.data
 
     @property
     def tcs_format(self) -> str:
@@ -205,6 +215,56 @@ class EphemObj:
 
         # Return the string object
         return ascii_string
+
+    @property
+    def tcs_table_azel(self) -> str:
+        """Produce the TCS format, with AZ/EL columns
+
+        Reminder to self about LDT ephem format:
+
+        yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
+        FK5 J2000.0 2000.0
+
+        Data Format
+        The 12 data columns are: Year, Month, Day, Hour, Minute, Seconds, RA
+        (hours min sec), and Dec(deg min sec), with the following format:
+
+        yyyy mm dd hh mm ss Ah Am As.ssssss +/-Dd Dm Ds.sssss
+
+        Note: All dates / times are UT.
+
+        The final line of the ephemeris file may include the reference frame
+        for the ephemeris:
+        For J2000 coordinates:
+        FK5 J2000.0 2000.0
+        For ICRF:
+        ICRS ICRF 2000.0
+        For apparent coordinates:  "APPT J20xx.xx 20xx.xx" where the 'x' must
+        be replaced by the epoch of your observing night.  (e.g. the night of
+        31 October 2020 was J2020.83)
+
+        Note: If this line is not included, you need to inform your TO of the
+        reference frame.
+
+        Returns
+        -------
+         :obj:`str`
+             The write-ready string ready for sending to the TCS
+        """
+        # Create a string buffer to capture the table output
+        output_buffer = io.StringIO()
+
+        # Write the table to the string buffer in a specified ASCII format
+        tcs_ephem = self.parse_datetime_coords()
+        tcs_ephem.remove_columns(["solar_elon", "lunar_elon"])
+        tcs_ephem.write(output_buffer, format="ascii.fixed_width")
+
+        # Get the string content from the buffer
+        ascii_string = output_buffer.getvalue()
+
+        # Return the string object
+        return ascii_string
+
 
     @property
     def visibility(self) -> pathlib.Path:
@@ -1201,9 +1261,13 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
         self.exitButton.pressed.connect(self.exit_button_clicked)
         self.addObjectsButton.pressed.connect(self.add_objects_button_clicked)
         self.removeObjectsButton.pressed.connect(self.remove_objects_button_clicked)
+        self.removeAllObjectsButton.pressed.connect(
+            self.remove_all_objects_button_clicked
+        )
         self.generateSelectedButton.pressed.connect(
             self.generate_selected_button_clicked
         )
+        self.clearEphemsButton.pressed.connect(self.clear_ephems_button_clicked)
         self.generateAllButton.pressed.connect(self.generate_all_button_clicked)
         self.saveGeneratedButton.pressed.connect(self.save_generated_button_clicked)
         self.visibilitySelectedButton.pressed.connect(
@@ -1337,6 +1401,48 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             " from the list"
         )
 
+    def remove_all_objects_button_clicked(self):
+        """The user clicked the "Remove All" button
+
+        Get the entire list, open a "Confirm" dialog, then remove the
+        lines from the QListWidget.
+        """
+        if not self.objectList.count():
+            # Set the `labelStatus` to an error message and return
+            self.labelStatus.setText("ERROR: No object(s) available for removal")
+            return
+
+        # Ask for confirmation
+        self.objectList.selectAll()
+        axed_lines = sorted(l.row() for l in self.objectList.selectedIndexes())
+        button = QtWidgets.QMessageBox.question(
+            self,
+            "Remove Lines?",
+            f"Are you sure you want to remove the {len(axed_lines)} "
+            "selected lines from the Objects list?",
+        )
+        # Once the dialog closes, "uncheck" the button
+        self.removeObjectsButton.setChecked(False)
+        if button == QtWidgets.QMessageBox.StandardButton.No:
+            return
+
+        # Remove the selected items from the ``objectList`` from the bottom
+        for line in axed_lines[::-1]:
+            item = self.objectList.takeItem(line)
+            # Delete the item to free memory
+            del item
+        self.labelStatus.setText(
+            f"Removed {len(axed_lines)} object{'s' if len(axed_lines) > 1 else ''}"
+            " from the list"
+        )
+
+    def clear_ephems_button_clicked(self):
+        """clear_ephems_button_clicked _summary_
+
+        _extended_summary_
+        """
+        self.pulled_ephems = []
+
     def generate_selected_button_clicked(self):
         """The user clicked the "Generate Selected Ephemeris" button
 
@@ -1441,6 +1547,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             )
             with open(fn, "w", encoding="utf-8") as f_obj:
                 f_obj.write(ephem.tcs_format)
+            with open(fn.with_suffix('.tbl'),"w", encoding="utf-8") as f_obj:
+                f_obj.write(ephem.tcs_table_azel)
 
     # GUI Functionality methods ==========================#
     def check_legal_time(self):
@@ -1555,7 +1663,8 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
                 return
 
             # Do something with the ephem object
-            self.pulled_ephems.append(ephem)
+            if not ephem.is_empty:
+                self.pulled_ephems.append(ephem)
             # print(ephem.tcs_format)
 
 
