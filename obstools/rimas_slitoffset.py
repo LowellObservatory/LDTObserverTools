@@ -100,8 +100,8 @@ class RIMASWindow(utils.ObstoolsGUI, Ui_MainWindow):
         desired = (self.centerXInput.value(), self.centerYInput.value())
         current = (self.currentXInput.value(), self.currentYInput.value())
         xi, eta = compute_rimas_offset(desired, current)
-        self.xiOutput.setText(f"{xi:+.1f}\"")
-        self.etaOutput.setText(f"{eta:+.1f}\"")
+        self.xiOutput.setText(f'{xi:+.1f}"')
+        self.etaOutput.setText(f'{eta:+.1f}"')
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#

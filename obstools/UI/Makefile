@@ -41,7 +41,6 @@ endif
 all: $(GEN_FILES) cleanup
 
 %.py: %.ui
-<<<<<<< HEAD
 	@printf "$(BRIGHT_GREEN)[BUILD]$(RESET) Converting %s → %s\n" "$<" "$@"
 	@mkdir -p $(@D)
 	@pyuic6 -o $@ $<
@@ -51,14 +50,6 @@ cleanup:
 	@if [ -n "$(XTRA_FILES)" ]; then rm $(XTRA_FILES); fi
 	@printf "$(BRIGHT_CYAN)[FORMAT]$(RESET) Running black formatter\n"
 	@black .
-=======
-	@mkdir -p $(@D) # Create the output directory if it doesn't exist
-	pyuic6 -o $@ $<
-# Remove extra files created by Qt Designer 
-	rm $(XTRA_FILES)
-# Clean up formatting in the generated Python files
-	black .
->>>>>>> eca9007 (Add new RIMAS slit offset tool)
 
 clean:
 	@printf "$(BRIGHT_YELLOW)[CLEAN]$(RESET) Removing generated .py files\n"
