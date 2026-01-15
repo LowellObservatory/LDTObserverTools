@@ -289,16 +289,16 @@ class TargetList:
         for col in izeros:
             rimas_csv[col] = np.zeros(n_rows, dtype=int)
         # Set the filters
-        rimas_csv["Filter1"] = np.full(n_rows, "J")
-        rimas_csv["Filter2"] = np.full(n_rows, "H")
+        rimas_csv["Filter1"] = np.full(n_rows, "grism")
+        rimas_csv["Filter2"] = np.full(n_rows, "grism")
         rimas_csv["Filter3"] = np.full(n_rows, "open")
-        rimas_csv["Filter4"] = np.full(n_rows, "open")
+        rimas_csv["Filter4"] = np.full(n_rows, '1.0"')
         # Set the dithers
-        rimas_csv["DitherType"] = np.full(n_rows, "Random")
-        rimas_csv["DitherX"] = np.full(n_rows, 20.0, dtype=float)
-        rimas_csv["DitherTotal"] = np.ones(n_rows, dtype=int)
+        rimas_csv["DitherType"] = np.full(n_rows, "ABBA")
+        rimas_csv["DitherX"] = np.full(n_rows, 10.0, dtype=float)
+        rimas_csv["DitherTotal"] = np.full(n_rows, 4.0, dtype=int)
         # Remaining columns
-        rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(1, n_rows)]
+        rimas_csv["BlockID"] = [f"P{v:05d}" for v in np.arange(1, n_rows + 1)]
         rimas_csv["Observer"] = np.full(n_rows, observer)
         rimas_csv["ObjectType"] = np.full(n_rows, "Science")
         rimas_csv["Images"] = np.full(n_rows, 10, dtype=int)
