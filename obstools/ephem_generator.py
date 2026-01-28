@@ -146,6 +146,7 @@ class EphemObj:
             f"{self.source}  ID: {self.obj_id}  UT: {self.utstart}  "
             f"ΔT: {self.stepsize.total_seconds()/60.:.1f} min  N: {len(self.data)}"
         )
+
     @property
     def is_empty(self) -> bool:
         """Is the EphemObj empty?
@@ -264,7 +265,6 @@ class EphemObj:
 
         # Return the string object
         return ascii_string
-
 
     @property
     def visibility(self) -> pathlib.Path:
@@ -1547,7 +1547,7 @@ class EphemWindow(utils.ObstoolsGUI, Ui_EphemMainWindow):
             )
             with open(fn, "w", encoding="utf-8") as f_obj:
                 f_obj.write(ephem.tcs_format)
-            with open(fn.with_suffix('.tbl'),"w", encoding="utf-8") as f_obj:
+            with open(fn.with_suffix(".tbl"), "w", encoding="utf-8") as f_obj:
                 f_obj.write(ephem.tcs_table_azel)
 
     # GUI Functionality methods ==========================#
