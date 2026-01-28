@@ -289,12 +289,12 @@ class TargetList:
         for col in izeros:
             rimas_csv[col] = np.zeros(n_rows, dtype=int)
         # Set the filters
-        rimas_csv["Filter1"] = np.full(n_rows, "grism")
-        rimas_csv["Filter2"] = np.full(n_rows, "grism")
+        rimas_csv["Filter1"] = np.full(n_rows, "J")
+        rimas_csv["Filter2"] = np.full(n_rows, "H")
         rimas_csv["Filter3"] = np.full(n_rows, "open")
-        rimas_csv["Filter4"] = np.full(n_rows, '1.0"')
+        rimas_csv["Filter4"] = np.full(n_rows, 'open')
         # Set the dithers
-        rimas_csv["DitherType"] = np.full(n_rows, "ABBA")
+        rimas_csv["DitherType"] = np.full(n_rows, "none")
         rimas_csv["DitherX"] = np.full(n_rows, 10.0, dtype=float)
         rimas_csv["DitherTotal"] = np.full(n_rows, 4.0, dtype=int)
         # Remaining columns
