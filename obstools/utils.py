@@ -153,7 +153,7 @@ def flatten_itertools(nested_list: list[list]) -> list:
     :obj:`list`
         The flattened list
     """
-    return [itertools.chain.from_iterable(nested_list)]
+    return [item for item in itertools.chain.from_iterable(nested_list)]
 
 
 def gaussfit(
