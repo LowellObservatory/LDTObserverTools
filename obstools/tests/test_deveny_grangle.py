@@ -11,8 +11,7 @@
 #  @author: tbowers
 # pylint: disable=missing-function-docstring
 
-"""DeVeny Grating Angle Calculator TEST Module
-"""
+"""DeVeny Grating Angle Calculator TEST Module"""
 
 import numpy as np
 

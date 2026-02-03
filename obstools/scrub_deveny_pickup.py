@@ -60,7 +60,7 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit import msgs
+from pypeit import log
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -135,7 +135,7 @@ def iterative_pypeit_clean(
         )[0]
     except (StopIteration, IndexError):
         # And... fail.
-        msgs.warn(
+        log.warning(
             f"File {filename.name} does not have a corresponding PypeIt-processed 2D spectrum. "
             "Check the image type and whether you have `run_pypeit`."
         )
@@ -1012,7 +1012,9 @@ def package_into_fits(
         suffix  (Default: False)
     """
     # Add a little history
-    time_str = datetime.datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+    time_str = datetime.datetime.now(datetime.UTC).isoformat(
+        sep=" ", timespec="seconds"
+    )
     history_str = f"Written by package obstools: {time_str} UTC"
     # For the image HDUs, include a basic header
     img_hdr = astropy.io.fits.Header({"BUNIT": "ADU", "HISTORY": history_str})
