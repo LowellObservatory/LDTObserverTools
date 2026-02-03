@@ -60,6 +60,7 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
+
 # from pypeit import msgs
 import pypeit.spec2dobj
 import scipy.fft
@@ -1012,7 +1013,9 @@ def package_into_fits(
         suffix  (Default: False)
     """
     # Add a little history
-    time_str = datetime.datetime.now(datetime.UTC).isoformat(sep=" ", timespec="seconds")
+    time_str = datetime.datetime.now(datetime.UTC).isoformat(
+        sep=" ", timespec="seconds"
+    )
     history_str = f"Written by package obstools: {time_str} UTC"
     # For the image HDUs, include a basic header
     img_hdr = astropy.io.fits.Header({"BUNIT": "ADU", "HISTORY": history_str})

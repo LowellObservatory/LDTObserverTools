@@ -11,8 +11,7 @@
 #  @author: tbowers
 # pylint: disable=missing-function-docstring
 
-"""Celestial Time Utilities TEST Module
-"""
+"""Celestial Time Utilities TEST Module"""
 
 import numpy as np
 import pytest
