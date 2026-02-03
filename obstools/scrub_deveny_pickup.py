@@ -60,7 +60,7 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit import msgs
+# from pypeit import msgs
 import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
@@ -135,10 +135,10 @@ def iterative_pypeit_clean(
         )[0]
     except (StopIteration, IndexError):
         # And... fail.
-        msgs.warn(
-            f"File {filename.name} does not have a corresponding PypeIt-processed 2D spectrum. "
-            "Check the image type and whether you have `run_pypeit`."
-        )
+        # msgs.warn(
+        #     f"File {filename.name} does not have a corresponding PypeIt-processed 2D spectrum. "
+        #     "Check the image type and whether you have `run_pypeit`."
+        # )
         return
     # Define (and create, if needed) the QA directory for these plots
     qa_dir = spec2d_file.parents[1] / "QA" / "PDFs"
