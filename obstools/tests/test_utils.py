@@ -36,14 +36,18 @@ def test_first_moment_1d():
 
 
 def test_flatten_comprehension():
-    pass
+    nested_str = [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]]
+    flat_str = utils.flatten_comprehension(nested_str)
+    assert flat_str == ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+    # Add other types of tests here...
 
 
 def test_flatten_itertools():
-    nested_str = [["a", "b", "c"], ["d"], ["e"], ["f"], ["g"]]
+    nested_str = [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]]
     flat_str = utils.flatten_itertools(nested_str)
-    assert flat_str == ["a", "b", "c", "d", "e", "f", "g"]
+    assert flat_str == ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
     # Add other types of tests here...
+
 
 def test_gaussfit():
     pass
