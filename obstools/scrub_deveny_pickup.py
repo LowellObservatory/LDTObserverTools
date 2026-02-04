@@ -28,7 +28,7 @@ module fist taken the FFT of the flattened (`i.e.`, `time series`) image to
 identify the strongest frequency.  (The function that performs the FFT also
 modifies a copy of the data in various ways to remove spurious signals in the
 FFT.)  From there, it uses a tightly bounded curve fitting (from
-:obj:`scipy.optimize`) to identify the sinusoid in each line of the image.
+:obj:`scipy.optimize`) to identify the sinusoid in each row of the image.
 
 Cosmic rays and other impulsive features in the 2D image can cause spurious
 matches for the sinusoid.  So to guard against introducing artifacts into the
@@ -135,10 +135,11 @@ def iterative_pypeit_clean(
         )[0]
     except (StopIteration, IndexError):
         # And... fail.
-        log.warning(
+        log_str = (
             f"File {filename.name} does not have a corresponding PypeIt-processed 2D spectrum. "
             "Check the image type and whether you have `run_pypeit`."
         )
+        log.warning(log_str)
         return
     # Define (and create, if needed) the QA directory for these plots
     qa_dir = spec2d_file.parents[1] / "QA" / "PDFs"
@@ -205,9 +206,9 @@ def iterative_pypeit_clean(
             print(" * Object model appears clean of target sinusoidal signal.")
             with_obj = False
 
-    # Fit a sinusoid to each line in the image using the pixel period as a guess
+    # Fit a sinusoid to each row in the image using the pixel period as a guess
     #  ==> This is the main point of the function
-    print("Fitting sinusoids to each line in the image...")
+    print("Fitting sinusoids to each row in the image...")
     resid_fitc = fit_lines(
         resid_img.copy(), resid_pixperiod, trim_ends=False, show_diagnostic=diagnostics
     )
@@ -562,9 +563,9 @@ def fit_lines(
     show_diagnostic: bool = False,
     fixed_sinusoid: bool = False,
 ) -> astropy.table.Table:
-    """Fit a sinusoid to each line in the image
+    """Fit a sinusoid to each row in the image
 
-    This is like a mini-driver function that fits a sinusoid to each line in
+    This is like a mini-driver function that fits a sinusoid to each row in
     the image.
 
     It also can refit lines that have excessive RMS residual as compared to the
@@ -585,9 +586,9 @@ def fit_lines(
         full fitting of all lines will be performed.  (Default: None)
     refit_thresh_sig : :obj:`float`, optional
         Threshold for RMS deviation (in sigma-clipped standard deviation units)
-        from the mean for a line to be refit.  (Default: 3.0)
+        from the mean for a row to be refit.  (Default: 3.0)
     trim_ends : :obj:`bool`, optional
-        Trim the 5 pixels off the ends of the line before fitting?
+        Trim the 5 pixels off the ends of the row before fitting?
         (Default: True)
     objmodel_check : :obj:`bool`, optional
         Is this image the spec2d objmodel?  (Default: False)
@@ -648,7 +649,7 @@ def fit_lines(
 
     # If fitting a (roughly) constant sinusoid to all lines, determine the
     #  (slowly varying) values of amplitude and period as a function of row
-    #  number by fitting a line to the orig_fitc using a linear least-squares
+    #  number by fitting a row to the orig_fitc using a linear least-squares
     #  algorithm.
     if fixed_sinusoid:
         # Valid range is the whole slit -- fill in any odd gaps
@@ -707,20 +708,12 @@ def fit_lines(
                 else np.sum(valid_idx) if fixed_sinusoid else nrow
             )
         ),
-        colour=(
-            "#87EBCF"
-            if do_refit
-            else (
-                "#EBC687"
-                if objmodel_check
-                else "#EB89EB" if fixed_sinusoid else "#87CEEB"
-            )
-        ),
+        colour=gated_color(do_refit, objmodel_check, fixed_sinusoid),
         unit="row",
         unit_scale=False,
     )
 
-    # Prepare the line diagnostic plot
+    # Prepare the row diagnostic plot
     if show_diagnostic:
         # Make a diagnostic plot
         _, axes = plt.subplots(nrows=4, figsize=(9, 9))
@@ -732,7 +725,7 @@ def fit_lines(
     for img_row in range(nrow):
         # If refitting, follow this logic:
         if do_refit:
-            # If not refitting this line, move along
+            # If not refitting this row, move along
             if not refit_lines[img_row]:
                 continue
 
@@ -768,22 +761,22 @@ def fit_lines(
                 continue
 
         if trim_ends:
-            # Pull this line, minus the last few pixels at each end
+            # Pull this row, minus the last few pixels at each end
             line = data_array[img_row, 5:-5]
         else:
-            # Use the entire line
+            # Use the entire row
             line = data_array[img_row]
 
         # To mitigate cosmic rays and night sky lines, sigma clip @ 5σ
         sig_clip = np.std(line) * 5.0 + np.median(line)
         line[line > sig_clip] = sig_clip
 
-        # Smooth the line with a median filter at 1/10th the pixel period
+        # Smooth the row with a median filter at 1/10th the pixel period
         line = smooth_array(line, kernel_size=utils.nearest_odd(pixel_period / 10.0))
 
         # Perform the curve fit
         try:
-            # If the line is identically zero, don't fit
+            # If the row is identically zero, don't fit
             if np.allclose(line, np.zeros_like(line)):
                 popt = p0
                 popt[0] = 0
@@ -881,7 +874,7 @@ def smooth_array(
 ) -> np.ndarray:
     """Smooth out an array with a given filter
 
-    This may be used for smoothing a line or attempting to smooth fit
+    This may be used for smoothing a row or attempting to smooth fit
     coefficients from row to row in order to ameliorate the effects of cosmic
     rays and strong sources.
 
@@ -1101,7 +1094,7 @@ def package_into_fits(
         "Table contains the sinusoid fit coefficients for each row of the image"
     )
     table_hdu.header["HISTORY"] = history_str
-    primary_hdu.header.append(("EXT0004", "FIT DATA", "Fit coefficients per line"))
+    primary_hdu.header.append(("EXT0004", "FIT DATA", "Fit coefficients per row"))
 
     # Assemble the whole thing into an HDUList and write to disk
     hdul = astropy.io.fits.HDUList(
@@ -1318,7 +1311,7 @@ def make_sinusoid_fit_plots(
     2. The row-by-row sinusoid period
     3. The row-by-row sinusoid phase shift
     4. The row-by-row rms residual when the sinusoidal fit is subtracted from
-       the original line
+       the original row
 
     Parameters
     ----------
@@ -1388,7 +1381,7 @@ def make_sinusoid_fit_plots(
             coef_txt.set_bbox({"facecolor": "0.75", "alpha": 0.2})
         axis.set_ylabel(ylabel, fontsize=tsz)
 
-        # Add the horizontal line for the FFT-predicted period
+        # Add the horizontal row for the FFT-predicted period
         if axis == axes[1]:
             axis.hlines(
                 pixel_period,
@@ -1617,6 +1610,34 @@ def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
     return 1.0 / (PIX_DWELL * val)
 
 
+def gated_color(gate1: bool, gate2: bool, gate3: bool) -> str:
+    """Get the gated color
+
+    Usually used for progress bars
+
+    Parameters
+    ----------
+    gate1 : :obj:`bool`
+        First gating variable
+    gate2 : :obj:`bool`
+        Second gating variable
+    gate3 : :obj:`bool`
+        Third gating variable
+
+    Returns
+    -------
+    :obj:`str`
+        Hex string color for the progress bar
+    """
+    if gate1:
+        return "#87EBCF"
+    if gate2:
+        return "#EBC687"
+    if gate3:
+        return "#EB89EB"
+    return "#87CEEB"
+
+
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
 class ScrubDevenyPickup(utils.ScriptBase):
     """Script class for ``scrub_deveny_pickup`` tool
@@ -1665,7 +1686,8 @@ class ScrubDevenyPickup(utils.ScriptBase):
             "`pypeit_setup`.",
         )
         parser.add_argument(
-            "--overwrite_raw",
+            "-o",
+            "--overwrite",
             action="store_true",
             help="Overwrite the raw file rather than create a new file with the '_scrub' suffix",
         )
@@ -1700,7 +1722,7 @@ class ScrubDevenyPickup(utils.ScriptBase):
             iterative_pypeit_clean(
                 pathlib.Path(file).resolve(),
                 proc_dir=pathlib.Path(args.proc_dir),
-                overwrite_raw=args.overwrite_raw,
+                overwrite_raw=args.overwrite,
                 diagnostics=args.diagnostics,
                 no_refit=args.no_refit,
                 extra_graphics=args.g,
