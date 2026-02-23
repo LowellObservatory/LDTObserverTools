@@ -33,8 +33,10 @@ jobs:
           - "3.12"
           - "3.13"
         toxenv:
+          - test
           - test-numpydev
           - test-astropydev
+          - test-alldeps
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -70,7 +72,6 @@ jobs:
           - "3.12"
           - "3.13"
         toxenv:
-          - test
           - test-alldeps
     steps:
       - name: Check out repository
