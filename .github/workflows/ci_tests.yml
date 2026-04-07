@@ -39,21 +39,22 @@ jobs:
           - test-alldeps
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - name: Install base dependencies
         run: |
+          sudo apt update
           sudo apt-get install -y freeglut3-dev
           python -m pip install --upgrade pip tox
       - name: Test with tox
         run: |
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
       - name: Upload coverage to codecov
-        if: "endsWith(matrix.tox_env, '-cov')"
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7  # v5.5.1
+        if: endsWith(matrix.tox_env, '-cov')
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
 
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
@@ -75,7 +76,7 @@ jobs:
           - test-alldeps
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
         with:
@@ -93,13 +94,14 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Conda environment check
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Install base dependencies
         run: |
+          sudo apt update
           sudo apt-get install -y freeglut3-dev
           python -m pip install --upgrade pip tox
       - name: Run obstools tests from environment built with conda
@@ -112,7 +114,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Python codestyle check
         uses: actions/setup-python@v6
         with:
