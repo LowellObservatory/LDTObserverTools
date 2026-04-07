@@ -11,9 +11,9 @@ on:
 jobs:
   update:
     permissions:
-      contents: read
-      pages: write
+      contents: write
       pull-requests: write
+      pages: write
     runs-on: ubuntu-latest
 
     steps:
