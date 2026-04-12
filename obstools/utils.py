@@ -28,6 +28,7 @@ import dataclasses
 import datetime
 from functools import reduce
 from importlib import resources
+import itertools
 import pathlib
 import textwrap
 import sys
@@ -158,6 +159,22 @@ def flatten_comprehension(nested_list: list[list]) -> list:
         The flattened list
     """
     return [item for row in nested_list for item in row]
+
+
+def flatten_itertools(nested_list: list[list]) -> list:
+    """Flatten a single-depth nested list via itertools
+
+    Parameters
+    ----------
+    nested_list : :obj:`list`
+        The single-depth nested list to flatten
+
+    Returns
+    -------
+    :obj:`list`
+        The flattened list
+    """
+    return [item for item in itertools.chain.from_iterable(nested_list)]
 
 
 def gaussfit(
