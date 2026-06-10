@@ -47,6 +47,7 @@ def test_parse_focus_log():
     assert isinstance(focus_id, str)
     assert focus_id == "20250203.081131"
     assert len(focus_cl.files) == 9
+    assert np.allclose(focus_cl.focus_log_collfoc, np.arange(9.0, 13.5, 0.5))
 
     # Test parsing of specifically named log
     focus_cl, focus_id = dfocus.parse_focus_log(
@@ -84,8 +85,18 @@ def test_parse_focus_headers():
     assert focus_pars.start == 9.0
     assert focus_pars.end == 13.0
     assert focus_pars.delta == 0.5
+    assert np.allclose(focus_pars.focus_values, np.arange(9.0, 13.5, 0.5))
+    assert focus_pars.mid_index == 4
     assert focus_pars.mnttemp == 7.45
     assert focus_pars.binning == "1x1"
+
+    # Prefer focus log values, but warn if they disagree with the FITS headers
+    focus_cl.focus_log_collfoc = focus_cl.focus_log_collfoc + 100.0
+    with pytest.warns(UserWarning, match="COLLFOC headers"):
+        focus_pars = dfocus.parse_focus_headers(focus_cl)
+    assert focus_pars.start == 109.0
+    assert focus_pars.end == 113.0
+    assert np.allclose(focus_pars.focus_values, np.arange(109.0, 113.5, 0.5))
 
     # Use a focus log with all the same input DeVeny frame
     focus_cl, _ = dfocus.parse_focus_log(
@@ -184,11 +195,12 @@ def test_fit_focus_curves():
 
     # Run the loop over all files to build the linewidth array
     line_width_array = []
-    for ccd in focus_cl.ccds():
+    mid_focus = focus_pars.focus_values[focus_pars.mid_index]
+    for idx, ccd in enumerate(focus_cl.ccds()):
         this_lines = dfocus.get_lines_from_ccd(
             ccd, 100.0, trace=mid_lines.trace, verbose=False
         )
-        line_dx = -4.0 * (ccd.header["COLLFOC"] - mid_ccd.header["COLLFOC"])
+        line_dx = -4.0 * (focus_pars.focus_values[idx] - mid_focus)
         line_widths = []
         for cen in mid_lines.centers:
             idx = np.abs((cen + line_dx) - this_lines.centers) < 3.0
