@@ -23,9 +23,12 @@ This file contains FITS Header utility routines.
 # Built-In Libraries
 import argparse
 import pathlib
+import typing
 
 # 3rd-Party Libraries
+import astropy.time
 import ccdproc
+import numpy as np
 
 # Local Libraries
 from obstools import utils
@@ -33,7 +36,12 @@ from obstools import utils
 # CONSTANTS
 
 
-def fix_ldt_header(files: str | pathlib.Path | list, keyword: str, new_value):
+def fix_ldt_header(
+    files: str | pathlib.Path | list,
+    keyword: str,
+    new_value: typing.Any,
+    rimas_exp: bool = False,
+):
     """Change FITS header keywords
 
     Sometimes at the telescope, incorrect or incomplete information is placed
@@ -48,6 +56,8 @@ def fix_ldt_header(files: str | pathlib.Path | list, keyword: str, new_value):
         FITS keyword to update
     new_value : :obj:`~typing.Any`
         New value for the FITS keyword
+    rimas_exp : :obj:`bool`, optional
+        Fix RIMAS exposure time keywords for data prior to mid-March 2026
     """
     if isinstance(files, list):
         files = [pathlib.Path(f).resolve() for f in files]
@@ -57,12 +67,47 @@ def fix_ldt_header(files: str | pathlib.Path | list, keyword: str, new_value):
     # Build the IFC
     icl = ccdproc.ImageFileCollection(filenames=files)
 
+    if rimas_exp:
+        fix_old_rimas(icl)
+        return
+
     for hdr in icl.headers(overwrite=True):
         # Attempt to get numerical values as numbers, not strings
         try:
             hdr[keyword] = float(new_value)
         except ValueError:
             hdr[keyword] = new_value
+
+
+def fix_old_rimas(icl: ccdproc.ImageFileCollection):
+    """Fix older RIMAS exposure time keywords
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    icl : :obj:`~ccdproc.ImageFileCollection`
+        The Image File Collection object containing the files to be changed
+    """
+    for hdr in icl.headers(overwrite=True):
+
+        # Check that the file is old enough
+        mjd = astropy.time.Time(hdr["DATE"]).mjd
+        cutoff = 61114.0  # 2026-03-15T00:00:00
+        if mjd > cutoff:
+            print("ERROR: Newer RIMAS file formatl cannot update exposure times!")
+
+        # Compute the new values and update the keywords and comments
+        tot_exptime = hdr["EXPTIME"]
+        frtime = hdr["FRTIME"]
+        hdr["EXPTIME"] = (
+            np.round(tot_exptime, 2),
+            "[s] exposure time of all frames incl. pedestal",
+        )
+        hdr["EXPTIMEE"] = (
+            np.round(tot_exptime - frtime, 2),
+            "[s] effective exposure time of reduced frame",
+        )
 
 
 # Command Line Script Infrastructure (borrowed from PypeIt) ==================#
@@ -99,6 +144,11 @@ class FixLdtHeader(utils.ScriptBase):
             Command-line interpreter.
         """
 
+        # Step 1: Check for the bypass flag only
+        temp_parser = argparse.ArgumentParser(add_help=False)
+        temp_parser.add_argument("--rimas_exp", action="store_true")
+        args, _ = temp_parser.parse_known_args()
+
         parser = super().get_parser(
             description="Fix a keyword in LDT FITS headers", width=width
         )
@@ -109,15 +159,25 @@ class FixLdtHeader(utils.ScriptBase):
             nargs="+",
             help="File(s) on which to operate",
         )
+
+        # Step 2: Define full parser based on flag presence
+        if not args.rimas_exp:
+            parser.add_argument(
+                "keyword", action="store", type=str, help="FITS keyword to change"
+            )
+            parser.add_argument(
+                "new_value",
+                action="store",
+                type=str,
+                help="New header keyword value to insert",
+            )
+
         parser.add_argument(
-            "keyword", action="store", type=str, help="FITS keyword to change"
+            "--rimas_exp",
+            action="store_true",
+            help="Fix older RIMAS exposure time keywords",
         )
-        parser.add_argument(
-            "new_value",
-            action="store",
-            type=str,
-            help="New header keyword value to insert",
-        )
+
         return parser
 
     @staticmethod
@@ -127,4 +187,9 @@ class FixLdtHeader(utils.ScriptBase):
         Simple function that calls the fixer.
         """
         # Giddy up!
-        fix_ldt_header(files=args.file, keyword=args.keyword, new_value=args.new_value)
+        fix_ldt_header(
+            files=args.file,
+            keyword=getattr(args, "keyword", None),
+            new_value=getattr(args, "new_value", None),
+            rimas_exp=getattr(args, "rimas_exp", False),
+        )
