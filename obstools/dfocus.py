@@ -65,6 +65,8 @@ class FocusParams:
         Ending focus value in the focus sweep
     delta : :obj:`float`
         Step size between focus values in the sweep
+    focus_values : :obj:`~numpy.ndarray`
+        Collimator focus values from the focus log
     mnttemp : :obj:`float`
         Mount temperature from the middle image of the sweep
     binning : :obj:`str`
@@ -79,6 +81,8 @@ class FocusParams:
     start: float
     end: float
     delta: float
+    focus_values: np.ndarray
+    mid_index: int
     plot_title: str
     opt_title: str
     mnttemp: float
@@ -212,14 +216,15 @@ def dfocus(
 
     line_width_array = []
     # Loop over the CCDs
-    for ccd in focus_icl.ccds():
+    mid_focus = focus_pars.focus_values[focus_pars.mid_index]
+    for idx, ccd in enumerate(focus_icl.ccds()):
         this_lines = get_lines_from_ccd(
             ccd, thresh, trace=mid_lines.trace, verbose=False
         )
 
         # Empirical shifts in line location due to off-axis paraboloid
         #  collimator mirror
-        line_dx = -4.0 * (ccd.header["COLLFOC"] - mid_ccd.header["COLLFOC"])
+        line_dx = -4.0 * (focus_pars.focus_values[idx] - mid_focus)
 
         # Keep only the lines from this image that match the reference image
         line_widths = []
@@ -315,8 +320,9 @@ def parse_focus_log(
         20230613.0031.fits   10.00   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
         20230613.0032.fits   10.50   600/4900   27.04    1.20  Clear (C)   Cd,Ar,Hg    9.10
 
-    This function parses out the filenames of the focus images for this run,
-    largely discarding the remaining information in the focus log file.
+    This function parses out the filenames and collimator focus values of the
+    focus images for this run, largely discarding the remaining information in
+    the focus log file.
 
     Parameters
     ----------
@@ -353,15 +359,22 @@ def parse_focus_log(
         raise utils.ObstoolsError("Specified focus run not in this directory")
 
     files = []
+    collfoc_values = []
     with open(flog, "r", encoding="utf8") as file_object:
         # Discard file header
         file_object.readline()
-        # Read in the remainder of the file, grabbing just the filenames
+        # Read in the remainder of the file, grabbing filenames and focus values
         for line in file_object:
-            files.append(path.parent / line.strip().split()[0])
+            parts = line.strip().split()
+            if not parts:
+                continue
+            files.append(path.parent / parts[0])
+            collfoc_values.append(float(parts[1]))
 
     # Return the Image File Collection
-    return ccdproc.ImageFileCollection(filenames=files), flog.name[-15:]
+    focus_icl = ccdproc.ImageFileCollection(filenames=files)
+    focus_icl.focus_log_collfoc = np.array(collfoc_values)
+    return focus_icl, flog.name[-15:]
 
 
 def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
@@ -392,16 +405,37 @@ def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
     # Compute the nominal line width
     nominal_lw = 2.94 * slitasec * deveny_grangle.deveny_amag(grangle)
 
+    # Pull the collimator focus values.  Prefer the focus log because it records
+    # the commanded sequence and is more reliable when FITS headers are stale.
+    header_focus_values = np.array(focus_icl.summary["collfoc"], dtype=float)
+    log_focus_values = getattr(focus_icl, "focus_log_collfoc", None)
+    if log_focus_values is None:
+        focus_values = header_focus_values
+    else:
+        focus_values = np.array(log_focus_values, dtype=float)
+        if focus_values.size != header_focus_values.size:
+            raise utils.ObstoolsError(
+                "Focus log does not contain one ColFoc value per image"
+            )
+        if not np.allclose(focus_values, header_focus_values):
+            warnings.warn(
+                "ColFoc values in the focus log do not agree with the FITS "
+                "COLLFOC headers; using the focus log values.",
+                UserWarning,
+                stacklevel=2,
+            )
+
     # Pull the collimator focus values from the first and last files
-    focus_0 = row["collfoc"]
-    focus_1 = focus_icl.summary["collfoc"][-1]
+    focus_0 = focus_values[0]
+    focus_1 = focus_values[-1]
     # Find the delta between focus values
     delta_focus = (focus_1 - focus_0) / (len(focus_icl.files) - 1)
     if delta_focus == 0:
         raise utils.ObstoolsError("No change in focus over this set of images")
 
     # Examine the middle image
-    mid_file = pathlib.Path(focus_icl.files[len(focus_icl.files) // 2])
+    mid_index = len(focus_icl.files) // 2
+    mid_file = pathlib.Path(focus_icl.files[mid_index])
 
     find_lines_title = (
         f"{mid_file.name}   Grating: {grating}   GRANGLE: "
@@ -420,6 +454,8 @@ def parse_focus_headers(focus_icl: ccdproc.ImageFileCollection) -> FocusParams:
         start=focus_0,
         end=focus_1,
         delta=delta_focus,
+        focus_values=focus_values,
+        mid_index=mid_index,
         plot_title=find_lines_title,
         opt_title=optimal_focus_title,
         mnttemp=mnttemp,
@@ -615,7 +651,7 @@ def fit_focus_curves(
     n_frames, n_centers = width_array.shape
 
     # Create the various arrays needed (full of NaN to begin with)
-    collfoc_vals = focus_pars.start + np.arange(n_frames) * focus_pars.delta
+    collfoc_vals = focus_pars.focus_values
 
     min_linewidth = np.full((n_centers,), np.nan, dtype=float)
     min_collfoc = np.full((n_centers,), np.nan, dtype=float)
@@ -822,8 +858,7 @@ def plot_focus_curves(
 
     # Set up variables
     n_frames, n_lines = line_width_array.shape
-    focus_idx = np.arange(n_frames)
-    focus_x = focus_idx * focus_pars.delta + focus_pars.start
+    focus_x = focus_pars.focus_values
 
     # Set the plotting array
     ncols = 6
