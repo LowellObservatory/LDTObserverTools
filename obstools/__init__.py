@@ -10,7 +10,6 @@
 
 """Init File"""
 
-
 # Imports for signal and log handling
 import os
 import warnings

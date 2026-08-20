@@ -1,6 +1,6 @@
 name: obstools
 channels:
-  - default
+  - conda-forge
 dependencies:
   - python>=3.11,<3.14
   - pip
