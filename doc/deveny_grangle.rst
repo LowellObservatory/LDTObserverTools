@@ -54,41 +54,11 @@ central wavelength (:math:`\lambda_c`) in Angstroms on the spectral CCD.
 Usage
 =====
 
-The script usage can be displayed by calling the script with the
-``-h`` option:
+Run ``deveny_gui`` and select the **Grating Angle** tab. The existing
+``deveny_grangle`` command opens the same tab; ``deveny_grangle --cli``
+retains the command-line calculator.
 
-.. include:: help/deveny_grangle.rst
-
-In its default mode, the tool launches a GUI window as in
-:numref:`grangle_startup`.
-
-.. _grangle_startup:
-.. figure:: figures/deveny_grangle_startup.png
-    :class: with-shadow
-    :alt: GUI at startup
-
-    -- The ``deveny_collfocus`` GUI at startup.
-
-Select your grating from the dropdown menu (this selects the groove density),
-and enter your desired central wavelength (in angstroms).  When you click
-"Compute", the bottom half of the GUI is populated with the needed grating tilt
-value from the equation above and the computed slit demagnification value (see
-the DeVeny user manual for a brief discussion of grating physics).  See
-:numref:`grangle_values`.
-
-.. _grangle_values:
-.. figure:: figures/deveny_grangle_values.png
-    :class: with-shadow
-    :alt: GUI after clicking "Compute"
-
-    -- The ``deveny_grangle`` GUI after clicking "Compute".  The needed grating
-    tilt angle and computed slit demagnification values have been populated.
-
-There are two optional modes for running this tool:
-
-    * ``--cli``: A command-line version of this tool, which looks and functions
-      identical to the old IDL routine with the same name.
-
-    * ``--max``: The GUI will have the option to compute the central wavelength
-      from :math:`\theta_{\rm grangle}` in addition to the forward calculation
-      done in the default mode.
+Choose a grating, then enter a central wavelength from 3000 to 11000 Å and
+click **Compute tilt**. The tab shows the grating tilt and slit demagnification.
+To reverse the calculation, enter a tilt from 0 to 48 degrees and click
+**Compute wavelength**.

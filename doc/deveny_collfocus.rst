@@ -48,49 +48,13 @@ images and compute the appropriate focus position.
 Usage
 =====
 
-The script usage can be displayed by calling the script with the
-``-h`` option:
+Run ``deveny_gui`` and select the **Collimator Focus** tab. The existing
+``deveny_collfocus`` command opens the same tab.
 
-.. include:: help/deveny_collfocus.rst
+Enter the mount temperature, grating tilt, and rear filter, then click
+**Compute focus sequence**. The tab shows the estimated focus (with 0.6 mm
+uncertainty) and the initial position, step size, and number of steps for
+LOUI. When ActiveMQ is configured at the telescope, **Get values from broker**
+loads the current temperature and tilt; manual entry is always available.
 
-When the application launches, a GUI window will appear as in
-:numref:`collfocus_startup`.
-
-.. _collfocus_startup:
-.. figure:: figures/deveny_collfocus_startup.png
-    :class: with-shadow
-    :alt: GUI at startup
-
-    -- The ``deveny_collfocus`` GUI at startup.
-
-
-If the application is launched from one of the observer computers at LDT
-(``dct-obs1`` or ``dct-obs2``), it will have the option to pull the current
-values for the mount temperature and grating tilt angle from the broker.  The
-current grating angle should always available on the broker, but the TO needs
-to have the their control software running before the mount temperature will be
-available (and it may still take up to a minute or so for the appropriate
-broker topic to update).  Load the current values from the broker by pressing
-the "Get Values from Broker" button.
-
-Whether you load the value from the broker or use this tool at home, you may
-still manually enter the mount temperature and grating tilt angle in the GUI
-windows.  You will always need to select the rear filter setting you are using.
-
-When you click "Compute", the bottom half of the GUI is populated with the
-estimated focus value from the equation above and values to enter into the
-DeVeny LOUI focus sequence tab.  See :numref:`collfocus_values`.
-
-.. _collfocus_values:
-.. figure:: figures/deveny_collfocus_values.png
-    :class: with-shadow
-    :alt: GUI after clicking "Compute"
-
-    -- The ``deveny_collfocus`` GUI after clicking "Compute".  The estimated
-    focus value (with uncertainty) is printed, along with suggested values for
-    use with the LOUI Focus Sequence tab.
-
-Observers should note that the lower limit on the collimator focus motorized
-stage is 7.75 mm.  In warm weather and/or for large grating tilt angles, the
-optimal focus may lie beyond this limit.  Set the collimator focus value at
-the lower limit and press on.
+The lower limit on the collimator focus motorized stage is 7.75 mm.

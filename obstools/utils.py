@@ -32,7 +32,6 @@ import sys
 import warnings
 
 # 3rd-Party Libraries
-import darkdetect
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
@@ -44,8 +43,6 @@ from obstools.version import version as __version__
 CONFIG = resources.files("obstools") / "config"
 DATA = resources.files("obstools") / "data"
 UI = resources.files("obstools") / "UI"
-# Modify SG theme based on system Light/Dark theme
-SG_THEME = "dark gray 14" if darkdetect.isDark() else "light grey 1"
 
 
 class ObstoolsError(Exception):

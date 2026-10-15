@@ -9,7 +9,7 @@
 DeVeny Exposure Time Calculator
 ===============================
 
-Status: *Planned -- to be folded into a combined DeVeny GUI Tool*
+Status: *Tab available in the DeVeny Tools GUI; calculation model pending*
 
 Overview
 ========
@@ -20,4 +20,6 @@ Overview
 Usage
 =====
 
-Usage information will be added here once this tool enters development.
+Run ``deveny_gui`` and select the **DeVeny ETC** tab. The tab currently
+explains that instrument throughput and sky model data are needed before
+exposure estimates can be calculated.

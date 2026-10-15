@@ -6,8 +6,8 @@ This module was borrowed and updated from PyepIt
 """
 
 # Built-In Libraries
-import configparser
 import pathlib
+import tomllib
 
 # 3rd Party Libraries
 import numpy as np
@@ -24,19 +24,19 @@ def write_dependency_table(setup_file: pathlib.Path, path: pathlib.Path):
     Parameters
     ----------
     setup_file : :obj:`~pathlib.Path`
-        The name and location of the package setup configuration file
+        The name and location of pyproject.toml
     path : :obj:`~pathlib.Path`
         The path within the documentation of where to write this table
     """
     ofile = path / "dependencies_table.rst"
 
-    setup = configparser.ConfigParser()
-    setup.read(setup_file)
+    with setup_file.open("rb") as stream:
+        project = tomllib.load(stream)["project"]
 
-    user_requires = np.sort(setup["options"]["install_requires"].split("\n")[1:])
-    dev_requires = np.sort(setup["options.extras_require"]["dev"].split("\n")[1:])
-    pypeit_requires = np.sort(setup["options.extras_require"]["pypeit"].split("\n")[1:])
-    required_python = setup["options"]["python_requires"]
+    user_requires = np.sort(project["dependencies"])
+    dev_requires = np.sort(project["optional-dependencies"]["dev"])
+    pypeit_requires = np.sort(project["optional-dependencies"]["pypeit"])
+    required_python = project["requires-python"]
 
     data_table = np.empty((4, 2), dtype=object)
     data_table[0, :] = ["Python Version", f"``{required_python}``"]
@@ -55,7 +55,7 @@ def write_dependency_table(setup_file: pathlib.Path, path: pathlib.Path):
 
     lines = string_table(data_table, delimeter="rst", has_header=False)
     with open(ofile, "w", encoding="utf-8") as f_obj:
-        f_obj.write(lines)
+        f_obj.write("\n".join(line.rstrip() for line in lines.splitlines()) + "\n")
     print(f"Wrote: {ofile}")
 
 
@@ -65,7 +65,7 @@ def main():
     if not output_root.is_dir():
         raise NotADirectoryError(f"{output_root} does not exist!")
 
-    setup_file = OBSTOOLS_ROOT / "setup.cfg"
+    setup_file = OBSTOOLS_ROOT / "pyproject.toml"
     if not setup_file.is_file():
         raise FileNotFoundError(f"{setup_file} does not exist!")
     write_dependency_table(setup_file, output_root)

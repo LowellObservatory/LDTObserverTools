@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "obstools"
+dynamic = ["version"]
+description = "Collection of Observer Tools for the Lowell Discovery Telescope"
+readme = "README.rst"
+requires-python = ">=3.11,<3.14"
+license = {text = "MPL-2.0"}
+authors = [{name = "Timothy P. Ellsworth Bowers", email = "tbowers@lowell.edu"}]
+keywords = ["obstools"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Documentation :: Sphinx",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: User Interfaces",
+]
+dependencies = [
+    "setuptools", "setuptools_scm", "astropy>=6.0", "ccdproc",
+    "matplotlib", "numpy>=2.0", "scipy", "PyQt6", "requests", "tqdm",
+]
+
+[project.urls]
+Homepage = "https://github.com/LowellObservatory/LDTObserverTools"
+
+[project.optional-dependencies]
+docs = ["sphinx>=1.6", "sphinx-automodapi", "sphinx-subfigure", "sphinx_rtd_theme<4"]
+broker = ["pyyaml", "stomp.py", "xmltodict"]
+pypeit = ["pypeit[specutils]>=2.0"]
+test = ["pytest>=7.0.0", "pytest-astropy", "tox"]
+dev = ["sphinx>=1.6", "sphinx-automodapi", "sphinx-subfigure", "sphinx_rtd_theme<4", "pylint", "black", "pypeit[specutils]>=2.0", "pyyaml", "stomp.py", "xmltodict", "pytest>=7.0.0", "pytest-astropy", "tox"]
+
+[project.scripts]
+deveny_gui = "obstools.deveny_gui:DevenyGui.entry_point"
+deveny_grangle = "obstools.deveny_grangle:DevenyGrangle.entry_point"
+deveny_collfocus = "obstools.deveny_collfocus:DevenyCollfocus.entry_point"
+dfocus = "obstools.dfocus:DFocus.entry_point"
+fix_ldt_header = "obstools.fix_ldt_header:FixLdtHeader.entry_point"
+lmi_etc = "obstools.lmi_etc:LmiEtc.entry_point"
+neocp_ephem = "obstools.neocp_ephem:NeocpEphem.entry_point"
+scrub_deveny_pickup = "obstools.scrub_deveny_pickup:ScrubDevenyPickup.entry_point"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["obstools*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+obstools = ["config/README", "data/etc_filter_info.ecsv", "UI/*.ui", "UI/*.png"]
+"obstools.tests" = ["files/deveny/*.fits", "files/deveny/focus/deveny_focus.*"]
+
+[tool.setuptools_scm]
+write_to = "obstools/version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["obstools/tests"]
