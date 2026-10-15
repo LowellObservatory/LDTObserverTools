@@ -311,7 +311,12 @@ class DevenyCollfocus(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters
@@ -333,7 +338,9 @@ class DevenyCollfocus(utils.ScriptBase):
         """
 
         parser = super().get_parser(
-            description="DeVeny Collimator Focus Sequence Estimator", width=width
+            description=description or "DeVeny Collimator Focus Sequence Estimator",
+            width=width,
+            formatter=formatter,
         )
         parser.add_argument(
             "-d", "--debug", action="store_true", default=False, help=argparse.SUPPRESS

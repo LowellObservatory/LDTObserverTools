@@ -46,6 +46,10 @@ DATA = resources.files("obstools") / "data"
 SG_THEME = "dark gray 14" if darkdetect.isDark() else "light grey 1"
 
 
+class ObstoolsError(Exception):
+    """Base error class for observer tools."""
+
+
 def all_subclasses(cls):
     """
     Collect all the subclasses of the provided class.
@@ -383,6 +387,106 @@ def good_poly(x, y, order, thresh, return_full=False):
     return coeff
 
 
+def good_poly_series(
+    x: np.ndarray, y: np.ndarray, order: int, thresh: float, return_full: bool = False
+):
+    """Robust fitting of a polynomial to data
+
+    This is a python port of an IDL routine written years ago by M. Buie.
+
+    This is a multi-pass fitting routine that fits a fixed order polynomial
+    to the input data.  After each pass, the scatter of the fit relative
+    to the fitted line is computed.  Each point is examined to see if it
+    falls beyond THRESH sigma from the line.  If is does, it is removed
+    from the data and the fit is tried again.  This will make up to two
+    attempts to remove bad data.
+
+    Written in IDL 1991-1998, Marc W. Buie, Lowell Observatory
+
+    Modified: 2024-Feb-07, T. Ellsworth-Bowers, Lowell Observatory
+
+    .. note::
+
+        This helper returns coefficients in ascending power order, as used
+        by :class:`numpy.polynomial.Polynomial`. The 0.6 ``good_poly``
+        function retains its descending power order for existing callers.
+
+    Parameters
+    ----------
+    x : :obj:`~numpy.ndarray`
+        Input dataset, independant values.
+    y : :obj:`~numpy.ndarray`
+        Input dataset, dependant values.
+    order : :obj:`int`
+        Order of the polynomial fit (linear = 1).
+    thresh : :obj:`float`
+        Sigma threshold for removing outliers.
+    return_full : :obj:`bool`, optional
+        If True, also return:
+            yfit : Fitted values for y that match the input vector.
+            newx : X values from input that were considered good.
+            newy : Y values from input that were considered good.
+
+    Returns
+    -------
+    :obj:`~numpy.ndarray`
+        Array of fit parameters in ascending power order.
+    Also, optionally, the ``return_full`` bits
+    """
+    # Filter out NaNs
+    good_idx = np.logical_and(np.isfinite(x), np.isfinite(y))
+    xx = x[good_idx]
+    yy = y[good_idx]
+
+    if not xx.size:
+        return warn_and_return_zeros(return_full, x, xx, yy, order)
+
+    # Check for fewer data points than the requested polynomial order
+    if xx.size < order:
+        # Set coefficient array to zero
+        coeff = np.zeros(order + 1)
+        # Set the constant appropriately
+        coeff[0] = yy[0] if xx.size == 1 else np.mean(yy)
+        print("Not enough data to support even a non-robust polynomial fit.")
+        if return_full:
+            yfit = np.full_like(x, coeff[0])
+            return coeff, yfit, xx, yy
+        return coeff
+
+    # Iterate!
+    for iteration in range(3):
+
+        # Initial fit with all the data
+        poly = np.polynomial.Polynomial.fit(xx, yy, order)
+        yfit = poly(xx)
+        resid_like = (yy - yfit) + np.mean(yfit)
+        mean, sigma = np.mean(resid_like), np.std(resid_like)
+
+        # End the cycle after the second iteration (i.e., don't check `nbad`)
+        if iteration == 2:
+            break
+
+        # Remove all points beyond threshold sigma
+        good = np.abs(resid_like - mean) < (thresh * sigma)
+        nbad = xx.size - np.sum(good)
+        xx, yy = xx[good], yy[good]
+        if not xx.size:
+            return warn_and_return_zeros(return_full, x, xx, yy, order)
+
+        # If everything is happy, move along
+        if nbad == 0:
+            break
+        iteration += 1
+
+    # Check that the fit coefficients are finite:
+    if not np.all(np.isfinite(poly.convert().coef)):
+        return warn_and_return_zeros(return_full, x, xx, yy, order)
+
+    if return_full:
+        return poly.convert().coef, yfit, xx, yy
+    return poly.convert().coef
+
+
 def nearest_odd(x: float) -> int:
     """Find the nearest odd integer
 
@@ -534,7 +638,6 @@ class ScriptBase:
         sys.exit(cls.main(args))
 
     @classmethod
-    @property
     def name(cls):
         """
         Provide the name of the script.  By default, this is the name of the

@@ -62,7 +62,7 @@ def script_classes() -> dict:
     scr_class = np.array(list(utils.all_subclasses(utils.ScriptBase)))
     print(scr_class)
 
-    scr_name = np.array([c.name for c in scr_class])
+    scr_name = np.array([c.name() for c in scr_class])
     # Construct a dictionary with the script name and class
     srt = np.argsort(scr_name)
     return dict(zip(scr_name[srt], scr_class[srt]))

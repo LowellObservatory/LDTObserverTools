@@ -23,6 +23,7 @@ Both a CLI (direct copy of the IDL version) and GUI version are included here.
 """
 
 # Built-In Libraries
+import argparse
 import os
 import sys
 
@@ -380,7 +381,12 @@ class DevenyGrangle(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters
@@ -402,7 +408,9 @@ class DevenyGrangle(utils.ScriptBase):
         """
 
         parser = super().get_parser(
-            description="DeVeny Grating Angle Calculator", width=width
+            description=description or "DeVeny Grating Angle Calculator",
+            width=width,
+            formatter=formatter,
         )
         parser.add_argument(
             "--cli",

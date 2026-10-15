@@ -191,7 +191,12 @@ class NeocpEphem(utils.ScriptBase):
     """
 
     @classmethod
-    def get_parser(cls, width=None):
+    def get_parser(
+        cls,
+        description: str = None,
+        width: int = None,
+        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
+    ):
         """Construct the command-line argument parser.
 
         Parameters
@@ -213,7 +218,9 @@ class NeocpEphem(utils.ScriptBase):
         """
 
         parser = super().get_parser(
-            description="Generate LDT Ephemeris Files for NEOCP objects", width=width
+            description=description or "Generate LDT Ephemeris Files for NEOCP objects",
+            width=width,
+            formatter=formatter,
         )
         parser.add_argument(
             "obj_id",

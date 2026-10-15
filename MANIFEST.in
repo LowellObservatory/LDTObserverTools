@@ -1,0 +1,2 @@
+# Keep source-tree test fixtures out of source distributions.
+recursive-exclude obstools/tests/files *

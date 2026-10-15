@@ -51,7 +51,15 @@ def test_gaussian_function():
 
 
 def test_good_poly():
-    pass
+    x = np.arange(6.0)
+    y = 4.0 + 3.0 * x + 2.0 * x**2 + np.array([0.0, 0.01, -0.01, 0.01, 0.0, -0.01])
+    legacy = utils.good_poly(x, y, 2, 3.0)
+    focus = utils.good_poly_series(x, y, 2, 3.0)
+
+    # Existing callers still receive descending coefficients; focus fitting
+    # receives the ascending order expected by numpy.polynomial.Polynomial.
+    assert np.allclose(legacy, [2.0, 3.0, 4.0], atol=0.03)
+    assert np.allclose(focus, legacy[::-1], atol=1e-8)
 
 
 def test_nearest_odd():
