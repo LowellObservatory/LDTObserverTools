@@ -67,7 +67,7 @@ import scipy.fft
 import scipy.ndimage
 import scipy.optimize
 import scipy.signal
-from tqdm import tqdm
+import tqdm
 
 # Internal Imports
 from obstools import utils
@@ -531,7 +531,7 @@ def flatten_clean_fft(
     x_fft = scipy.fft.fftfreq(n_pts := flat_array.size, PIX_DWELL)
 
     # Mask out periods longer than ~500 pixels (this also removes negative freq's)
-    y_fft[x_fft < pixper_tofrom_hz(500)] = 0.0
+    y_fft = np.where(x_fft < pixper_tofrom_hz(500), 0.0, y_fft)
 
     # Compute the power spectrum, smoothed with a 10-Hz Gaussian
     pspec = scipy.ndimage.gaussian_filter1d(np.abs(y_fft) ** 2, 10)
@@ -643,6 +643,7 @@ def fit_lines(
             return orig_fitc
 
     # Checking the object model for sinusoidal pattern noise
+    ind_obj = []
     if objmodel_check:
         ind_obj = [
             i for i in range(nrow) if not np.allclose(data_array[i], np.zeros(ncol))
@@ -699,7 +700,7 @@ def fit_lines(
     )
 
     # Create a progress bar for every occasion!
-    progress_bar = tqdm(
+    progress_bar = tqdm.tqdm(
         total=(
             np.sum(refit_lines)
             if do_refit
@@ -715,11 +716,12 @@ def fit_lines(
     )
 
     # Prepare the row diagnostic plot
+    axes = None
+    tsz = 8
+    pidx = 0
     if show_diagnostic:
         # Make a diagnostic plot
         _, axes = plt.subplots(nrows=4, figsize=(9, 9))
-        tsz = 8
-        pidx = 0
 
     # Loop over the rows in the image to fit the pattern
     xpl = np.arange(ncol)
@@ -806,7 +808,7 @@ def fit_lines(
             infodict, mesg, ier = {"fvec": 0}, "Runtime Error", 0
 
         # Diagnositc Plot showing particular rows ==========>
-        if show_diagnostic and img_row in [76, 193, 285, 412]:
+        if axes is not None and img_row in [76, 193, 285, 412]:
             axis = axes[pidx]
             # Add this to the plot
             axis.plot(xpl, line, "k-", linewidth=0.75)

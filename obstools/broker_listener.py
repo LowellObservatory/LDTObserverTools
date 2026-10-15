@@ -26,10 +26,9 @@ business.
 """
 
 # Built-In Libraries
+import pathlib
 
 # 3rd-Party Libraries
-from pathlib import Path
-
 import stomp
 import yaml
 import xmltodict
@@ -51,7 +50,7 @@ class ActiveMQ_Listener:
         The location of the configuration file to read
     """
 
-    def __init__(self, config_file: str | Path) -> None:
+    def __init__(self, config_file: str | pathlib.Path) -> None:
         # Initialize
         self.mounttemp_from_broker = {}
         self.grangle_from_broker = {}

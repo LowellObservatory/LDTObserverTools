@@ -30,13 +30,12 @@ import itertools
 import pathlib
 import textwrap
 import sys
-from typing import NoReturn, Sequence
+import typing
 import warnings
 
 # 3rd-Party Libraries
 import darkdetect
-from matplotlib.axes import Axes
-import matplotlib.pyplot as plt
+import matplotlib.axes
 import numpy as np
 import scipy.optimize
 
@@ -157,7 +156,7 @@ def flatten_itertools(nested_list: list[list]) -> list:
     :obj:`list`
         The flattened list
     """
-    return [item for item in itertools.chain.from_iterable(nested_list)]
+    return list(itertools.chain.from_iterable(nested_list))
 
 
 def gaussfit(
@@ -438,7 +437,7 @@ def nearest_odd(x: float) -> int:
     return int(2 * np.floor(x / 2) + 1)
 
 
-def set_std_tickparams(axis: Axes, tsz: int | float) -> None:
+def set_std_tickparams(axis: matplotlib.axes.Axes, tsz: int | float) -> None:
     """Set standard tick parameters for a plot
 
     These are my own "standards", based on plots I used to make in IDL.
@@ -570,7 +569,7 @@ class ScriptBase:
     """
 
     @classmethod
-    def entry_point(cls) -> NoReturn:
+    def entry_point(cls) -> typing.NoReturn:
         """
         Defines the main script entry point.
         """
@@ -586,7 +585,9 @@ class ScriptBase:
         return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
-    def parse_args(cls, options: Sequence[str] | None = None) -> argparse.Namespace:
+    def parse_args(
+        cls, options: typing.Sequence[str] | None = None
+    ) -> argparse.Namespace:
         """
         Parse the command-line arguments.
         """
@@ -596,17 +597,18 @@ class ScriptBase:
 
     @staticmethod
     def _fill_parser_cwd(parser: argparse.ArgumentParser) -> None:
-        """
-        Replace the default of any action that is exactly ``'current working
-        directory'`` with the value of ``os.getcwd()``.
+        """Resolve current-directory defaults on parser actions.
 
-        The ``parser`` is edited *in place*.
+        Replace any default equal to ``'current working directory'`` with
+        :meth:`pathlib.Path.cwd`. The parser is modified in place.
 
-        Args:
-            parser (:obj:`~argparse.ArgumentParser`):
-                The argument parsing object to edit.
+        Parameters
+        ----------
+        parser : argparse.ArgumentParser
+            Parser whose action defaults should be resolved.
         """
-        for action in parser._actions:
+        # argparse has no public iterator over both positional and optional actions.
+        for action in parser._actions:  # pylint: disable=protected-access
             if action.default == "current working directory":
                 action.default = pathlib.Path.cwd()
 
