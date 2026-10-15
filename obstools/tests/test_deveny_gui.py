@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: MPL-2.0
 """Focused checks for the combined DeVeny interface."""
 
+import os
+import sys
+
+if sys.platform.startswith("linux"):
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
 import pytest
 from PyQt6 import QtWidgets
 

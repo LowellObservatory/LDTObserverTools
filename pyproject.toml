@@ -59,6 +59,7 @@ namespaces = false
 
 [tool.setuptools.package-data]
 obstools = ["config/README", "data/etc_filter_info.ecsv", "UI/*.ui", "UI/*.png"]
+"obstools.tests" = ["files/deveny/*.fits", "files/deveny/focus/deveny_focus.*"]
 
 [tool.setuptools_scm]
 write_to = "obstools/version.py"
