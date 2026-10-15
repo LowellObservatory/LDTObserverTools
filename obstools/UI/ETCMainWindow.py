@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 # Form implementation generated from reading ui file 'ETCMainWindow.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0

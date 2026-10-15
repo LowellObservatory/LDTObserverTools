@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -25,6 +26,7 @@ business.
 """
 
 # Built-In Libraries
+import pathlib
 
 # 3rd-Party Libraries
 import stomp
@@ -48,7 +50,7 @@ class ActiveMQ_Listener:
         The location of the configuration file to read
     """
 
-    def __init__(self, config_file):
+    def __init__(self, config_file: str | pathlib.Path) -> None:
         # Initialize
         self.mounttemp_from_broker = {}
         self.grangle_from_broker = {}
@@ -100,15 +102,29 @@ class ActiveMQ_Listener:
             message are placed.
         """
 
-        def __init__(self, parent):
+        def __init__(self, parent: "ActiveMQ_Listener") -> None:
             # Set parent for communication upward
             self.parent = parent
 
-        def on_error(self, message):
+        def on_error(self, message: str) -> None:
+            """Report a broker error.
+
+            Parameters
+            ----------
+            message : str
+                Error text sent by the broker.
+            """
             # TODO: This really needs to do something substantial
             print(f'received an error "{message}"')
 
-        def on_message(self, message):
+        def on_message(self, message: "stomp.utils.Frame") -> None:
+            """Place parsed telemetry from a broker message on the parent.
+
+            Parameters
+            ----------
+            message : stomp.utils.Frame
+                Broker message containing a telemetry destination and XML body.
+            """
             # When a message is recieved, parse out and place into parent attributes
 
             # Get the topic
@@ -122,7 +138,7 @@ class ActiveMQ_Listener:
                 status = xmltodict.parse(message.body)["DevenyTelemetry"]
                 self.parent.grangle_from_broker = self.parent.parse_deveny(status)
 
-    def parse_deveny(self, status):
+    def parse_deveny(self, status: dict | None) -> dict:
         """Parse an XMLTODICT status message
 
         Parameters

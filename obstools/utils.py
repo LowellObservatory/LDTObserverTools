@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -29,11 +30,12 @@ import itertools
 import pathlib
 import textwrap
 import sys
+import typing
 import warnings
 
 # 3rd-Party Libraries
 import darkdetect
-import matplotlib.pyplot as plt
+import matplotlib.axes
 import numpy as np
 import scipy.optimize
 
@@ -52,9 +54,8 @@ class ObstoolsError(Exception):
     """Base error class for this package"""
 
 
-def all_subclasses(cls):
-    """
-    Collect all the subclasses of the provided class.
+def all_subclasses(cls: type) -> set[type]:
+    """Collect all descendants of a class.
 
     .. note::
 
@@ -66,36 +67,38 @@ def all_subclasses(cls):
     Thanks to:
     https://stackoverflow.com/questions/3862310/how-to-find-all-the-subclasses-of-a-class-given-its-name
 
-    Args:
-        cls (object):
-            The base class
+    Parameters
+    ----------
+    cls : type
+        Base class to inspect.
 
-    Returns:
-        :obj:`set`: The unique set of derived classes, including any
-        intermediate base classes in the inheritance thread.
+    Returns
+    -------
+    set[type]
+        Derived classes, including intermediate base classes.
     """
     return set(cls.__subclasses__()).union(
         [s for c in cls.__subclasses__() for s in all_subclasses(c)]
     )
 
 
-def check_float(potential_float) -> bool:
-    """Simple funtion to check whether something is (convertable to) a float
+def check_float(potential_float: object) -> bool:
+    """Check whether a value can be converted to a float.
 
     Parameters
     ----------
-    potential_float : :obj:`~typing.Any`
-        Value to check for float
+    potential_float : object
+        Value to test.
 
     Returns
     -------
-    :obj:`bool`
-        Whether it am or it ain't a :obj:`float`.
+    bool
+        Whether ``float(potential_float)`` succeeds.
     """
     try:
         float(potential_float)
         return True
-    except ValueError:
+    except (TypeError, ValueError):
         return False
 
 
@@ -153,7 +156,7 @@ def flatten_itertools(nested_list: list[list]) -> list:
     :obj:`list`
         The flattened list
     """
-    return [item for item in itertools.chain.from_iterable(nested_list)]
+    return list(itertools.chain.from_iterable(nested_list))
 
 
 def gaussfit(
@@ -163,7 +166,7 @@ def gaussfit(
     estimates: np.ndarray = None,
     bounds: np.ndarray = None,
     debug: bool = False,
-):
+) -> tuple[np.ndarray, np.ndarray]:
     """Function similar to IDL's GAUSSFIT
 
     Big caveat: as implemented, can only estimate the initial parameters for
@@ -307,6 +310,10 @@ def gaussian_function(
 
 def good_poly(
     x: np.ndarray, y: np.ndarray, order: int, thresh: float, return_full: bool = False
+) -> (
+    np.ndarray
+    | list[int]
+    | tuple[np.ndarray | list[int], np.ndarray | list[int], np.ndarray, np.ndarray]
 ):
     """Robust fitting of a polynomial to data
 
@@ -329,11 +336,9 @@ def good_poly(
         :mod:`numpy.polynomial` package rather than the older
         :class:`numpy.poly1d` class (including :func:`numpy.polyfit`).
         Operationally, this means the coefficients returned by this function
-        are in *reverse order* from previously, meaning they are in
-        *descending* order of power rathar than ascending.  For instance, a
-        polynomial of form :math:`y = ax^2 + bx + c` would have coefficients
-        returned in order ``[c, b, a]`` rather than the older
-        ``[a, b, c] = [c_2, c_1, c_0]``.
+        are in *ascending* order of power, with the constant term first. For
+        instance, a polynomial of form :math:`y = ax^2 + bx + c` returns
+        ``[c, b, a]`` rather than the older ``[a, b, c]`` order.
 
     Parameters
     ----------
@@ -386,6 +391,9 @@ def good_poly(
         resid_like = (yy - yfit) + np.mean(yfit)
         mean, sigma = np.mean(resid_like), np.std(resid_like)
 
+        if sigma == 0:
+            break
+
         # End the cycle after the second iteration (i.e., don't check `nbad`)
         if iteration == 2:
             break
@@ -429,7 +437,7 @@ def nearest_odd(x: float) -> int:
     return int(2 * np.floor(x / 2) + 1)
 
 
-def set_std_tickparams(axis: plt.axis, tsz: int | float):
+def set_std_tickparams(axis: matplotlib.axes.Axes, tsz: int | float) -> None:
     """Set standard tick parameters for a plot
 
     These are my own "standards", based on plots I used to make in IDL.
@@ -464,7 +472,7 @@ def sinusoid(
 ) -> np.ndarray:
     """Return a basic sinusoid (for use with :func:`scipy.optimize.curve_fit`)
 
-    _extended_summary_
+    The result includes a constant baseline and optional polynomial terms.
 
     Parameters
     ----------
@@ -515,7 +523,7 @@ def warn_and_return_zeros(
     yy: np.ndarray,
     order: int,
     raise_warn: bool = False,
-) -> np.ndarray:
+) -> list[int] | tuple[list[int], list[int], np.ndarray, np.ndarray]:
     """Set warning and return zeroes from :func:`good_poly`
 
     This function is a DRY.  Since this block is used several times in
@@ -561,7 +569,7 @@ class ScriptBase:
     """
 
     @classmethod
-    def entry_point(cls):
+    def entry_point(cls) -> typing.NoReturn:
         """
         Defines the main script entry point.
         """
@@ -569,7 +577,7 @@ class ScriptBase:
         sys.exit(cls.main(args))
 
     @classmethod
-    def name(cls):
+    def name(cls) -> str:
         """
         Provide the name of the script.  By default, this is the name of the
         module.
@@ -577,7 +585,9 @@ class ScriptBase:
         return f"{cls.__module__.rsplit('.', maxsplit=1)[-1]}"
 
     @classmethod
-    def parse_args(cls, options=None):
+    def parse_args(
+        cls, options: typing.Sequence[str] | None = None
+    ) -> argparse.Namespace:
         """
         Parse the command-line arguments.
         """
@@ -586,24 +596,25 @@ class ScriptBase:
         return parser.parse_args(options)
 
     @staticmethod
-    def _fill_parser_cwd(parser: argparse.ArgumentParser):
-        """
-        Replace the default of any action that is exactly ``'current working
-        directory'`` with the value of ``os.getcwd()``.
+    def _fill_parser_cwd(parser: argparse.ArgumentParser) -> None:
+        """Resolve current-directory defaults on parser actions.
 
-        The ``parser`` is edited *in place*.
+        Replace any default equal to ``'current working directory'`` with
+        :meth:`pathlib.Path.cwd`. The parser is modified in place.
 
-        Args:
-            parser (:obj:`~argparse.ArgumentParser`):
-                The argument parsing object to edit.
+        Parameters
+        ----------
+        parser : argparse.ArgumentParser
+            Parser whose action defaults should be resolved.
         """
-        for action in parser._actions:
+        # argparse has no public iterator over both positional and optional actions.
+        for action in parser._actions:  # pylint: disable=protected-access
             if action.default == "current working directory":
                 action.default = pathlib.Path.cwd()
 
     # Base classes should override this
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """
         Execute the script.
         """
@@ -611,10 +622,12 @@ class ScriptBase:
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """
         Construct the command-line argument parser.
 
@@ -726,7 +739,7 @@ class SmartFormatter(argparse.HelpFormatter):
                                    fit_wv_min_max = 9000.,9500.
     """
 
-    def _split_lines(self, text, width):
+    def _split_lines(self, text: str, width: int) -> list[str]:
         """
         Split the provided text into width constrained lines.
 

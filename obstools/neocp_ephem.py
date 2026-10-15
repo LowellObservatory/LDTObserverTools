@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -103,30 +104,31 @@ import requests
 from obstools import utils
 
 
-def neocp_ephem(neocp_id):
+def neocp_ephem(neocp_id: str) -> None:
     """NEO Confirmation Page Ephemeris Generator
 
-    _extended_summary_
+    Query the current UTC day's ephemeris and write an LDT ephemeris file.
 
     Parameters
     ----------
-    neocp_id : :obj:`~typing.Any`
-        The NEOCP ID for the object
+    neocp_id : str
+        The NEOCP designation for the object.
     """
-    now = datetime.datetime.fromisoformat("2022-11-23 22:00:00")
+    now = datetime.datetime.now(datetime.timezone.utc)
     now_p1d = now + datetime.timedelta(days=1)
 
     # Build the API query
     query = {
         "tdes": neocp_id,
         "obs-code": "G37",
-        "eph-start": now.isoformat("T", timespec="seconds"),
-        "eph-stop": now_p1d.isoformat("T", timespec="seconds"),
+        "eph-start": now.strftime("%Y-%m-%dT%H:%M:%S"),
+        "eph-stop": now_p1d.strftime("%Y-%m-%dT%H:%M:%S"),
         "eph-step": "1h",
         # "orbits": "true"
     }
 
     r = requests.get("https://ssd-api.jpl.nasa.gov/scout.api", params=query, timeout=10)
+    r.raise_for_status()
 
     print(r.url)
 
@@ -192,10 +194,12 @@ class NeocpEphem(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -228,7 +232,7 @@ class NeocpEphem(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that calls the main driver function.

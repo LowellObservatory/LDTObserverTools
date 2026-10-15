@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -43,7 +44,7 @@ COLL = np.deg2rad(10.00)  # DeVeny Optical Angle -- Collimator-to-Grating
 TGOFFSET = 0.0  # Mechanical Offset in the grating angle
 
 
-def deveny_grangle_cli():
+def deveny_grangle_cli() -> None:
     """Compute the desired grating angle given grating and central wavelength
 
     Command line version of ``deveny_grangle``, direct port of the IDL version.
@@ -67,7 +68,7 @@ def deveny_grangle_cli():
     )
 
 
-def deveny_grangle_gui(max_gui: bool = False):
+def deveny_grangle_gui(max_gui: bool = False) -> None:
     r"""Main Driver for the DeVeny Grangle GUI
 
     Compute the desired grating angle given grating and central wavelength
@@ -246,7 +247,7 @@ def deveny_grangle_gui(max_gui: bool = False):
 
 
 # Computation Utility Functions ==============================================#
-def compute_grangle(lpmm: float, wavelen: float):
+def compute_grangle(lpmm: float, wavelen: float) -> tuple[float, float]:
     """Compute the needed grating angle
 
     Given the grating's line density and the desired central wavelength,
@@ -383,10 +384,12 @@ class DevenyGrangle(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -423,7 +426,7 @@ class DevenyGrangle(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that calls the appropriate driver function.

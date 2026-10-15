@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -41,7 +42,7 @@ def fix_ldt_header(
     keyword: str,
     new_value: typing.Any,
     rimas_exp: bool = False,
-):
+) -> None:
     """Change FITS header keywords
 
     Sometimes at the telescope, incorrect or incomplete information is placed
@@ -79,10 +80,10 @@ def fix_ldt_header(
             hdr[keyword] = new_value
 
 
-def fix_old_rimas(icl: ccdproc.ImageFileCollection):
+def fix_old_rimas(icl: ccdproc.ImageFileCollection) -> None:
     """Fix older RIMAS exposure time keywords
 
-    _extended_summary_
+    Update older files with the effective exposure time excluding the pedestal.
 
     Parameters
     ----------
@@ -95,7 +96,8 @@ def fix_old_rimas(icl: ccdproc.ImageFileCollection):
         mjd = astropy.time.Time(hdr["DATE"]).mjd
         cutoff = 61114.0  # 2026-03-15T00:00:00
         if mjd > cutoff:
-            print("ERROR: Newer RIMAS file formatl cannot update exposure times!")
+            print("ERROR: Newer RIMAS file format; cannot update exposure times!")
+            continue
 
         # Compute the new values and update the keywords and comments
         tot_exptime = hdr["EXPTIME"]
@@ -120,10 +122,12 @@ class FixLdtHeader(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -181,7 +185,7 @@ class FixLdtHeader(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that calls the fixer.
