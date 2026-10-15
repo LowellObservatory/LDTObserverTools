@@ -74,20 +74,19 @@ __version__ = version
 
 
 # Build the list of script classes
-def script_classes() -> dict:
+def script_classes() -> dict[str, type]:
     """Build the list of script classes in the package
 
     Returns
     -------
-    :obj:`dict`
-        Dictionary of {name:class} for all script classes
+    dict[str, type]
+        Dictionary mapping script names to their classes, sorted by name.
     """
-    import numpy as np
     from obstools import utils
 
-    # Recursively collect all subclasses
-    scr_class = np.array(list(utils.all_subclasses(utils.ScriptBase)))
-    scr_name = np.array([c.name() for c in scr_class])
-    # Construct a dictionary with the script name and class
-    srt = np.argsort(scr_name)
-    return dict(zip(scr_name[srt], scr_class[srt]))
+    return dict(
+        sorted(
+            ((cls.name(), cls) for cls in utils.all_subclasses(utils.ScriptBase)),
+            key=lambda item: item[0],
+        )
+    )

@@ -2,17 +2,12 @@
 """
 Construct an rst table with the dependencies
 
-This module was borrowed and updated from PyepIt
-    https://github.com/pypeit/PypeIt/
+The table is generated from the package metadata without optional dependencies.
 """
 
 # Built-In Libraries
 import pathlib
 import tomllib
-
-# 3rd Party Libraries
-import numpy as np
-from pypeit.utils import string_table
 
 # The repository root is up two levels from here
 # NOTE: This is a hack needed for this script to run on GH pages.
@@ -34,29 +29,28 @@ def write_dependency_table(pyproject_file: pathlib.Path, path: pathlib.Path) -> 
     with pyproject_file.open("rb") as stream:
         project = tomllib.load(stream)["project"]
 
-    user_requires = np.sort(project["dependencies"])
-    dev_requires = np.sort(project["optional-dependencies"]["dev"])
-    pypeit_requires = np.sort(project["optional-dependencies"]["pypeit"])
+    user_requires = sorted(project["dependencies"])
+    dev_requires = sorted(project["optional-dependencies"]["dev"])
+    pypeit_requires = sorted(project["optional-dependencies"]["pypeit"])
     required_python = project["requires-python"]
 
-    data_table = np.empty((4, 2), dtype=object)
-    data_table[0, :] = ["Python Version", f"``{required_python}``"]
-    data_table[1, :] = [
-        "Required for users",
-        ", ".join([f"``{u}``" for u in user_requires]),
-    ]
-    data_table[2, :] = [
-        "Optional ``pypeit`` requirements",
-        ", ".join([f"``{u}``" for u in pypeit_requires]),
-    ]
-    data_table[3, :] = [
-        "Required for developers",
-        ", ".join([f"``{d}``" for d in dev_requires]),
+    rows = [
+        ("Python Version", f"``{required_python}``"),
+        ("Required for users", ", ".join(f"``{item}``" for item in user_requires)),
+        (
+            "Optional ``pypeit`` requirements",
+            ", ".join(f"``{item}``" for item in pypeit_requires),
+        ),
+        ("Required for developers", ", ".join(f"``{item}``" for item in dev_requires)),
     ]
 
-    lines = string_table(data_table, delimeter="rst", has_header=False)
-    with open(ofile, "w", encoding="utf-8") as f_obj:
-        f_obj.write("\n".join(line.rstrip() for line in lines.splitlines()) + "\n")
+    label_width = max(len(label) for label, _ in rows)
+    value_width = max(len(value) for _, value in rows)
+    separator = f"{'=' * label_width}  {'=' * value_width}"
+    lines = [separator]
+    lines.extend(f"{label:<{label_width}}  {value}" for label, value in rows)
+    lines.append(separator)
+    ofile.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote: {ofile}")
 
 

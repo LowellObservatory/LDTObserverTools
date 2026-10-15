@@ -48,6 +48,7 @@ for each row of the image.
 import argparse
 import datetime
 import pathlib
+from typing import TYPE_CHECKING
 import warnings
 
 # 3rd Party Libraries
@@ -61,8 +62,6 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit import log
-import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
 import scipy.optimize
@@ -71,6 +70,9 @@ import tqdm
 
 # Internal Imports
 from obstools import utils
+
+if TYPE_CHECKING:
+    import pypeit.spec2dobj
 
 # Mean pixel readout time (7.25 µs)
 PIX_DWELL = 7.25e-6
@@ -83,7 +85,7 @@ warnings.simplefilter("ignore", astropy.io.fits.verify.VerifyWarning)
 # Narrative Functions ========================================================#
 def iterative_pypeit_clean(
     filename: pathlib.Path,
-    proc_dir: pathlib.Path = None,
+    proc_dir: pathlib.Path | None = None,
     overwrite_raw: bool = False,
     diagnostics: bool = False,
     no_refit: bool = False,
@@ -114,9 +116,23 @@ def iterative_pypeit_clean(
         Do not refit lines with "bad" RMS  (Default: False)
     extra_graphics : :obj:`bool`, optional
         Produce extra graphics formats for documentation?  (Default: False)
-    rereun_fft : :obj:`bool`, optional
+    rerun_fft : :obj:`bool`, optional
         Pass the fitted pattern through the FFT analysis?  (Default: False)
+
+    Raises
+    ------
+    ImportError
+        If the optional PypeIt dependency is not installed.
     """
+    try:
+        from pypeit import log
+        import pypeit.spec2dobj
+    except ImportError as exc:
+        raise ImportError(
+            "scrub_deveny_pickup requires a compatible PypeIt release; "
+            "install the obstools[pypeit] extra"
+        ) from exc
+
     # Print a welcome statement
     print(f"\nProcessing frame {filename.name}")
 
@@ -124,7 +140,11 @@ def iterative_pypeit_clean(
     #   comprehension searches in each possible 'instrument setup' directory
     #   Check that the `spec2d` file actually exists and print a helpful
     #   message if it doesn't.
-    pyp_dir = sorted(proc_dir.resolve().glob("ldt_deveny_?"))
+    pyp_dir = sorted(
+        (pathlib.Path.cwd() if proc_dir is None else proc_dir)
+        .resolve()
+        .glob("ldt_deveny_?")
+    )
 
     try:
         # Look for the spec2d file
@@ -1432,7 +1452,7 @@ def make_sinusoid_fit_plots(
 
 def make_image_comparison_plots(
     filename: pathlib.Path,
-    spec2d: pypeit.spec2dobj.Spec2DObj,
+    spec2d: "pypeit.spec2dobj.Spec2DObj",
     resid: np.ndarray,
     pattern: np.ndarray,
     qa_dir: pathlib.Path = None,
