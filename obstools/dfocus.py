@@ -30,6 +30,7 @@ import argparse
 import dataclasses
 import os
 import pathlib
+import shutil
 import sys
 import warnings
 
@@ -184,7 +185,7 @@ def dfocus(
         Make example figures for online documentation?  (Default: False)
     """
     # Make a pretty title for the output of the routine
-    n_cols = (os.get_terminal_size()).columns
+    n_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
     print("=" * n_cols)
     print("  DeVeny Collimator Focus Calculator")
 

@@ -109,6 +109,11 @@ The script usage can be displayed by calling the script with the
 
 .. include:: help/dfocus.rst
 
+The **Focus Analysis** tab of ``deveny_gui`` lets you choose a focus data
+directory, a focus log (or ``last``), and a line threshold. It runs the same
+analysis, shows its output, and saves the PDF plots in the selected directory.
+The ``dfocus`` command remains available.
+
 This command-line tool must be invoked from the ``/deveny/<UTDATE>/focus``
 directory on the observer machine (``dct-obs1`` / ``dct-obs2``) so that it can
 find the focus index files created by the DeVeny LOUI.  To run the tool on the

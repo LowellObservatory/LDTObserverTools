@@ -24,13 +24,10 @@ Both a CLI (direct copy of the IDL version) and GUI version are included here.
 
 # Built-In Libraries
 import argparse
-import os
-import sys
 
 # 3rd-Party Libraries
 import numpy as np
 import scipy.optimize
-import PySimpleGUI as sg
 
 # Local Libraries
 from obstools import utils
@@ -65,184 +62,6 @@ def deveny_grangle_cli():
         " Slit demagnification (pixels/arcsec, 0.34 arcsec/pixel): "
         + f"{PIXSCALE*amag:.2f}\n"
     )
-
-
-def deveny_grangle_gui(max_gui: bool = False):
-    r"""Main Driver for the DeVeny Grangle GUI
-
-    Compute the desired grating angle given grating and central wavelength
-
-    GUI version of ``deveny_grangle`` built using ``PySimpleGUI``.  The GUI
-    includes a drop-down menu for available gratings, and checks for a requested
-    wavelength between 3000A and 11,000A.  This interface uses the same
-    subroutines as the CLI version and produces the same results.
-
-    This version optionally allows for the calculation of the central wavelength
-    given a grating angle
-
-    Parameters
-    ----------
-    max_gui : :obj:`bool`, optional
-        Display the MAX GUI (forward and backward calculations)  (Default: False)
-    """
-    # Define the gratings for the drop-down menu
-    gratings = [
-        "DV1 - 150 g/mm, 5000 Å",
-        "DV2 - 300 g/mm, 4000 Å",
-        "DV3 - 300 g/mm, 6750 Å",
-        "DV4 - 400 g/mm, 8500 Å",
-        "DV5 - 500 g/mm, 5500 Å",
-        "DV6 - 600 g/mm, 4900 Å",
-        "DV7 - 600 g/mm, 6750 Å",
-        "DV8 - 831 g/mm, 8000 Å",
-        "DV9 - 1200 g/mm, 5000 Å",
-        "DV10 - 2160 g/mm, 5000 Å",
-    ]
-
-    # Define the color scheme for the GUI
-    sg.theme(utils.SG_THEME)
-
-    # Define the window layout
-    row1 = [
-        sg.Text("Select Grating:"),
-        sg.Drop(
-            values=(gratings),
-            auto_size_text=True,
-            default_value=gratings[1],
-            key="Grat",
-        ),
-    ]
-    row2 = [
-        sg.Text("Enter Central Wavelength:"),
-        sg.Input(key="-WAVEIN-", size=(6, 1)),
-        sg.Text("Å"),
-    ]
-    if max_gui:
-        row8 = [
-            sg.Text("Enter Grating Tilt:"),
-            sg.Input(key="-TILTIN-", size=(6, 1)),
-            sg.Text("º"),
-        ]
-        row3 = [
-            sg.Button("Compute Tilt"),
-            sg.Button("Compute Wavelength"),
-            sg.Button("Done"),
-        ]
-    else:
-        row3 = [sg.Button("Compute"), sg.Button("Done")]
-    row4 = [sg.Text("             Grating: "), sg.Text(size=(20, 1), key="-GRATOUT-")]
-    row5 = [sg.Text("  Central Wavelength: "), sg.Text(size=(20, 1), key="-WAVEOUT-")]
-    row6 = [sg.Text("DeVeny Grating Tilt = "), sg.Text(size=(20, 1), key="-TILTOUT-")]
-    row7 = [
-        sg.Text('Slit demagnification (0.34"/pixel): '),
-        sg.Text(size=(15, 1), key="-DEMAGOUT-"),
-    ]
-
-    # Define the rows based on which GUI we're making
-    rows = (
-        [row1, row2, row8, row3, row4, row5, row6, row7]
-        if max_gui
-        else [row1, row2, row3, row4, row5, row6, row7]
-    )
-
-    # Make the pysimplegui "Error performing wm_overrideredirect" go away
-    old_stdout = sys.stdout
-    with open(os.devnull, "w", encoding="utf8") as f_null:
-        sys.stdout = f_null
-
-        # Create the Window
-        window = sg.Window(
-            "DeVeny Grating Angle Calculator",
-            rows,
-            location=(10, 10),
-            finalize=True,
-            element_justification="center",
-            font="Helvetica 18",
-        )
-
-    # Return the STDOUT to the command line
-    sys.stdout = old_stdout
-
-    # Wait for events
-    while True:
-        event, values = window.read()
-        if event in [sg.WIN_CLOSED, "Done"]:
-            break
-
-        if event in ["Compute", "Compute Tilt"]:
-            # Check for non-numeric entries for Central Wavelength
-            if not values["-WAVEIN-"].isnumeric():
-                window["-GRATOUT-"].update("")
-                window["-WAVEOUT-"].update("Please Enter a Number")
-                window["-TILTOUT-"].update("")
-                window["-DEMAGOUT-"].update("")
-                if max_gui:
-                    window["-TILTIN-"].update("")
-                # Wait for next event
-                continue
-
-            # Convert wavelen to float, and check for valid range
-            wavelen = float(values["-WAVEIN-"])
-            if wavelen < 3000 or wavelen > 11000:
-                window["-GRATOUT-"].update("")
-                window["-WAVEOUT-"].update("Wavelength out of range")
-                window["-TILTOUT-"].update("")
-                window["-DEMAGOUT-"].update("")
-                if max_gui:
-                    window["-TILTIN-"].update("")
-                # Wait for next event
-                continue
-
-            # Compute the grating angle and anamorphic demagnification
-            gpmm = float(values["Grat"].split(" - ")[1].split(" g/mm")[0])
-            grangle, amag = compute_grangle(gpmm, wavelen)
-
-            # Update the window with the calculated values
-            window["-GRATOUT-"].update(values["Grat"])
-            window["-WAVEOUT-"].update(f"{values['-WAVEIN-']} Å")
-            window["-TILTOUT-"].update(f"{grangle+TGOFFSET:.2f}º")
-            window["-DEMAGOUT-"].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
-            if max_gui:
-                window["-TILTIN-"].update(f"{grangle+TGOFFSET:.2f}")
-
-        elif event == "Compute Wavelength":
-            # Check for non-numeric entries for Grating Tilt
-            if not utils.check_float(values["-TILTIN-"]):
-                window["-GRATOUT-"].update("")
-                window["-WAVEOUT-"].update("")
-                window["-TILTOUT-"].update("Please Enter a Number")
-                window["-DEMAGOUT-"].update("")
-                window["-WAVEIN-"].update("")
-                # Wait for next event
-                continue
-
-            # Convert wavelen to float, and check for valid range
-            tilt = float(values["-TILTIN-"])
-            if tilt < 0 or tilt > 48:
-                window["-GRATOUT-"].update("")
-                window["-WAVEOUT-"].update("")
-                window["-TILTOUT-"].update("Tilt angle out of range")
-                window["-DEMAGOUT-"].update("")
-                window["-WAVEIN-"].update("")
-                # Wait for next event
-                continue
-
-            # Compute the grating angle and anamorphic demagnification
-            gpmm = float(values["Grat"].split(" - ")[1].split(" g/mm")[0])
-            wavelen = lambda_at_angle(tilt, gpmm)
-            amag = deveny_amag(tilt)
-
-            # Update the window with the calculated values
-            window["-GRATOUT-"].update(values["Grat"])
-            window["-WAVEOUT-"].update(f"{wavelen:.0f} Å")
-            window["-TILTOUT-"].update(f"{tilt+TGOFFSET:.2f}º")
-            window["-DEMAGOUT-"].update(f"{PIXSCALE*amag:.2f} pixels/arcsec")
-            window["-WAVEIN-"].update(f"{wavelen:.0f}")
-        else:
-            print("Something funny happened... should never print.")
-
-    # All done, close window
-    window.close()
 
 
 # Computation Utility Functions ==============================================#
@@ -415,11 +234,6 @@ class DevenyGrangle(utils.ScriptBase):
             action="store_true",
             help="Use the command-line version of this tool",
         )
-        parser.add_argument(
-            "--max",
-            action="store_true",
-            help="Use the MAX version of the GUI (compute wavelength from angle)",
-        )
         return parser
 
     @staticmethod
@@ -432,4 +246,6 @@ class DevenyGrangle(utils.ScriptBase):
         if args.cli:
             deveny_grangle_cli()
         else:
-            deveny_grangle_gui(max_gui=args.max)
+            from obstools.deveny_gui import run_gui
+
+            run_gui(tab=0)
