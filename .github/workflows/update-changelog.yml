@@ -1,4 +1,4 @@
-# This workflow takes the GitHub release notes an updates the changelog on the
+# This workflow takes the GitHub release notes and updates the changelog on the
 # main branch with the body of the release notes, thereby keeping a log in
 # the git repo of the changes.
 
@@ -11,8 +11,7 @@ on:
 jobs:
   update:
     permissions:
-      contents: read
-      pull-requests: write
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
