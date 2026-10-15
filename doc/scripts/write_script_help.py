@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 """
 Dynamically build the rst documentation with the script help text.
 
@@ -6,7 +7,6 @@ This module was borrowed and updated from PyepIt
 """
 
 # Built-In Libraries
-import os
 import pathlib
 import time
 
@@ -23,20 +23,22 @@ OBSTOOLS_ROOT = pathlib.Path(__file__).parents[2]
 # -----------------------------------------------------------------------------
 
 
-def write_help(script_cls: utils.ScriptBase, opath: pathlib.Path, width: int = 80):
+def write_help(
+    script_cls: type[utils.ScriptBase], opath: pathlib.Path, width: int = 80
+) -> None:
     """Write the ``.rst`` help files for all scripts
 
     Parameters
     ----------
-    script_cls : :class:`~pypeit.scripts.scriptbase.ScriptBase`
-        The :class:`~pypeit.scripts.scriptbase.ScriptBase` subclass
-    opath : :obj:`~pathlib.Path`
-        The path into which to place the resulting ``.rst`` file
-    width : :obj:`int`, optional
-        The width of the help text before wrapping  (Default: 80)
+    script_cls : type[utils.ScriptBase]
+        Script class whose parser supplies the help text.
+    opath : pathlib.Path
+        Directory in which to write the help file.
+    width : int, optional
+        Maximum width of formatted help text, by default 80.
     """
     exe = script_cls.name()
-    ofile = os.path.join(opath, f"{exe}.rst")
+    ofile = opath / f"{exe}.rst"
     lines = [".. code-block:: console", ""]
     lines += [f"    $ {exe} -h"]
     parser = script_cls.get_parser(width=width)

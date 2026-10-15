@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -88,7 +89,7 @@ def iterative_pypeit_clean(
     no_refit: bool = False,
     extra_graphics: bool = False,
     rerun_fft: bool = False,
-):
+) -> None:
     """Iteratively use PypeIt to clean pickup noise
 
     As part of the data-reduction process, PypeIt fits and extracts images as
@@ -340,7 +341,7 @@ def clean_pickup(
     use_hann: bool = False,
     sine_plot: bool = True,
     fft_plot: bool = False,
-):
+) -> None:
     """Clean the Pickup Noise
 
     .. warning::
@@ -971,7 +972,7 @@ def package_into_fits(
     fit_coeffs: dict,
     pixel_period: float,
     overwrite_raw: bool = False,
-):
+) -> None:
     """Package the cleaned data into a FITS file
 
     Package everything into a multiextension FITS file:
@@ -1119,7 +1120,7 @@ def create_fft_plot(
     peak_freq: float,
     qa_dir: pathlib.Path = None,
     extra_graphics: bool = False,
-):
+) -> None:
     """Create the FFT analysis plot
 
     This function creates a multipanel plot saved as ``fft_analysis.pdf`` in
@@ -1301,7 +1302,7 @@ def make_sinusoid_fit_plots(
     extra_graphics: bool = False,
     fixed_fitc: astropy.table.Table = None,
     smoothing: dict = None,
-):
+) -> None:
     """Create a set of diagnostic plots from the set of sinusoid fits
 
     This function creates a multipanel plot saved as ``sinusoid_fits.pdf`` in
@@ -1435,7 +1436,7 @@ def make_image_comparison_plots(
     qa_dir: pathlib.Path = None,
     with_obj: bool = False,
     extra_graphics: bool = False,
-):
+) -> None:
     """Make a set of Image Comparison plots
 
     This function creates a multipanel plot.  The panels are:
@@ -1594,7 +1595,7 @@ def make_sine_label(popt: np.ndarray, infodict: dict, mesg: str, ier: int) -> st
 def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
     """Convert to/from pixel period and Hertz
 
-    _extended_summary_
+    Use the pixel dwell time to convert between period and frequency.
 
     Parameters
     ----------
@@ -1648,10 +1649,12 @@ class ScrubDevenyPickup(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -1711,7 +1714,7 @@ class ScrubDevenyPickup(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that takes the input file list and calls the cleaning

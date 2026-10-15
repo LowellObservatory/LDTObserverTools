@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -10,14 +11,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-from configparser import ConfigParser
 from importlib import metadata
-import pathlib
-
-# Get configuration information from setup.cfg
-conf = ConfigParser()
-conf.read([pathlib.Path(__file__).parents[1] / "setup.cfg"])
-setup_cfg = dict(conf.items("metadata"))
 
 # -- Project information -----------------------------------------------------
 
@@ -125,7 +119,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # The full version, including alpha/beta/rc tags.
-version = metadata.version(setup_cfg["name"])
+version = metadata.version("obstools")
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
