@@ -25,6 +25,7 @@ try:
     from obstools import lmi_etc
     from obstools import fix_ldt_header
     from obstools import neocp_ephem
+    from obstools import rimas_dither_pattern
     from obstools import scrub_deveny_pickup
 except ImportError as err:
     pass

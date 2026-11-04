@@ -14,4 +14,4 @@
       -h, --help   show this help message and exit
       --rimas_exp  Fix older RIMAS exposure time keywords (default: False)
     
-    LDT Observer Tools (obstools) version 0.7.3
+    LDT Observer Tools (obstools) version 0.7.5
