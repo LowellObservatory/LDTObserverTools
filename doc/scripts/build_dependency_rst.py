@@ -6,8 +6,12 @@ The table is generated from the package metadata without optional dependencies.
 """
 
 # Built-In Libraries
+from io import StringIO
 import pathlib
 import tomllib
+
+# 3rd Party Libraries
+from astropy.table import Table
 
 # The repository root is up two levels from here
 # NOTE: This is a hack needed for this script to run on GH pages.
@@ -44,13 +48,14 @@ def write_dependency_table(pyproject_file: pathlib.Path, path: pathlib.Path) -> 
         ("Required for developers", ", ".join(f"``{item}``" for item in dev_requires)),
     ]
 
-    label_width = max(len(label) for label, _ in rows)
-    value_width = max(len(value) for _, value in rows)
-    separator = f"{'=' * label_width}  {'=' * value_width}"
-    lines = [separator]
-    lines.extend(f"{label:<{label_width}}  {value}" for label, value in rows)
-    lines.append(separator)
-    ofile.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Use the first data row as AstroPy's header so its RST writer sizes both
+    # columns correctly, then remove the header/body rule for a headerless table.
+    table = Table(rows=rows[1:], names=rows[0])
+    stream = StringIO()
+    table.write(stream, format="ascii.rst")
+    lines = stream.getvalue().splitlines()
+    del lines[2]
+    ofile.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")
     print(f"Wrote: {ofile}")
 
 

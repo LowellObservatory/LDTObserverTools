@@ -47,14 +47,14 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt update
-          sudo apt-get install -y freeglut3-dev
+          sudo apt-get install -y freeglut3-dev libegl1
           python -m pip install --upgrade pip tox
       - name: Test with tox
         run: |
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
       - name: Upload coverage to codecov
         if: endsWith(matrix.tox_env, '-cov')
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
 
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
@@ -102,7 +102,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt update
-          sudo apt-get install -y freeglut3-dev
+          sudo apt-get install -y freeglut3-dev libegl1
           python -m pip install --upgrade pip tox
       - name: Run obstools tests from environment built with conda
         run: |

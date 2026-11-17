@@ -18,5 +18,4 @@ Odds and ends in support of tests
 
 from importlib import resources
 
-
 TEST_FILES = resources.files("obstools") / "tests" / "files"
