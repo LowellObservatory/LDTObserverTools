@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -304,7 +305,7 @@ def mag_given_snr_exptime(input_data: ETCData) -> float:
 
 
 # Helper Routines (Alphabetical) =============================================#
-def check_etc_inputs(input_data: ETCData):
+def check_etc_inputs(input_data: ETCData) -> None:
     """Check the ETC inputs for valid values
 
     Does a cursory check on the ETC inputs for proper range, etc.  These are
@@ -517,7 +518,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
     actions needed to compute ETCs from the GUI inputs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
         self.show()
@@ -561,7 +562,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
         self.last_aux_data = AuxData()
         self.etc_table = astropy.table.Table()
 
-    def exit_button_clicked(self):
+    def exit_button_clicked(self) -> None:
         """The user clicked the "Exit" button
 
         Display a confirmation dialog, and quit if "Yes"
@@ -577,7 +578,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
         if button == QtWidgets.QMessageBox.StandardButton.Ok:
             QtWidgets.QApplication.quit()
 
-    def compute_button_clicked(self):
+    def compute_button_clicked(self) -> None:
         """The user clicked the "Compute" button
 
         Poll the ETC mode, and read in the mode-specific values along with all
@@ -645,7 +646,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
         self.last_input_data = input_data
         self.last_aux_data = aux_data
 
-    def show_table_button_clicked(self):
+    def show_table_button_clicked(self) -> None:
         """The user clicked the "Show Table" button
 
         The table of saved ETC values can be shown in a separate window.  By
@@ -662,7 +663,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
             self.tableWindow.show()
             self.buttonShowTable.setText("Hide Table")
 
-    def add_data_button_clicked(self):
+    def add_data_button_clicked(self) -> None:
         """The user clicked the "Add to Table" button
 
         Add the current contents of :attr:`last_input_data` and
@@ -728,7 +729,7 @@ class ETCWindow(QtWidgets.QMainWindow, Ui_ETCMainWindow):
             noise_ccd=np.round(read_noise_in_aperture(input_data), 2),
         )
 
-    def set_stacked_page(self, index: int, checked: bool):
+    def set_stacked_page(self, index: int, checked: bool) -> None:
         """Show the proper ETC Mode page
 
         Parameters
@@ -782,7 +783,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         "FITS Bintable (*.fits)",
     ]
 
-    def __init__(self, table_colnames: list):
+    def __init__(self, table_colnames: list[str]) -> None:
         self.table_colnames = table_colnames
         super().__init__()
         self.setupUi(self)
@@ -803,7 +804,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         # Init things
         self.last_row = 0
 
-    def save_table_button_clicked(self):
+    def save_table_button_clicked(self) -> None:
         """The user clicked the "Save Table" button
 
         Save the presently displayed table to disk in one of several formats.
@@ -856,7 +857,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
                 raise ValueError(f"Unrecognized save file format: {m_format}")
         table_data.write(file_name, format=t_format, overwrite=True)
 
-    def clear_table_button_clicked(self):
+    def clear_table_button_clicked(self) -> None:
         """The user clicked the "Clear Table" button
 
         Clear the table of ETC values, offering a "Confirm" dialog to avoid
@@ -884,7 +885,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
         self.tableDatalog.resizeRowsToContents()
         self.tableDatalog.show()
 
-    def remove_row_button_clicked(self):
+    def remove_row_button_clicked(self) -> None:
         """The user clicked the "Remove Row" button
 
         Remove the highlighted line from the table.  This may be useful for
@@ -904,7 +905,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
             )
             self.tableDatalog.show()
 
-    def update_table_cols(self):
+    def update_table_cols(self) -> None:
         """Update the number and labels of table columns
 
         Update based on the current content of self.headers
@@ -915,7 +916,7 @@ class TableWindow(QtWidgets.QMainWindow, Ui_ETCDataWindow):
             self.tableDatalog.insertColumn(col_position)
         self.tableDatalog.setHorizontalHeaderLabels(self.table_colnames)
 
-    def add_row_to_table(self, new_row: astropy.table.Table):
+    def add_row_to_table(self, new_row: astropy.table.Table) -> None:
         """Add a row to the displayed data table
 
         Take the latest calculation from the ETC and add it to the TableWidget
@@ -985,10 +986,12 @@ class LmiEtc(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -1015,7 +1018,7 @@ class LmiEtc(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Set up the top-level PyQt6 objects and start the event loop

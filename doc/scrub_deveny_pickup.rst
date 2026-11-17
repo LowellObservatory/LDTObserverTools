@@ -52,7 +52,7 @@ Fitting and removing the sinusoidal signal seen in :numref:`raw_frame` is
 complicated by the presence of bright features in the raw frame such as the
 observed object(s), night sky lines, and cosmic rays.  We use the spectroscopic
 data reduction pipeline (`PypeIt
-<https://pypeit.readthedocs.io/en/release/index.html>`_) with a particular set
+<https://pypeit.readthedocs.io/en/stable/index.html>`_) with a particular set
 of parameters to mask cosmic rays and extract night sky lines and object
 spectra.  With these bright signals removed, we can then to fit sinusoids to
 the residual noise image to produce a pattern image representing the EMI
@@ -149,41 +149,6 @@ Data Processing Steps
             bspline_spacing = 100
             local_maskwidth = 200.
             no_poly = True
-
-   .. warning::
-
-      If you are using a version of PypeIt ``< 1.15.0`` (see the top line of
-      the PypeIt Reduction File for the version number), then you will instead
-      need to add the entirety of the following to the Parameter Block to
-      ensure the traced slit edges do not shrink unreasonably and that pattern
-      noise in the CCD overscan does not introduce artifacts in the fitting.
-      Regions outside the marked slits will have 0 value in the residual image,
-      and therefore any sinusoidal signal there will not be fit out.  (The
-      additional parameters included here were added to the DeVeny default set
-      in PypeIt version ``1.15.0``.)
-
-      .. code-block:: ini
-
-         [flexure]
-            spec_method = skip
-         [reduce]
-            [[skysub]]
-               bspline_spacing = 100
-               local_maskwidth = 200.
-               no_poly = True
-            [[findobj]]
-               find_trim_edge = 0,0
-         [calibrations]
-            [[slitedges]]
-               minimum_slit_length = 170
-               max_nudge = 5
-               det_buffer = 0
-            [[flatfield]]
-               tweak_slits = False
-         [scienceframe]
-            [[process]]
-               overscan_method = polynomial
-               overscan_par = 1,0,0
 
 2. Once the PypeIt reduction is complete, you are ready to run the scrubber.
    In the directory containing the raw files, run the scrubber (see

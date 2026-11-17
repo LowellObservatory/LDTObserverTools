@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,6 +48,7 @@ for each row of the image.
 import argparse
 import datetime
 import pathlib
+from typing import TYPE_CHECKING
 import warnings
 
 # 3rd Party Libraries
@@ -60,16 +62,17 @@ import astropy.wcs
 import ccdproc.utils.slices
 import matplotlib.pyplot as plt
 import numpy as np
-from pypeit import log
-import pypeit.spec2dobj
 import scipy.fft
 import scipy.ndimage
 import scipy.optimize
 import scipy.signal
-from tqdm import tqdm
+import tqdm
 
 # Internal Imports
 from obstools import utils
+
+if TYPE_CHECKING:
+    import pypeit.spec2dobj
 
 # Mean pixel readout time (7.25 µs)
 PIX_DWELL = 7.25e-6
@@ -82,13 +85,13 @@ warnings.simplefilter("ignore", astropy.io.fits.verify.VerifyWarning)
 # Narrative Functions ========================================================#
 def iterative_pypeit_clean(
     filename: pathlib.Path,
-    proc_dir: pathlib.Path = None,
+    proc_dir: pathlib.Path | None = None,
     overwrite_raw: bool = False,
     diagnostics: bool = False,
     no_refit: bool = False,
     extra_graphics: bool = False,
     rerun_fft: bool = False,
-):
+) -> None:
     """Iteratively use PypeIt to clean pickup noise
 
     As part of the data-reduction process, PypeIt fits and extracts images as
@@ -113,9 +116,23 @@ def iterative_pypeit_clean(
         Do not refit lines with "bad" RMS  (Default: False)
     extra_graphics : :obj:`bool`, optional
         Produce extra graphics formats for documentation?  (Default: False)
-    rereun_fft : :obj:`bool`, optional
+    rerun_fft : :obj:`bool`, optional
         Pass the fitted pattern through the FFT analysis?  (Default: False)
+
+    Raises
+    ------
+    ImportError
+        If the optional PypeIt dependency is not installed.
     """
+    try:
+        from pypeit import log
+        import pypeit.spec2dobj
+    except ImportError as exc:
+        raise ImportError(
+            "scrub_deveny_pickup requires a compatible PypeIt release; "
+            "install the obstools[pypeit] extra"
+        ) from exc
+
     # Print a welcome statement
     print(f"\nProcessing frame {filename.name}")
 
@@ -123,7 +140,11 @@ def iterative_pypeit_clean(
     #   comprehension searches in each possible 'instrument setup' directory
     #   Check that the `spec2d` file actually exists and print a helpful
     #   message if it doesn't.
-    pyp_dir = sorted(proc_dir.resolve().glob("ldt_deveny_?"))
+    pyp_dir = sorted(
+        (pathlib.Path.cwd() if proc_dir is None else proc_dir)
+        .resolve()
+        .glob("ldt_deveny_?")
+    )
 
     try:
         # Look for the spec2d file
@@ -340,7 +361,7 @@ def clean_pickup(
     use_hann: bool = False,
     sine_plot: bool = True,
     fft_plot: bool = False,
-):
+) -> None:
     """Clean the Pickup Noise
 
     .. warning::
@@ -530,7 +551,7 @@ def flatten_clean_fft(
     x_fft = scipy.fft.fftfreq(n_pts := flat_array.size, PIX_DWELL)
 
     # Mask out periods longer than ~500 pixels (this also removes negative freq's)
-    y_fft[x_fft < pixper_tofrom_hz(500)] = 0.0
+    y_fft = np.where(x_fft < pixper_tofrom_hz(500), 0.0, y_fft)
 
     # Compute the power spectrum, smoothed with a 10-Hz Gaussian
     pspec = scipy.ndimage.gaussian_filter1d(np.abs(y_fft) ** 2, 10)
@@ -642,6 +663,7 @@ def fit_lines(
             return orig_fitc
 
     # Checking the object model for sinusoidal pattern noise
+    ind_obj = []
     if objmodel_check:
         ind_obj = [
             i for i in range(nrow) if not np.allclose(data_array[i], np.zeros(ncol))
@@ -698,7 +720,7 @@ def fit_lines(
     )
 
     # Create a progress bar for every occasion!
-    progress_bar = tqdm(
+    progress_bar = tqdm.tqdm(
         total=(
             np.sum(refit_lines)
             if do_refit
@@ -714,11 +736,12 @@ def fit_lines(
     )
 
     # Prepare the row diagnostic plot
+    axes = None
+    tsz = 8
+    pidx = 0
     if show_diagnostic:
         # Make a diagnostic plot
         _, axes = plt.subplots(nrows=4, figsize=(9, 9))
-        tsz = 8
-        pidx = 0
 
     # Loop over the rows in the image to fit the pattern
     xpl = np.arange(ncol)
@@ -805,7 +828,7 @@ def fit_lines(
             infodict, mesg, ier = {"fvec": 0}, "Runtime Error", 0
 
         # Diagnositc Plot showing particular rows ==========>
-        if show_diagnostic and img_row in [76, 193, 285, 412]:
+        if axes is not None and img_row in [76, 193, 285, 412]:
             axis = axes[pidx]
             # Add this to the plot
             axis.plot(xpl, line, "k-", linewidth=0.75)
@@ -971,7 +994,7 @@ def package_into_fits(
     fit_coeffs: dict,
     pixel_period: float,
     overwrite_raw: bool = False,
-):
+) -> None:
     """Package the cleaned data into a FITS file
 
     Package everything into a multiextension FITS file:
@@ -1119,7 +1142,7 @@ def create_fft_plot(
     peak_freq: float,
     qa_dir: pathlib.Path = None,
     extra_graphics: bool = False,
-):
+) -> None:
     """Create the FFT analysis plot
 
     This function creates a multipanel plot saved as ``fft_analysis.pdf`` in
@@ -1301,7 +1324,7 @@ def make_sinusoid_fit_plots(
     extra_graphics: bool = False,
     fixed_fitc: astropy.table.Table = None,
     smoothing: dict = None,
-):
+) -> None:
     """Create a set of diagnostic plots from the set of sinusoid fits
 
     This function creates a multipanel plot saved as ``sinusoid_fits.pdf`` in
@@ -1429,13 +1452,13 @@ def make_sinusoid_fit_plots(
 
 def make_image_comparison_plots(
     filename: pathlib.Path,
-    spec2d: pypeit.spec2dobj.Spec2DObj,
+    spec2d: "pypeit.spec2dobj.Spec2DObj",
     resid: np.ndarray,
     pattern: np.ndarray,
     qa_dir: pathlib.Path = None,
     with_obj: bool = False,
     extra_graphics: bool = False,
-):
+) -> None:
     """Make a set of Image Comparison plots
 
     This function creates a multipanel plot.  The panels are:
@@ -1594,7 +1617,7 @@ def make_sine_label(popt: np.ndarray, infodict: dict, mesg: str, ier: int) -> st
 def pixper_tofrom_hz(val: np.ndarray) -> np.ndarray:
     """Convert to/from pixel period and Hertz
 
-    _extended_summary_
+    Use the pixel dwell time to convert between period and frequency.
 
     Parameters
     ----------
@@ -1648,10 +1671,12 @@ class ScrubDevenyPickup(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -1711,7 +1736,7 @@ class ScrubDevenyPickup(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that takes the input file list and calls the cleaning

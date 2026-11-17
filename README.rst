@@ -166,7 +166,7 @@ Installing LDTObserverTools via ``pip``
 .. note::
   The commands here assume ``pip`` is associated with Python3.  To check, run
   ``pip --version`` from the command line and check that the associated python
-  version is ``>= 3.11``.
+  version is ``>= 3.12, < 3.15``.
 
   Also, you will need ``git`` installed on your system / in your environment.
 
@@ -200,9 +200,11 @@ Some of the instrument-specific routines in this package require additional depe
 that are not otherwise needed by the majority of the routines herein.
 
    - If you are using the ``scrub_deveny_pickup`` tool, you will need the
-     spectroscopic data reduction pipeline `PypeIt <https://pypeit.readthedocs.io/en/release/>`_
+     spectroscopic data reduction pipeline `PypeIt <https://pypeit.readthedocs.io/en/stable/>`_
      for the iterative cleaning of the pickup noise.  It can be installed by
      including it in the optional dependencies, *e.g.*:
+
+     The ``pypeit`` extra installs PypeIt 3.0 or newer, including on Python 3.14.
 
       .. code-block:: console
 

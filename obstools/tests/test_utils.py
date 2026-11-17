@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -29,6 +30,7 @@ def test_check_float():
     assert utils.check_float(1)
     # Boolean is convertable to a float
     assert utils.check_float(True)
+    assert not utils.check_float(None)
 
 
 def test_first_moment_1d():
@@ -58,7 +60,11 @@ def test_gaussian_function():
 
 
 def test_good_poly():
-    pass
+    import numpy as np
+
+    x = np.arange(5, dtype=float)
+    y = 2 * x + 1
+    np.testing.assert_allclose(utils.good_poly(x, y, order=1, thresh=3), [1, 2])
 
 
 def test_nearest_odd():

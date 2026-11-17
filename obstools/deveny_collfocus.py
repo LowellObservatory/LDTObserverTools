@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -50,7 +51,7 @@ MIN_COLLFOC = 7.5  # Smallest collimator focus value (in mm)
 STEPSIZE = 0.5  # Default step size (in mm)
 
 
-def deveny_collfocus(debug: bool = False):
+def deveny_collfocus(debug: bool = False) -> None:
     """Main Driver for the DeVeny Collimator Focus Sequence Estimator GUI
 
     Compute the estimated focus and LOUI Focus Sequence range given the mount
@@ -313,10 +314,12 @@ class DevenyCollfocus(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -346,7 +349,7 @@ class DevenyCollfocus(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that calls the main driver function.

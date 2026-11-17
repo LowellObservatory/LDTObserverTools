@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 #
 #  This file is part of LDTObserverTools.
 #
@@ -160,7 +161,7 @@ def dfocus(
     thresh: float = 100.0,
     launch_preview: bool = True,
     docfig: bool = False,
-):
+) -> None:
     """Find the optimal DeVeny collimator focus value
 
     This is the user-facing ``dfocus`` function that calls all of the various
@@ -507,7 +508,7 @@ def get_lines_from_ccd(
 def centered_trace(spec2d: np.ndarray) -> np.ndarray:
     """Construct a simple trace down the middle of the image
 
-    _extended_summary_
+    Return one spatial coordinate per dispersion column at half the image height.
 
     Parameters
     ----------
@@ -717,7 +718,7 @@ def plot_lines(
     centers: np.ndarray,
     focus_pars: FocusParams = None,
     plot_pars: PlotParams = None,
-):
+) -> None:
     """Plot centroid lines in a 1-row image
 
     Parameters
@@ -771,7 +772,7 @@ def plot_optimal_focus(
     med_opt_focus: float,
     plot_pars: PlotParams,
     debug: bool = False,
-):
+) -> None:
     """Make the Optimal Focus Plot (IDL2 Window)
 
     [extended_summary]
@@ -835,7 +836,7 @@ def plot_focus_curves(
     focus_curves: FocusCurves,
     focus_pars: FocusParams,
     plot_pars: PlotParams,
-):
+) -> None:
     """Make the big plot of all the focus curves (IDL1 Window)
 
     [extended_summary]
@@ -970,10 +971,12 @@ class DFocus(utils.ScriptBase):
     @classmethod
     def get_parser(
         cls,
-        description: str = None,
-        width: int = None,
-        formatter: argparse.HelpFormatter = argparse.ArgumentDefaultsHelpFormatter,
-    ):
+        description: str | None = None,
+        width: int | None = None,
+        formatter: type[
+            argparse.HelpFormatter
+        ] = argparse.ArgumentDefaultsHelpFormatter,
+    ) -> argparse.ArgumentParser:
         """Construct the command-line argument parser.
 
         Parameters
@@ -1021,7 +1024,7 @@ class DFocus(utils.ScriptBase):
         return parser
 
     @staticmethod
-    def main(args):
+    def main(args: argparse.Namespace) -> None:
         """Main Driver
 
         Simple function that calls the primary function.

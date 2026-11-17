@@ -29,9 +29,9 @@ jobs:
         os:
           - ubuntu-latest
         python:
-          - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
         toxenv:
           - test
           - test-numpydev
@@ -69,9 +69,9 @@ jobs:
           - windows-latest
           - macos-latest
         python:
-          - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
         toxenv:
           - test-alldeps
     steps:
