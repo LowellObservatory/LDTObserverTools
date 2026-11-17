@@ -8,10 +8,11 @@ This module was borrowed and updated from PyepIt
 # Built-In Libraries
 import configparser
 import pathlib
+from io import StringIO
 
 # 3rd Party Libraries
 import numpy as np
-from pypeit.utils import string_table
+from astropy.table import Table
 
 # The repository root is up two levels from here
 # NOTE: This is a hack needed for this script to run on GH pages.
@@ -53,9 +54,15 @@ def write_dependency_table(setup_file: pathlib.Path, path: pathlib.Path):
         ", ".join([f"``{d}``" for d in dev_requires]),
     ]
 
-    lines = string_table(data_table, delimeter="rst", has_header=False)
+    # Use the first data row as AstroPy's header so its RST writer sizes both
+    # columns correctly, then remove the header/body rule for a headerless table.
+    table = Table(rows=data_table[1:], names=data_table[0])
+    stream = StringIO()
+    table.write(stream, format="ascii.rst")
+    lines = stream.getvalue().splitlines()
+    del lines[2]
     with open(ofile, "w", encoding="utf-8") as f_obj:
-        f_obj.write(lines)
+        f_obj.write("\n".join(line.rstrip() for line in lines) + "\n")
     print(f"Wrote: {ofile}")
 
 
