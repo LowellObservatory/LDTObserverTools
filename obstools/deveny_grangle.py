@@ -35,7 +35,6 @@ import PySimpleGUI as sg
 # Local Libraries
 from obstools import utils
 
-
 # CONSTANTS
 PIXSCALE = 2.94  # Base pixels per arcsec: 1 / (0.34 arcsec / pixel)
 CAMCOL = np.deg2rad(55.00)  # DeVeny Optical Angle -- Camera-to-Collimator

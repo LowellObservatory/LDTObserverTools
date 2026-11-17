@@ -42,6 +42,7 @@ Dependencies Table
    :hidden:
 
    Exposure Time Calculator <rimas_etc>
+   Dither Metadata Correction <rimas_dither_pattern>
    RIMAS Imaging Quick Look Tool <rimas_image_ql>
    RIMAS Spectrum Quick Look Tool <rimas_spec_ql>
 
