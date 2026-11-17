@@ -1,0 +1,230 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>obstools.tests.test_rimas_dither_pattern &mdash; LDT Observer Tools 2025 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=beddf052" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=a0fb6060" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=cb975c41"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/obstools_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">LMI Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../lmi_ql.html">LMI Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DeVeny Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_grangle.html">Grating Angle Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_collfocus.html">Collimator Focus Sequence Estimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dfocus.html">Collimator Focus Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scrub_deveny_pickup.html">Pickup Noise Scrubber</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deveny_ql.html">DeVeny Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RIMAS Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_dither_pattern.html">Dither Metadata Correction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_image_ql.html">RIMAS Imaging Quick Look Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rimas_spec_ql.html">RIMAS Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">General LDT Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../fix_ldt_header.html">Simple FITS Header Fixer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../neocp_ephem.html">NEO CP Ephemeris Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../input_validator.html">Input List Validator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../observer_target.html">Observer Target List Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">LDTObserverTools API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">LDT Observer Tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../obstools.html">obstools</a></li>
+      <li class="breadcrumb-item active">obstools.tests.test_rimas_dither_pattern</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for obstools.tests.test_rimas_dither_pattern</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Tests for the RIMAS dither sidecar generator."""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">astropy.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools.rimas_dither_pattern</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DitherSequence</span><span class="p">,</span>
+    <span class="n">RimasDitherPattern</span><span class="p">,</span>
+    <span class="n">build_correction_table</span><span class="p">,</span>
+    <span class="n">parse_frame_list</span><span class="p">,</span>
+    <span class="n">write_correction_table</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_abba_with_missing_frames">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_rimas_dither_pattern.html#obstools.tests.test_rimas_dither_pattern.test_abba_with_missing_frames">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_abba_with_missing_frames</span><span class="p">():</span>
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">DitherSequence</span><span class="p">((</span><span class="mi">86</span><span class="p">,</span> <span class="mi">87</span><span class="p">,</span> <span class="mi">89</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">DitherSequence</span><span class="p">((</span><span class="mi">90</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">92</span><span class="p">,</span> <span class="mi">93</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">DitherSequence</span><span class="p">((</span><span class="mi">94</span><span class="p">,</span> <span class="mi">96</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">build_correction_table</span><span class="p">(</span><span class="s2">"ABBA"</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="s2">"20260305"</span><span class="p">,</span> <span class="n">arms</span><span class="o">=</span><span class="p">(</span><span class="s2">"HK"</span><span class="p">,))</span>
+    <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s2">"dithnum"</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s2">"dithpos"</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s2">"dithseq"</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="test_both_arms_default">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_rimas_dither_pattern.html#obstools.tests.test_rimas_dither_pattern.test_both_arms_default">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_both_arms_default</span><span class="p">():</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">build_correction_table</span><span class="p">(</span><span class="s2">"ONOFF"</span><span class="p">,</span> <span class="p">[</span><span class="n">DitherSequence</span><span class="p">((</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="mi">1</span><span class="p">)],</span> <span class="s2">"20260305"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+    <span class="k">assert</span> <span class="n">table</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"filename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"20260305.rimas.0007.YJ.fits"</span></div>
+
+
+
+<div class="viewcode-block" id="test_validation">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_rimas_dither_pattern.html#obstools.tests.test_rimas_dither_pattern.test_validation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_validation</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"span more than one ABBA"</span><span class="p">):</span>
+        <span class="n">build_correction_table</span><span class="p">(</span><span class="s2">"ABBA"</span><span class="p">,</span> <span class="p">[</span><span class="n">DitherSequence</span><span class="p">((</span><span class="mi">86</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="mi">1</span><span class="p">)],</span> <span class="s2">"20260305"</span><span class="p">)</span>
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">DitherSequence</span><span class="p">((</span><span class="mi">86</span><span class="p">,</span> <span class="mi">87</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="n">DitherSequence</span><span class="p">((</span><span class="mi">87</span><span class="p">,</span> <span class="mi">88</span><span class="p">),</span> <span class="mi">2</span><span class="p">)]</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"more than one sequence"</span><span class="p">):</span>
+        <span class="n">build_correction_table</span><span class="p">(</span><span class="s2">"ABBA"</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="s2">"20260305"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_parse_and_write">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_rimas_dither_pattern.html#obstools.tests.test_rimas_dither_pattern.test_parse_and_write">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_parse_and_write</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">parse_frame_list</span><span class="p">(</span><span class="s2">"86, 87,89"</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mi">86</span><span class="p">,</span> <span class="mi">87</span><span class="p">,</span> <span class="mi">89</span><span class="p">)</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">build_correction_table</span><span class="p">(</span>
+        <span class="s2">"ABBA"</span><span class="p">,</span> <span class="p">[</span><span class="n">DitherSequence</span><span class="p">((</span><span class="mi">86</span><span class="p">,</span> <span class="mi">87</span><span class="p">,</span> <span class="mi">89</span><span class="p">),</span> <span class="mi">1</span><span class="p">)],</span> <span class="s2">"20260305"</span><span class="p">,</span> <span class="n">arms</span><span class="o">=</span><span class="p">(</span><span class="s2">"HK"</span><span class="p">,)</span>
+    <span class="p">)</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">write_correction_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">"corrections.ecsv"</span><span class="p">)</span>
+    <span class="n">reread</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"ascii.ecsv"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">reread</span><span class="o">.</span><span class="n">colnames</span> <span class="o">==</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span>
+    <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">reread</span><span class="p">[</span><span class="s2">"dithnum"</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="test_cli_bash_brace_expansion">
+<a class="viewcode-back" href="../../../api/obstools.tests.test_rimas_dither_pattern.html#obstools.tests.test_rimas_dither_pattern.test_cli_bash_brace_expansion">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_cli_bash_brace_expansion</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">RimasDitherPattern</span><span class="o">.</span><span class="n">get_parser</span><span class="p">()</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="s2">"ABBA"</span><span class="p">,</span>
+            <span class="s2">"--date"</span><span class="p">,</span>
+            <span class="s2">"20260305"</span><span class="p">,</span>
+            <span class="s2">"-s"</span><span class="p">,</span>
+            <span class="s2">"86"</span><span class="p">,</span>
+            <span class="s2">"87"</span><span class="p">,</span>
+            <span class="s2">"88"</span><span class="p">,</span>
+            <span class="s2">"89"</span><span class="p">,</span>
+            <span class="s2">"-s"</span><span class="p">,</span>
+            <span class="s2">"90"</span><span class="p">,</span>
+            <span class="s2">"91"</span><span class="p">,</span>
+            <span class="s2">"92"</span><span class="p">,</span>
+            <span class="s2">"93"</span><span class="p">,</span>
+            <span class="s2">"-s"</span><span class="p">,</span>
+            <span class="s2">"94"</span><span class="p">,</span>
+            <span class="s2">"95"</span><span class="p">,</span>
+            <span class="s2">"96"</span><span class="p">,</span>
+            <span class="s2">"97"</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">parse_frame_list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span>
+
+    <span class="k">assert</span> <span class="n">sequences</span> <span class="o">==</span> <span class="p">[</span>
+        <span class="p">(</span><span class="mi">86</span><span class="p">,</span> <span class="mi">87</span><span class="p">,</span> <span class="mi">88</span><span class="p">,</span> <span class="mi">89</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">92</span><span class="p">,</span> <span class="mi">93</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">94</span><span class="p">,</span> <span class="mi">95</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">97</span><span class="p">),</span>
+    <span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023-2025, Lowell Observatory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

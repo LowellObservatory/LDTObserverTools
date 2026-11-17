@@ -1,0 +1,497 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>obstools.rimas_dither_pattern &mdash; LDT Observer Tools 2025 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=beddf052" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=a0fb6060" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=cb975c41"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+              <img src="../../_static/obstools_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">LMI Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../lmi_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../lmi_ql.html">LMI Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">DeVeny Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../deveny_grangle.html">Grating Angle Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deveny_collfocus.html">Collimator Focus Sequence Estimator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dfocus.html">Collimator Focus Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deveny_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scrub_deveny_pickup.html">Pickup Noise Scrubber</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deveny_ql.html">DeVeny Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RIMAS Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../rimas_etc.html">Exposure Time Calculator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rimas_dither_pattern.html">Dither Metadata Correction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rimas_image_ql.html">RIMAS Imaging Quick Look Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rimas_spec_ql.html">RIMAS Spectrum Quick Look Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">General LDT Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../fix_ldt_header.html">Simple FITS Header Fixer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../neocp_ephem.html">NEO CP Ephemeris Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../input_validator.html">Input List Validator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../observer_target.html">Observer Target List Tool</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">LDTObserverTools API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">LDT Observer Tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../obstools.html">obstools</a></li>
+      <li class="breadcrumb-item active">obstools.rimas_dither_pattern</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for obstools.rimas_dither_pattern</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1">#</span>
+<span class="c1">#  This file is part of LDTObserverTools.</span>
+<span class="c1">#</span>
+<span class="c1">#   This Source Code Form is subject to the terms of the Mozilla Public</span>
+<span class="c1">#   License, v. 2.0. If a copy of the MPL was not distributed with this</span>
+<span class="c1">#   file, You can obtain one at http://mozilla.org/MPL/2.0/.</span>
+<span class="c1">#</span>
+<span class="c1">#  Created on 19-Aug-2026</span>
+<span class="c1">#</span>
+<span class="c1">#  @author: tbowers</span>
+
+<span class="sd">"""Create ECSV sidecars that correct RIMAS dither metadata</span>
+
+<span class="sd">LDTObserverTools contains python ports of various LDT Observer Tools</span>
+
+<span class="sd">Lowell Discovery Telescope (Lowell Observatory: Flagstaff, AZ)</span>
+<span class="sd">https://lowell.edu</span>
+
+<span class="sd">The generated tables identify the dither pattern, position, and sequence for</span>
+<span class="sd">all commanded RIMAS frames, including exposures that were not written to disk.</span>
+<span class="sd">"""</span>
+
+<span class="c1"># Built-In Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+<span class="c1"># 3rd-Party Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">astropy.table</span>
+
+<span class="c1"># Local Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obstools</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+
+<span class="c1"># Module-level Constants</span>
+<span class="n">PATTERNS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ABBA"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">),</span> <span class="s2">"ONOFF"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"On"</span><span class="p">,</span> <span class="s2">"Off"</span><span class="p">)}</span>
+
+
+<div class="viewcode-block" id="DitherSequence">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.DitherSequence">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DitherSequence</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Represent the recorded frames in one commanded dither sequence.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frames : tuple of int</span>
+<span class="sd">        Commanded frame numbers in strictly increasing order, including frames</span>
+<span class="sd">        that were not written to disk.</span>
+<span class="sd">    sequence_id : int</span>
+<span class="sd">        Positive identifier for the commanded sequence.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frames : tuple of int</span>
+<span class="sd">        Recorded frame numbers in the sequence.</span>
+<span class="sd">    sequence_id : int</span>
+<span class="sd">        Identifier for the sequence.</span>
+<span class="sd">    """</span>
+
+    <span class="n">frames</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">sequence_id</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_pattern">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.normalize_pattern">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_pattern</span><span class="p">(</span><span class="n">sequence_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the canonical name of a supported dither pattern.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequence_type : str</span>
+<span class="sd">        Pattern name. Matching ignores case and surrounding whitespace.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        Uppercase canonical pattern name.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If ``sequence_type`` is not supported.</span>
+<span class="sd">    """</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">sequence_type</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">pattern</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PATTERNS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Unsupported sequence type </span><span class="si">{</span><span class="n">sequence_type</span><span class="si">!r}</span><span class="s2">; choose </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">PATTERNS</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pattern</span></div>
+
+
+
+<div class="viewcode-block" id="parse_frame_list">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.parse_frame_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_frame_list</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Parse frame numbers from one or more strings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value : str or iterable of str</span>
+<span class="sd">        Frame numbers supplied as individual strings, comma-separated strings,</span>
+<span class="sd">        or a mixture of both. Whitespace and empty fields are ignored.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple of int</span>
+<span class="sd">        Parsed frame numbers in input order.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If a nonempty field is not an integer or no frames are given.</span>
+<span class="sd">    """</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">frames</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">values</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Invalid frame list </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">; use space- or comma-separated integers."</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">frames</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A dither sequence must contain at least one frame."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">frames</span></div>
+
+
+
+<div class="viewcode-block" id="validate_sequence">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.validate_sequence">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">:</span> <span class="n">DitherSequence</span><span class="p">,</span> <span class="n">sequence_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Validate one sequence against a dither pattern.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequence : DitherSequence</span>
+<span class="sd">        Sequence to validate.</span>
+<span class="sd">    sequence_type : str</span>
+<span class="sd">        Supported dither pattern name.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the pattern or sequence is invalid.</span>
+<span class="sd">    """</span>
+    <span class="n">pattern</span><span class="p">,</span> <span class="n">frames</span> <span class="o">=</span> <span class="n">normalize_pattern</span><span class="p">(</span><span class="n">sequence_type</span><span class="p">),</span> <span class="n">sequence</span><span class="o">.</span><span class="n">frames</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">frames</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A dither sequence must contain at least one frame."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Sequence IDs must be positive."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">frame</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Frame numbers must be non-negative."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">b</span> <span class="o">&lt;=</span> <span class="n">a</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="n">frames</span><span class="p">[</span><span class="mi">1</span><span class="p">:])):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Frames in sequence </span><span class="si">{</span><span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span><span class="si">}</span><span class="s2"> must increase strictly."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">frames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">frames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">PATTERNS</span><span class="p">[</span><span class="n">pattern</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Frames in sequence </span><span class="si">{</span><span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span><span class="si">}</span><span class="s2"> span more than one </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2"> pattern."</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build_correction_table">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.build_correction_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_correction_table</span><span class="p">(</span>
+    <span class="n">sequence_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DitherSequence</span><span class="p">],</span>
+    <span class="n">date</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">arms</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"YJ"</span><span class="p">,</span> <span class="s2">"HK"</span><span class="p">),</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"observing log"</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">astropy</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">Table</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Build a RIMAS dither metadata correction table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequence_type : str</span>
+<span class="sd">        Supported dither pattern name.</span>
+<span class="sd">    sequences : sequence of DitherSequence</span>
+<span class="sd">        Recorded frames grouped by commanded sequence.</span>
+<span class="sd">    date : str</span>
+<span class="sd">        Observing date in ``YYYYMMDD`` format.</span>
+<span class="sd">    arms : iterable of str, optional</span>
+<span class="sd">        Detector arms to include; supported values are ``"YJ"`` and ``"HK"``.</span>
+<span class="sd">    source : str, optional</span>
+<span class="sd">        Description of the correction metadata source.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    astropy.table.Table</span>
+<span class="sd">        Correction rows for every recorded frame and selected arm.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If inputs are invalid, identifiers or frames are duplicated, or no rows</span>
+<span class="sd">        can be produced.</span>
+<span class="sd">    """</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">normalize_pattern</span><span class="p">(</span><span class="n">sequence_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">date</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">8</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">date</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Date must have YYYYMMDD format."</span><span class="p">)</span>
+    <span class="n">use_arms</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">arm</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">arm</span> <span class="ow">in</span> <span class="n">arms</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_arms</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">arm</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"YJ"</span><span class="p">,</span> <span class="s2">"HK"</span><span class="p">)</span> <span class="k">for</span> <span class="n">arm</span> <span class="ow">in</span> <span class="n">use_arms</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Arms must contain one or both of YJ and HK."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">use_arms</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">use_arms</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Arms must not contain duplicates."</span><span class="p">)</span>
+
+    <span class="n">rows</span><span class="p">,</span> <span class="n">seen_frames</span><span class="p">,</span> <span class="n">seen_ids</span> <span class="o">=</span> <span class="p">[],</span> <span class="nb">set</span><span class="p">(),</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">sequence</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">:</span>
+        <span class="n">validate_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span> <span class="ow">in</span> <span class="n">seen_ids</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Duplicate sequence ID </span><span class="si">{</span><span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">seen_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span><span class="p">)</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">sequence</span><span class="o">.</span><span class="n">frames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">seen_frames</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Frame </span><span class="si">{</span><span class="n">frame</span><span class="si">}</span><span class="s2"> occurs in more than one sequence."</span><span class="p">)</span>
+            <span class="n">seen_frames</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+            <span class="n">dithnum</span> <span class="o">=</span> <span class="n">frame</span> <span class="o">-</span> <span class="n">first</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">arm</span> <span class="ow">in</span> <span class="n">use_arms</span><span class="p">:</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">date</span><span class="si">}</span><span class="s2">.rimas.</span><span class="si">{</span><span class="n">frame</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">arm</span><span class="si">}</span><span class="s2">.fits"</span><span class="p">,</span>
+                        <span class="n">pattern</span><span class="p">,</span>
+                        <span class="n">dithnum</span><span class="p">,</span>
+                        <span class="n">PATTERNS</span><span class="p">[</span><span class="n">pattern</span><span class="p">][</span><span class="n">dithnum</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span>
+                        <span class="n">sequence</span><span class="o">.</span><span class="n">sequence_id</span><span class="p">,</span>
+                        <span class="n">source</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"At least one dither sequence is required."</span><span class="p">)</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">Table</span><span class="p">(</span>
+        <span class="n">rows</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span>
+        <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"filename"</span><span class="p">,</span> <span class="s2">"dithpat"</span><span class="p">,</span> <span class="s2">"dithnum"</span><span class="p">,</span> <span class="s2">"dithpos"</span><span class="p">,</span> <span class="s2">"dithseq"</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">"description"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"RIMAS dither metadata corrections"</span>
+    <span class="k">return</span> <span class="n">table</span></div>
+
+
+
+<div class="viewcode-block" id="write_correction_table">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.write_correction_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_correction_table</span><span class="p">(</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">astropy</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Write a correction table in ECSV format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    table : astropy.table.Table</span>
+<span class="sd">        Correction table to write.</span>
+<span class="sd">    output : str or pathlib.Path</span>
+<span class="sd">        Destination path. Missing parent directories are created.</span>
+<span class="sd">    overwrite : bool, optional</span>
+<span class="sd">        Whether to replace an existing file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pathlib.Path</span>
+<span class="sd">        Absolute path of the written file.</span>
+<span class="sd">    """</span>
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="n">output_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"ascii.ecsv"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output_path</span></div>
+
+
+
+<div class="viewcode-block" id="RimasDitherPattern">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.RimasDitherPattern">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RimasDitherPattern</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">ScriptBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Provide the CLI for creating RIMAS dither sidecars.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    One ``--sequence`` option is accepted per commanded sequence. Sequence</span>
+<span class="sd">    identifiers follow the order of those options.</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="RimasDitherPattern.get_parser">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.RimasDitherPattern.get_parser">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">formatter</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span>
+            <span class="n">argparse</span><span class="o">.</span><span class="n">HelpFormatter</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Construct the command-line argument parser.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        description : str or None, optional</span>
+<span class="sd">            Parser description. Retained for base-class compatibility.</span>
+<span class="sd">        width : int or None, optional</span>
+<span class="sd">            Maximum width of formatted help output.</span>
+<span class="sd">        formatter : type of argparse.HelpFormatter, optional</span>
+<span class="sd">            Help formatter class.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        argparse.ArgumentParser</span>
+<span class="sd">            Configured command-line parser.</span>
+<span class="sd">        """</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_parser</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Create an ECSV sidecar correcting RIMAS dither metadata."</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+            <span class="n">formatter</span><span class="o">=</span><span class="n">formatter</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"sequence_type"</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">PATTERNS</span><span class="p">))</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">"-s"</span><span class="p">,</span>
+            <span class="s2">"--sequence"</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">"append"</span><span class="p">,</span>
+            <span class="n">nargs</span><span class="o">=</span><span class="s2">"+"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">"FRAME"</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Full frame list for one commanded sequence, including frames not "</span>
+                <span class="s2">"written to disk. Repeat for each sequence; Bash brace expansion "</span>
+                <span class="s2">"such as -s {86..89} is supported."</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--date"</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Observing date (YYYYMMDD)"</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">"--arms"</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">"+"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="s2">"YJ"</span><span class="p">,</span> <span class="s2">"HK"</span><span class="p">),</span> <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"YJ"</span><span class="p">,</span> <span class="s2">"HK"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"-o"</span><span class="p">,</span> <span class="s2">"--output"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">"rimas_dither_corrections.ecsv"</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--source"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">"observing log"</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--overwrite"</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<div class="viewcode-block" id="RimasDitherPattern.main">
+<a class="viewcode-back" href="../../api/obstools.rimas_dither_pattern.html#obstools.rimas_dither_pattern.RimasDitherPattern.main">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Create and write a correction table from parsed arguments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        args : argparse.Namespace</span>
+<span class="sd">            Parsed command-line arguments produced by :meth:`get_parser`.</span>
+<span class="sd">        """</span>
+        <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">DitherSequence</span><span class="p">(</span><span class="n">parse_frame_list</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">index</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">build_correction_table</span><span class="p">(</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">sequence_type</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">arms</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">source</span>
+        <span class="p">)</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">write_correction_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">overwrite</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Wrote </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="si">}</span><span class="s2"> corrections to </span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023-2025, Lowell Observatory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
