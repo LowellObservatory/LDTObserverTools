@@ -1,6 +1,4 @@
-# This workflow takes the GitHub release notes and updates the changelog on the
-# main branch with the body of the release notes, thereby keeping a log in
-# the git repo of the changes.
+# Propose release notes for the changelog through a pull request to main.
 
 name: "Update Changelog"
 
@@ -12,6 +10,7 @@ jobs:
   update:
     permissions:
       contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
 
     steps:
@@ -28,9 +27,13 @@ jobs:
           latest-version: ${{ github.event.release.name }}
           path-to-changelog: CHANGES.md
 
-      - name: Commit updated CHANGELOG
-        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403  # v5.2.0
+      - name: Propose updated changelog
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1  # v8
         with:
-          branch: main
-          commit_message: Update CHANGELOG
-          file_pattern: CHANGES.md
+          add-paths: CHANGES.md
+          base: main
+          branch: changelog/${{ github.event.release.tag_name }}
+          commit-message: Update changelog for ${{ github.event.release.tag_name }}
+          title: Update changelog for ${{ github.event.release.tag_name }}
+          body: Add the published release notes to CHANGES.md.
+          delete-branch: true
