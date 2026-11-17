@@ -130,7 +130,7 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
-    "pypeit": ("https://pypeit.readthedocs.io/en/release/", None),
+    "pypeit": ("https://pypeit.readthedocs.io/en/stable/", None),
     "stomp": ("https://jasonrbriggs.github.io/stomp.py/", None),
 }
 
