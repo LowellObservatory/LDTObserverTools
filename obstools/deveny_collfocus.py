@@ -29,175 +29,16 @@ incorporated into the LDTObserverTools package.
 
 # Built-In Libraries
 import argparse
-import os
-import sys
 
 # 3rd-Party Libraries
 import numpy as np
-import PySimpleGUI as sg
 
 # Local Libraries
 from obstools import utils
 
-try:
-    from obstools import broker_listener
-except ImportError:
-    pass
-
-
 # CONSTANTS
 MIN_COLLFOC = 7.5  # Smallest collimator focus value (in mm)
 STEPSIZE = 0.5  # Default step size (in mm)
-
-
-def deveny_collfocus(debug: bool = False):
-    """Main Driver for the DeVeny Collimator Focus Sequence Estimator GUI
-
-    Compute the estimated focus and LOUI Focus Sequence range given the mount
-    temperature, grating tilt angle, and presence of an order-blocking filter.
-    Optionally, read in the current mount temperature and grating tilt angle
-    from the ActiveMQ broker, if running at the site.
-
-    Parameters
-    ----------
-    debug : :obj:`bool`, optional
-        Print debug statements?  (Default: False)
-    """
-    # Check that stomp was imported (in broker_listener) and that the config file exists
-    use_stomp = "stomp" in sys.modules and (utils.CONFIG / "activemq_joe.yaml").exists()
-    # Fire up the broker Listener
-    if use_stomp:
-        am_radio = broker_listener.ActiveMQ_Listener(utils.CONFIG / "activemq_joe.yaml")
-    if debug:
-        print(
-            f"The parts of use_stomp = {use_stomp}:  sys.modules = {'stomp' in sys.modules}  "
-            f"config exists = {(utils.CONFIG / 'activemq_joe.yaml').exists()}"
-        )
-
-    # Define the color scheme for the GUI
-    sg.theme(utils.SG_THEME)
-
-    # Define the window layout
-    row1 = [
-        sg.Text("Enter Mount Temperature:", font="courier 18"),
-        sg.Input(key="-TEMPIN-", size=(12, 1)),
-        sg.Text("ºC"),
-    ]
-    row2 = [
-        sg.Text("     Enter Grating Tilt:", font="courier 18"),
-        sg.Input(key="-TILTIN-", size=(12, 1)),
-        sg.Text("º"),
-    ]
-    row3 = [
-        sg.Text("     Select Rear Filter:", font="courier 18"),
-        sg.Drop(
-            values=(["CLEAR", "GG420", "GG495", "OG570"]),
-            auto_size_text=True,
-            default_value="CLEAR",
-            key="-FILTER-",
-        ),
-    ]
-    row4 = [
-        sg.Button("Compute"),
-        sg.Button("Get Values from Broker") if use_stomp else sg.Text(""),
-        sg.Button("Done"),
-    ]
-    row5 = [
-        sg.Text("     Estimated Focus Value:"),
-        sg.Text(size=(21, 1), key="-FOCUSOUT-"),
-    ]
-    row6 = [sg.Text("Suggested Focus Sequence: ", font="Helvetica 18 underline")]
-    row7 = [
-        sg.Text("  Initial Position (mm):", font="courier 18"),
-        sg.Text(
-            size=(3, 1),
-            key="-STARTPOS-",
-            text_color=sg.theme_input_text_color(),
-            background_color=sg.theme_input_background_color(),
-        ),
-        sg.Text("Step Size (mm):", font="courier 18"),
-        sg.Text(
-            size=(3, 1),
-            key="-STEPSIZE-",
-            text_color=sg.theme_input_text_color(),
-            background_color=sg.theme_input_background_color(),
-        ),
-    ]
-    row8 = [
-        sg.Text("        Number of Steps:", font="courier 18"),
-        sg.Text(
-            size=(3, 1),
-            key="-NSTEPS-",
-            text_color=sg.theme_input_text_color(),
-            background_color=sg.theme_input_background_color(),
-        ),
-    ]
-
-    # Define the rows based on which GUI we're making
-    rows = [row1, row2, row3, row4, row5, row6, row7, row8]
-
-    # Make the pysimplegui "Error performing wm_overrideredirect" go away
-    old_stdout = sys.stdout
-    with open(os.devnull, "w", encoding="utf8") as f_null:
-        sys.stdout = f_null
-
-        # Create the Window
-        window = sg.Window(
-            "DeVeny Collimator Focus Sequence Estimator",
-            rows,
-            location=(10, 10),
-            finalize=True,
-            element_justification="left",
-            font="Helvetica 18",
-        )
-
-    # Return the STDOUT to the command line
-    sys.stdout = old_stdout
-
-    # Wait for events
-    while True:
-        event, values = window.read()
-        if event in [sg.WIN_CLOSED, "Done"]:
-            break
-
-        if event == "Compute":
-            # Check for non-numeric values in entries
-            try:
-                tempin = float(values["-TEMPIN-"])
-                tiltin = float(values["-TILTIN-"])
-            except ValueError:
-                window["-FOCUSOUT-"].update("Please Enter a Number")
-                window["-STARTPOS-"].update("")
-                window["-STEPSIZE-"].update("")
-                window["-NSTEPS-"].update("")
-                window["-TEMPIN-"].update("")
-                window["-TILTIN-"].update("")
-                # Wait for next event
-                continue
-
-            # Compute the estimated focus and focus sequence range
-            est_focus = calculate_collimator_focus(
-                tempin, tiltin, values["-FILTER-"] != "CLEAR"
-            )
-            focseq_range = calculate_focus_sequence(est_focus)
-
-            # Update the window with the calculated values
-            window["-FOCUSOUT-"].update(f"{np.round(est_focus,1)} ± 0.6 mm")
-            window["-STARTPOS-"].update(f"{np.round(focseq_range[0],1)}")
-            window["-STEPSIZE-"].update(f"{np.round(focseq_range[1],1)}")
-            window["-NSTEPS-"].update(f"{focseq_range[2]}")
-
-        elif event == "Get Values from Broker":
-            # Retrieve the current values from the broker
-            window["-TEMPIN-"].update(
-                extract_broker_values(am_radio.mounttemp_from_broker)
-            )
-            window["-TILTIN-"].update(
-                extract_broker_values(am_radio.grangle_from_broker)
-            )
-
-    # All done, close window
-    window.close()
 
 
 # Computation Utility Functions ==============================================#
@@ -352,4 +193,6 @@ class DevenyCollfocus(utils.ScriptBase):
         Simple function that calls the main driver function.
         """
         # Giddy up!
-        deveny_collfocus(debug=args.debug)
+        from obstools.deveny_gui import run_gui
+
+        run_gui(tab=1)

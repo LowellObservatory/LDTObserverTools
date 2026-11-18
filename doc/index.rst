@@ -29,6 +29,7 @@ Dependencies Table
    :maxdepth: 1
    :hidden:
 
+   Combined DeVeny Tools GUI <deveny_gui>
    Grating Angle Calculator <deveny_grangle>
    Collimator Focus Sequence Estimator <deveny_collfocus>
    Collimator Focus Calculator <dfocus>

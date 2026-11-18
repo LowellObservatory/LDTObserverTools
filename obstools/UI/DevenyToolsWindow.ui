@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DevenyToolsWindow</class>
+ <widget class="QMainWindow" name="DevenyToolsWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>850</width><height>650</height></rect></property>
+  <property name="windowTitle">
+   <string>DeVeny Tools GUI</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <item>
+     <layout class="QHBoxLayout" name="headerLayout">
+      <item>
+       <widget class="QLabel" name="LowellLogo" />
+      </item>
+      <item>
+       <widget class="QLabel" name="labelTitle">
+        <property name="text">
+         <string>DeVeny Tools</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <widget class="QWidget" name="grangleTab">
+       <attribute name="title">
+        <string>Grating Angle</string>
+       </attribute>
+       <layout class="QGridLayout" name="grangleTabLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="gratingLabel">
+          <property name="text">
+           <string>Grating</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="gratingCombo">
+          <item>
+           <property name="text">
+            <string>DV1 - 150 g/mm, 5000 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV2 - 300 g/mm, 4000 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV3 - 300 g/mm, 6750 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV4 - 400 g/mm, 8500 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV5 - 500 g/mm, 5500 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV6 - 600 g/mm, 4900 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV7 - 600 g/mm, 6750 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV8 - 831 g/mm, 8000 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV9 - 1200 g/mm, 5000 Å</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>DV10 - 2160 g/mm, 5000 Å</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="wavelengthLabel">
+          <property name="text">
+           <string>Central wavelength (Å)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="wavelengthInput" />
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="computeTiltButton">
+          <property name="text">
+           <string>Compute tilt</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="tiltLabel">
+          <property name="text">
+           <string>Grating tilt (°)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="tiltInput" />
+        </item>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="computeWavelengthButton">
+          <property name="text">
+           <string>Compute wavelength</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="grangleResultLabel">
+          <property name="text">
+           <string>Result</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="grangleResult">
+          <property name="text">
+           <string />
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="demagLabel">
+          <property name="text">
+           <string>Slit demagnification</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="demagResult">
+          <property name="text">
+           <string />
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="grangleHint">
+          <property name="text">
+           <string>Valid wavelength: 3000–11000 Å; tilt: 0–48°.</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="collfocusTab">
+       <attribute name="title">
+        <string>Collimator Focus</string>
+       </attribute>
+       <layout class="QGridLayout" name="collfocusTabLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="temperatureInputLabel">
+          <property name="text">
+           <string>Mount temperature (°C)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="temperatureInput" />
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="collTiltInputLabel">
+          <property name="text">
+           <string>Grating tilt (°)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="collTiltInput" />
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="filterComboLabel">
+          <property name="text">
+           <string>Rear filter</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QComboBox" name="filterCombo">
+          <item>
+           <property name="text">
+            <string>CLEAR</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>GG420</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>GG495</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>OG570</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QPushButton" name="brokerButton">
+          <property name="text">
+           <string>Get values from broker</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QPushButton" name="computeFocusButton">
+          <property name="text">
+           <string>Compute focus sequence</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="focusResultLabel">
+          <property name="text">
+           <string>Estimated focus (mm)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="focusResult">
+          <property name="text">
+           <string />
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="startResultLabel">
+          <property name="text">
+           <string>Initial position (mm)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLabel" name="startResult">
+          <property name="text">
+           <string />
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="stepResultLabel">
+          <property name="text">
+           <string>Step size (mm)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QLabel" name="stepResult">
+          <property name="text">
+           <string />
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="stepsResultLabel">
+          <property name="text">
+           <string>Number of steps</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QLabel" name="stepsResult">
+          <property name="text">
+           <string />
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="focusTab">
+       <attribute name="title">
+        <string>Focus Analysis</string>
+       </attribute>
+       <layout class="QGridLayout" name="focusTabLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="focusDirectoryLabel">
+          <property name="text">
+           <string>Data directory</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="focusDirectory" />
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="focusLogLabel">
+          <property name="text">
+           <string>Focus log (or last)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="focusLog">
+          <property name="text">
+           <string>last</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="focusThresholdLabel">
+          <property name="text">
+           <string>Line threshold</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="focusThreshold">
+          <property name="text">
+           <string>100</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QPushButton" name="browseDirectoryButton">
+          <property name="text">
+           <string>Browse…</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QPushButton" name="runFocusButton">
+          <property name="text">
+           <string>Analyze focus run</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QPlainTextEdit" name="focusOutput">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="etcTab">
+       <attribute name="title">
+        <string>DeVeny ETC</string>
+       </attribute>
+       <layout class="QGridLayout" name="etcTabLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="etcStatus">
+          <property name="text">
+           <string>DeVeny exposure time calculator is planned. Instrument throughput and sky model are not yet available in this package.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources />
+ <connections />
+</ui>

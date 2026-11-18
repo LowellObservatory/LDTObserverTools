@@ -80,7 +80,10 @@ def test_parse_focus_headers():
     assert isinstance(focus_pars, dfocus.FocusParams)
 
     # Check outputs versus expected
-    assert focus_pars.mid_file == DV_TEST_FILES / "20250203.0025.fits"
+    assert (
+        focus_pars.mid_file.resolve()
+        == (DV_TEST_FILES / "20250203.0025.fits").resolve()
+    )
     assert np.isclose(focus_pars.nominal, 2.76, atol=0.01)
     assert focus_pars.start == 9.0
     assert focus_pars.end == 13.0

@@ -5,12 +5,12 @@
                                 [--arms {YJ,HK} [{YJ,HK} ...]] [-o OUTPUT]
                                 [--source SOURCE] [--overwrite]
                                 {ABBA,ONOFF}
-    
+
     Create an ECSV sidecar correcting RIMAS dither metadata.
-    
+
     positional arguments:
       {ABBA,ONOFF}
-    
+
     options:
       -h, --help            show this help message and exit
       -s, --sequence FRAME [FRAME ...]
@@ -22,5 +22,5 @@
       -o, --output OUTPUT
       --source SOURCE
       --overwrite
-    
+
     LDT Observer Tools (obstools) version 0.7.5
