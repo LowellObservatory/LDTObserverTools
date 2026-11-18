@@ -11,4 +11,4 @@
                             The NEOCP temporary designation ID (e.g., 'P10vY9r')
                             (default: None)
     
-    LDT Observer Tools (obstools) version 0.7.3
+    LDT Observer Tools (obstools) version 0.7.5

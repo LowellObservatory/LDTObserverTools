@@ -101,6 +101,8 @@ Tools Contained in this Package:
 
   - Simple FITS header fixing tool (``fix_ldt_header``)
 
+  - Ephemeris generator (``ephem_generator``)
+
 .. _future:
 
 Future Tools (planned or in development):
@@ -115,8 +117,6 @@ Future Tools (planned or in development):
   - RIMAS Imaging Quick-Look tool (``rimas_image_ql``)
 
   - RIMAS Spectroscopic Quick-Look tool (``rimas_spec_ql``)
-
-  - NEO Confirmation Page ephemeris generator (``neocp_ephem``)
 
   - Input List Validator (``validate_input_list``)
 

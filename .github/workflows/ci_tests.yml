@@ -39,22 +39,22 @@ jobs:
           - test-alldeps
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Install base dependencies
         run: |
           sudo apt update
-          sudo apt-get install -y freeglut3-dev
+          sudo apt-get install -y freeglut3-dev libegl1
           python -m pip install --upgrade pip tox
       - name: Test with tox
         run: |
           tox -e ${{ matrix.python }}-${{ matrix.toxenv }}
       - name: Upload coverage to codecov
         if: endsWith(matrix.tox_env, '-cov')
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
 
   os-tests:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
@@ -76,9 +76,9 @@ jobs:
           - test-alldeps
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Install base dependencies
@@ -94,15 +94,15 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Conda environment check
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install base dependencies
         run: |
           sudo apt update
-          sudo apt-get install -y freeglut3-dev
+          sudo apt-get install -y freeglut3-dev libegl1
           python -m pip install --upgrade pip tox
       - name: Run obstools tests from environment built with conda
         run: |
@@ -114,9 +114,9 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Python codestyle check
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install base dependencies
