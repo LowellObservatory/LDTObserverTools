@@ -3,7 +3,7 @@ obstools.deveny\_collfocus module
 
 .. automodule:: obstools.deveny_collfocus
    :members:
-   :private-members:
-   :undoc-members:
-   :show-inheritance:
    :no-index:
+   :private-members:
+   :show-inheritance:
+   :undoc-members:

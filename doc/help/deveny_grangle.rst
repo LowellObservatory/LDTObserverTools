@@ -9,4 +9,4 @@
       -h, --help  show this help message and exit
       --cli       Use the command-line version of this tool (default: False)
     
-    LDT Observer Tools (obstools) version 0.7.2
+    LDT Observer Tools (obstools) version 0.7.5
