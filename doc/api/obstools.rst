@@ -23,6 +23,7 @@ Submodules
    obstools.fix_ldt_header
    obstools.lmi_etc
    obstools.neocp_ephem
+   obstools.rimas_dither_pattern
    obstools.scrub_deveny_pickup
    obstools.utils
 
@@ -31,7 +32,7 @@ Module contents
 
 .. automodule:: obstools
    :members:
-   :private-members:
-   :undoc-members:
-   :show-inheritance:
    :no-index:
+   :private-members:
+   :show-inheritance:
+   :undoc-members:
